@@ -1,0 +1,5 @@
+# Repo a piblik (GitHub Pages): sèlman aplikasyon an.
+# Migrasyon SQL yo, edge function lan ak tès yo rete prive.
+supabase/
+tests/
+node_modules/
