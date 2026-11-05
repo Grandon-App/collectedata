@@ -109,6 +109,10 @@ html[data-look="b"] .row { background: var(--card); border: 1px solid var(--line
 html[data-look="b"] .row b { font-weight: 800; }
 html[data-look="b"] .row .right b { font-size: 1.0625rem; }
 html[data-look="b"] .row.flat { background: transparent; border: 0; padding: 8px 0 0; }
+/* Liy fidbak (onglè Fidbak + fich cycle): kat yo nan gride a ka gen wotè diferan → tèks la rete anwo; fraz rezon an, epi nòt ajan an kòm ti blòk sitasyon ak ba safran */
+html[data-look="b"] .row.swivi { align-items: flex-start; }
+html[data-look="b"] .swivi .rezon { margin-top: 2px; }
+html[data-look="b"] .swivi .nòt { margin-top: 6px; padding: 6px 10px; background: var(--soft); border-left: 3px solid var(--acc); border-radius: 0 10px 10px 0; color: var(--ink); overflow-wrap: anywhere; }
 html[data-look="b"] .btns { gap: 8px; margin-top: 10px; }
 html[data-look="b"] .btns .btn { flex: 1; }
 html[data-look="b"] .btns-v { gap: 8px; }
@@ -171,6 +175,7 @@ html[data-look="b"] .tabs { background: transparent; border: 0; border-radius: 0
 html[data-look="b"] .tab { flex: 1 1 auto; min-width: 0; min-height: 44px; padding: 8px 14px; border-radius: 99px; border: 1px solid var(--line2); background: var(--card); color: var(--ink); font-weight: 700; font-size: .9375rem; overflow-wrap: anywhere; }
 html[data-look="b"] .tab.on { background: var(--pri); color: var(--pri-ink); border-color: var(--pri); }
 html[data-look="b"] .cnt-b { background: var(--cnt-err); color: var(--cnt-err-ink); font-weight: 800; font-size: .75rem; padding: 1px 8px; }
+html[data-look="b"] .tab[data-ong="fidbak"] .cnt-b { background: var(--t-y); color: var(--i-y); } /* fidbak jodi a = enfòmasyon, pa yon alèt (Validasyon rete wouj) */
 html[data-look="b"] .tab.on .cnt-b { background: #fff; color: var(--navy); }
 
 /* ---------- Rechèch ---------- */
@@ -440,6 +445,7 @@ html[data-look="b"] .soon-ico svg { fill: none; stroke: var(--acc); }
 @media (min-width: 768px) {
   html[data-look="b"] main { max-width: 980px; padding-left: 24px; padding-right: 24px; }
   html[data-look="b"] .grid-t { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  html[data-look="b"] .list.grid-t > .empty { grid-column: 1 / -1; }
   html[data-look="b"] .tabbar { left: 50%; right: auto; transform: translateX(-50%); width: min(640px, 100%); bottom: 12px; border: 1px solid var(--line); border-radius: 22px; padding: 6px 10px 8px; }
   html[data-look="b"] .tabbar a { font-size: .75rem; }
   html[data-look="b"] body.has-nav main { padding-bottom: 120px; }
@@ -456,6 +462,10 @@ html[data-look="b"] .soon-ico svg { fill: none; stroke: var(--acc); }
   html[data-look="b"] .ctop .stats { grid-column: 1 / -1; }
   html[data-look="b"] .btn-row, html[data-look="b"] .acts3, html[data-look="b"] .head.center { max-width: 640px; margin-left: auto; margin-right: auto; }
   html[data-look="b"] .kach > b { font-size: 3rem; }
+}
+@media (max-width: 767px) {
+  /* Manadjè: 4 onglè (Kont, Tranzaksyon, Fidbak, Validasyon) → 2 × 2, pa 3 + yon pil pou kont li sou tout lajè a */
+  html[data-look="b"] .tabs:has(> .tab:nth-child(4)) .tab { flex: 1 1 calc(50% - 4px); }
 }
 @media (max-width: 360px) {
   html[data-look="b"] .bhead .btn.sq span { display: none; }
@@ -606,8 +616,11 @@ html[data-look="b"] .soon-ico svg { fill: none; stroke: var(--acc); }
 @media (min-width: 1440px) {
   html[data-look="b"] main { max-width: 1240px; }
   html[data-look="b"] .list.grid-t { grid-template-columns: repeat(3, 1fr); }
+  html[data-look="b"] #ong > .list.grid-t { grid-template-columns: repeat(3, 1fr); } /* onglè Fidbak: menm jan ak Kliyan (règ #ong > .list ≥ 1280 la bay 2) */
 }
 @media (min-width: 1024px) and (max-width: 1279px) {
+  /* Epay manadjè: 4 onglè × 176 px > 712 px kontni → pil yo yon ti kras pi etwat pou yo rete sou yon sèl liy (3 onglè yo pa chanje) */
+  html[data-look="b"] .tabs:has(> .tab:nth-child(4)) .tab { min-width: 150px; padding: 8px 20px; }
   /* Fich: kolòn dwat la ~340 px — etikèt la kenbe lajè l (≤ 55 %), se valè a (aliyen adwat, yon ti kras pi piti) ki kase si bezwen, pa tou de bò yo */
   html[data-look="b"] .fich2 .card.info .kv > span { flex: 0 0 auto; max-width: 55%; }
   html[data-look="b"] .fich2 .card.info .kv > b { flex: 1 1 auto; min-width: 0; font-size: .9375rem; }

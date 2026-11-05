@@ -63,7 +63,7 @@ export const MOTIFS = [["repase", "Kliyan an di pou m repase"], ["pa_la", "Kliya
   ["refize", "Kliyan an refize peye"], ["fenmen", "Biznis la fèmen"], ["malad", "Kliyan an malad"], ["lot", "Lòt rezon"]];
 export const motifLabel = (m) => (MOTIFS.find(([v]) => v === m) || [m, m])[1];
 // Fidbak kout (pou yon ti chip sou yon liy kliyan)
-export const MOTIF_KOUT = { repase: "Repase", pa_la: "Pa la", pa_gen_kob: "Pa gen kòb", refize: "Refize", fenmen: "Fèmen", malad: "Malad", lot: "Fidbak" };
+export const MOTIF_KOUT = { repase: "Repase", pa_la: "Pa la", pa_gen_kob: "Pa gen kòb", refize: "Refize", fenmen: "Fèmen", malad: "Malad", lot: "Lòt" };
 
 // Ikòn SVG (stroke, koulè = currentColor). Itilize `ICO.x` nan markup la.
 const svg = (p, extra = "") => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"${extra}>${p}</svg>`;

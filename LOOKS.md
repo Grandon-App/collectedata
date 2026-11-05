@@ -63,7 +63,7 @@ Hook obligatwa:
 - Onglè kont: `#jodi-list` (gen `jodiHtml`, oswa `<p class="empty">Pa gen peman ki tonbe jodi a.</p>`), `#kont` (gen `kontHtml`), `<input id="q" type="search" aria-label="Chèche kont" value="${h(q)}">`, filt `[data-filt="jodi"|"tout"|"reta"]` (`.on` sou `filt`).
 - Lyen `#/chwazi/cycle` (nouvo cycle).
 - Onglè tx: `demannHtml` (si pa vid) + `txHtml` (oswa "Poko gen tranzaksyon."). Onglè valid: `validHtml` (oswa "Pa gen demann an atant.").
-- Onglè fidbak: tit "Fidbak yo" + `nFidbak`, `fidbakFilt` (chips `[data-ffb]`, app.js branche yo), `<div class="list" id="fidbak-list">` ak `fidbakHtml` (oswa `<p class="empty">${fidbakVid}</p>`). Liy yo se `a.row.swivi` (non kliyan, badj rezon, nimewo kont · rezon · lè · ajan, nòt).
+- Onglè fidbak: tit "Fidbak yo" + `nFidbak`, `fidbakFilt` (chips `[data-ffb]`, app.js branche yo), `<div class="list" id="fidbak-list">` ak `fidbakHtml` (oswa `<p class="empty">${fidbakVid}</p>`). Liy yo se `a.row.swivi` (non kliyan, badj rezon, fraz rezon an, nimewo kont · lè · ajan, nòt). Lis la ka sèvi ak `.list.grid-t` (2 kolòn ≥ 768 px, 3 a ≥ 1440 px tankou Kliyan; look A ak B fè sa) oswa yon lis senp (look C).
 
 ### `kontRow(r)` — yon liy kont (itilize nan 2 lis Epay yo)
 ```

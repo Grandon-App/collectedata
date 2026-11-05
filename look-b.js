@@ -79,6 +79,9 @@ export function kontRow(r) {
 }
 
 // ---------- Epay ----------
+// Sa chif onglè a vle di, pou lektè ekran sèlman (i18n tradui l): Fidbak = fidbak jodi a, Validasyon = demann an atant.
+const SR_CNT = { fidbak: "jodi a", valid: "Demann an atant" };
+// Onglè yo: sèl onglè aktif la nan lòd Tab (tabindex 0); flèch yo (app.js) deplase fokis la sou lòt yo (tabindex -1).
 export function epay(ctx) {
   const { ong, ongs, stats, filt, q, moi, today } = ctx;
   const FILT = [["jodi", "Jodi a", stats.pouJodi], ["tout", "Tout", stats.aktif], ["reta", "An reta", stats.anReta]];
@@ -119,7 +122,7 @@ export function epay(ctx) {
     <div><div class="eyebrow">${t(JOU[ctx.isoJou])} ${datKout(today)} · <span data-brut>${prenon(moi)}</span></div><h1>Epay</h1></div>
     <a class="btn pri sq" href="#/chwazi/cycle" aria-label="Nouvo cycle">${ICO.plus}<span>Nouvo cycle</span></a>
   </div>
-  <div class="tabs" role="tablist">${ongs.map(([k, l, n]) => `<button role="tab" class="tab ${k === ong ? "on" : ""}" aria-selected="${k === ong}" data-ong="${k}">${l}${n ? ` <span class="cnt-b">${n}</span>` : ""}</button>`).join("")}</div>
+  <div class="tabs" role="tablist">${ongs.map(([k, l, n]) => `<button role="tab" class="tab ${k === ong ? "on" : ""}" aria-selected="${k === ong}" tabindex="${k === ong ? 0 : -1}" data-ong="${k}">${l}${n ? ` <span class="cnt-b">${n}</span>${SR_CNT[k] ? `<span class="sr"> ${SR_CNT[k]}</span>` : ""}` : ""}</button>`).join("")}</div>
   <div id="ong">${body}</div>`;
 }
 
