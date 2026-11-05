@@ -140,6 +140,23 @@ b.in { color: var(--ok); } b.out { color: var(--err); }
 .tabbar svg { width: 24px; height: 24px; fill: none; stroke: currentColor; }
 [hidden] { display: none !important; }
 .tabbar a.on { color: var(--pri); }
+.nav-foot { display: none; }
+/* Laptop / ekran laj (≥ 1024 px): navigasyon an vin yon kolòn agòch anba ba estati a; kontni an pi laj.
+   Chak look re-ekri règ sa yo ak pwòp estil li (gade LOOKS.md § Laptop). */
+@media (min-width: 1024px) {
+  body.has-nav { padding-left: var(--nav-w, 0px); } /* chak look mete --nav-w (sinon pa gen kolòn) */
+  body.has-nav main { padding-bottom: 40px; }
+  body.has-nav .toast { left: auto; right: 24px; bottom: 24px; transform: none; max-width: 420px; }
+  .tabbar { position: fixed; left: 0; right: auto; top: var(--bar-h, 56px); bottom: 0; width: var(--nav-w, 232px); transform: none;
+    display: flex; flex-direction: column; gap: 4px; padding: 14px 12px; border: 0; border-right: 1px solid var(--line); border-radius: 0; box-shadow: none; overflow-y: auto; }
+  .tabbar a { flex-direction: row; justify-content: flex-start; gap: 12px; min-height: 48px; padding: 0 14px; border-radius: 12px; font-size: .95rem; }
+  .nav-foot { display: flex; flex-direction: column; gap: 2px; margin-top: auto; padding: 12px 14px 4px; font-size: .85rem; color: var(--mut); border-top: 1px solid var(--line); }
+  .nav-foot .nav-moi { color: var(--ink); font-weight: 700; }
+  main { max-width: 1120px; padding: 24px 32px 40px; }
+  .form { max-width: 720px; }
+  .list.grid-t { grid-template-columns: 1fr 1fr; }
+}
+@media (min-width: 1440px) { .list.grid-t { grid-template-columns: 1fr 1fr 1fr; } main { max-width: 1240px; } }
 .tabbar a.on svg { background: color-mix(in srgb, var(--pri) 14%, transparent); border-radius: 99px; padding: 3px 14px; width: 54px; height: 30px; }
 .tabbar a:focus-visible { outline: 2px solid var(--info); outline-offset: -2px; }
 body.has-nav main { padding-bottom: calc(96px + env(safe-area-inset-bottom)); }

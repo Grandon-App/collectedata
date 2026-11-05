@@ -101,6 +101,7 @@ async function updateBar() {
       ${err ? `<span class="cnt err">${err}!</span>` : ""}
       ${s?.expired ? `<span class="cnt err">Konekte</span>` : ""}
     </a>`;
+  mezireBar();
 }
 
 // ---------- Ba navigasyon anba ----------
@@ -119,8 +120,17 @@ function updateNav() {
   const a = tabActif(r);
   $nav.hidden = false;
   document.body.classList.add("has-nav");
-  $nav.innerHTML = TABS.map(([k, href, label]) => `<a href="${href}" class="${k === a ? "on" : ""}" ${k === a ? 'aria-current="page"' : ""}>${ICO[k]}<span>${label}</span></a>`).join("");
+  $nav.innerHTML = TABS.map(([k, href, label]) => `<a href="${href}" class="${k === a ? "on" : ""}" ${k === a ? 'aria-current="page"' : ""}>${ICO[k]}<span>${label}</span></a>`).join("")
+    + `<div class="nav-foot"><span class="nav-moi" data-brut>${h(moi.nom || "")}</span><span class="nav-wol">${WOL[moi.role] || "Anplwaye"}</span><span class="nav-ver mut">v${h(APP_VERSION)}</span></div>`;
+  mezireBar();
 }
+// Wotè ba estati a (--bar-h): sou laptop, navigasyon agòch la kòmanse anba l.
+function mezireBar() {
+  document.documentElement.style.setProperty("--bar-h", ($bar.hidden ? 0 : $bar.offsetHeight) + "px");
+}
+let tmMezire = 0;
+window.addEventListener("resize", () => { clearTimeout(tmMezire); tmMezire = setTimeout(mezireBar, 80); });
+if (document.fonts?.ready) document.fonts.ready.then(mezireBar).catch(() => {});
 
 // ---------- Koneksyon ----------
 function viewLogin(expired) {
