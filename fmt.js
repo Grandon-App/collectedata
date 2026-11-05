@@ -61,7 +61,7 @@ export const KLAS = (kind) => (kind === "depo" || kind === "viman_in" ? "in" : k
 export const TYPES_FRE = ["Frais carnet", "Frais d'ouverture", "Frais de gestion", "Pénalité", "Autre"];
 export const MOTIFS = [["repase", "Kliyan an di pou m repase"], ["pa_la", "Kliyan an pa la jodi a"], ["pa_gen_kob", "Kliyan an di li pa gen kòb jodi a"],
   ["refize", "Kliyan an refize peye"], ["fenmen", "Biznis la fèmen"], ["malad", "Kliyan an malad"], ["lot", "Lòt rezon"]];
-export const motifLabel = (m) => (MOTIFS.find(([v]) => v === m) || [m, m])[1];
+export const motifLabel = (m) => (MOTIFS.find(([v]) => v === m) || [m, "Lòt rezon"])[1];
 // Fidbak kout (pou yon ti chip sou yon liy kliyan)
 export const MOTIF_KOUT = { repase: "Repase", pa_la: "Pa la", pa_gen_kob: "Pa gen kòb", refize: "Refize", fenmen: "Fèmen", malad: "Malad", lot: "Lòt" };
 

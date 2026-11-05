@@ -308,7 +308,7 @@ let ajans = {};
 function liSwivi(M, x, { kliyan = true } = {}) {
   const k = M.comptes.get(x.id_compte_epargne); const c = k && M.clients.get(k.id_personne);
   const ajan = nomAjan(x.agent_id);
-  const kò = `<div class="grow">${kliyan ? `<b>${d(non(c))}</b> <span class="badge warn">${t(MOTIF_KOUT[x.motif] || "Fidbak")}</span>` : `<b>${t(motifLabel(x.motif))}</b>`} ${badgePend(x)}
+  const kò = `<div class="grow">${kliyan ? `<b>${d(non(c))}</b> <span class="badge warn">${t(MOTIF_KOUT[x.motif] || "Lòt")}</span>` : `<b>${t(motifLabel(x.motif))}</b>`} ${badgePend(x)}
       ${kliyan ? `<div class="sm rezon">${t(motifLabel(x.motif))}</div>` : ""}
       <div class="mut sm">${kliyan ? `${d(k?.no_compte || t("Cycle poko voye"))} · ` : ""}${lè(x.capture_le)}${ajan ? ` · ${d(ajan)}` : ""}</div>
       ${x.note ? `<div class="sm nòt">${d(x.note)}</div>` : ""}
