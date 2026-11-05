@@ -138,7 +138,7 @@ b.in { color: var(--ok); } b.out { color: var(--err); }
 .tabbar a { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 56px;
   text-decoration: none; color: var(--mut); font-size: .72rem; font-weight: 600; border-radius: 12px; }
 .tabbar svg { width: 24px; height: 24px; fill: none; stroke: currentColor; }
-#bar[hidden], .tabbar[hidden] { display: none; }
+[hidden] { display: none !important; }
 .tabbar a.on { color: var(--pri); }
 .tabbar a.on svg { background: color-mix(in srgb, var(--pri) 14%, transparent); border-radius: 99px; padding: 3px 14px; width: 54px; height: 30px; }
 .tabbar a:focus-visible { outline: 2px solid var(--info); outline-offset: -2px; }
