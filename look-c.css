@@ -468,14 +468,14 @@ html[data-look="c"] .look-desk { color: var(--mut); display: block; }
   html[data-look="c"] .tabbar { position: fixed; left: 0; right: auto; top: var(--bar-h, 65px); bottom: 0; width: var(--nav-w); transform: none; z-index: 20;
     display: flex; flex-direction: column; gap: 4px; padding: 16px 12px 12px; background: var(--nav); border: 0; border-right: 1px solid var(--line); border-radius: 0; box-shadow: none;
     overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; }
-  html[data-look="c"] .tabbar a { position: relative; flex: 0 0 auto; flex-direction: row; justify-content: flex-start; align-items: center; gap: 12px; min-height: 46px; padding: 0 14px;
+  html[data-look="c"] .tabbar a { position: relative; flex: 0 0 auto; flex-direction: row; justify-content: flex-start; align-items: center; gap: 12px; min-height: 48px; padding: 0 14px;
     border-radius: 10px; color: var(--mut); font-size: .9375rem; font-weight: 600; letter-spacing: 0; transition: background-color .12s, color .12s; }
   html[data-look="c"] .tabbar a span { overflow: visible; }
   html[data-look="c"] .tabbar svg, html[data-look="c"] .tabbar a.on svg { width: 22px; height: 22px; flex-shrink: 0; stroke-width: 1.8; }
   /* Aktif: tèks + ikòn lò, ti fon lò (8 %), ba lò 3 px agòch anndan bouton an */
   html[data-look="c"] .tabbar a.on { color: var(--gold); background: rgba(232, 193, 90, .08); font-weight: 700; }
   html[data-look="c"] .tabbar a.on svg { stroke-width: 2.2; }
-  html[data-look="c"] .tabbar a.on::before { content: ""; position: absolute; left: 0; top: 11px; bottom: 11px; width: 3px; border-radius: 0 3px 3px 0; background: var(--gold); }
+  html[data-look="c"] .tabbar a.on::before { content: ""; position: absolute; left: 0; top: 12px; bottom: 12px; width: 3px; border-radius: 0 3px 3px 0; background: var(--gold); }
   html[data-look="c"] .tabbar a:focus-visible { outline: 2px solid var(--gold); outline-offset: -2px; }
   /* Pye kolòn nan: non ajan an (ink 600), wòl (majiskil 10 px), vèsyon (mono) */
   html[data-look="c"] .nav-foot { display: flex; flex-direction: column; gap: 3px; flex: 0 0 auto; margin-top: auto; padding: 14px 14px 6px; border-top: 1px solid var(--line); color: var(--mut); font-size: .8rem; }
@@ -497,7 +497,21 @@ html[data-look="c"] .look-desk { color: var(--mut); display: block; }
   html[data-look="c"] .card.info { padding: 0 20px; }
   html[data-look="c"] .ledger { padding: 4px 20px; }
   html[data-look="c"] .row { padding: 13px 0; }
-  html[data-look="c"] .modal { max-width: 480px; padding: 24px; }
+  /* Popup: pi konpak (tèt ikòn + tit sou yon liy, chwa 42 px, nòt 56 px) pou popup fidbak la (7 chwa) antre nèt nan yon ekran 600 px wotè */
+  html[data-look="c"] .modal { max-width: 480px; padding: 20px 24px; }
+  html[data-look="c"] .modal-h { flex-direction: row; justify-content: flex-start; text-align: left; gap: 12px; }
+  html[data-look="c"] .modal-h h2 { text-align: left; justify-content: flex-start; font-size: 1.05rem; }
+  html[data-look="c"] .modal-ico { width: 36px; height: 36px; font-size: 1rem; box-shadow: 0 0 0 3px var(--gold-bg); }
+  html[data-look="c"] .modal-ico.danger { box-shadow: 0 0 0 3px var(--err-bg); }
+  html[data-look="c"] .modal-foto { width: 56px; height: 56px; }
+  html[data-look="c"] .modal-p { text-align: left; margin: 8px 0 0; font-size: .92rem; }
+  html[data-look="c"] .modal-dl { margin-top: 10px; }
+  html[data-look="c"] .modal-choix fieldset { margin-top: 10px; gap: 4px; }
+  html[data-look="c"] .modal-choix label:not(.modal-l) { min-height: 42px; padding: 6px 12px; font-size: .9rem; }
+  html[data-look="c"] .modal-l { margin-top: 8px; }
+  html[data-look="c"] .modal-choix textarea { min-height: 56px; height: 56px; padding: 8px 12px; margin-top: 4px; }
+  html[data-look="c"] .modal-b { margin-top: 12px; }
+  html[data-look="c"] .modal-b .btn { min-height: 44px; }
   html[data-look="c"] .empty { padding: 28px 16px; }
   /* Paj etwat (fòm, paj ak lyen retou, koneksyon, Paramèt): 720 px santre */
   html[data-look="c"] main:has(> .form), html[data-look="c"] main:has(> .back), html[data-look="c"] main:has(> .login) { max-width: 784px; }
@@ -513,10 +527,11 @@ html[data-look="c"] .look-desk { color: var(--mut); display: block; }
   html[data-look="c"] .stile > b { font-size: 1.6rem; }
   html[data-look="c"] .tabs { margin: 20px 0 4px; }
   html[data-look="c"] .tab { flex: 0 0 auto; min-width: 160px; padding: 0 20px; }
-  html[data-look="c"] .ep-2 { display: grid; grid-template-columns: var(--g2); gap: 0 32px; align-items: start; }
+  html[data-look="c"] .ep-2 { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 0 32px; align-items: start; } /* 5/7 depi 1024: kont aktif yo (meta, balans) bezwen plis plas pase «Peman jodi a» */
   html[data-look="c"] .ep-col { min-width: 0; }
   html[data-look="c"] .ep-2 .list.grid-t { grid-template-columns: minmax(0, 1fr); gap: 0; }
-  html[data-look="c"] .ep-2 .chips.filt { max-width: 480px; margin: 2px 0 8px; }
+  html[data-look="c"] .ep-2 .chips.filt { width: fit-content; max-width: 100%; grid-template-columns: repeat(3, auto); margin: 2px 0 8px; } /* chak chip pran lajè tèks li (fr + gwo tèks pa kase sou 2 liy) */
+  html[data-look="c"] .ep-2 .chips.filt .chip { padding: 4px 14px; font-size: .8rem; }
   html[data-look="c"] .ep-2 #q { max-width: 480px; margin-bottom: 4px; }
   html[data-look="c"] #ong > .note.info-note { max-width: 760px; }
   /* Liy demann / validasyon (.row.col): tèks agòch, bouton Apwouve · Refize adwat (pa etire sou tout lajè a) */
@@ -525,7 +540,7 @@ html[data-look="c"] .look-desk { color: var(--mut); display: block; }
   html[data-look="c"] .row.col .btns .btn { flex: 0 0 auto; min-width: 120px; }
 
   /* --- Fich kliyan: gòch (avatar, non, enfòmasyon) | dwat (cycle aktif, lòt cycle) --- */
-  html[data-look="c"] .fich-2 { display: grid; grid-template-columns: var(--g2); gap: 0 32px; align-items: start; }
+  html[data-look="c"] .fich-2 { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 0 32px; align-items: start; } /* 7/5 a 1024–1279 (valè tablo a pa kase sou 3 liy), 5/7 a ≥ 1280 */
   html[data-look="c"] .fich-l, html[data-look="c"] .fich-r { min-width: 0; }
   html[data-look="c"] .fich-h { margin: 8px 0 16px; gap: 18px; }
   html[data-look="c"] .fich-h h1 { font-size: 1.6rem; }
@@ -533,7 +548,7 @@ html[data-look="c"] .look-desk { color: var(--mut); display: block; }
   html[data-look="c"] .fich-h .avatar.ph { font-size: 1.9rem; }
   html[data-look="c"] .fich-r > .lrow:first-child { margin-top: 8px; min-height: 44px; }
   html[data-look="c"] .cyc { padding: 16px 20px; }
-  html[data-look="c"] .heat i { height: 22px; border-radius: 4px; }
+  html[data-look="c"] .heat i { height: 20px; border-radius: 4px; }
   html[data-look="c"] .wd { min-height: 34px; font-size: .74rem; }
 
   /* --- Fich cycle: gòch (balans/vèsman, bouton yo, tablo detay) | dwat (kat cycle: chalè, semèn, pwogrè); lis yo anba --- */
@@ -562,6 +577,8 @@ html[data-look="c"] .look-desk { color: var(--mut); display: block; }
 
   /* --- Tablo de bò: 2 tuil + 3 gwo lyen (kat) sou yon liy --- */
   html[data-look="c"] #tablo { max-width: 1000px; }
+  html[data-look="c"] #tablo .stat2 { max-width: none; } /* menm lajè ak 3 kat yo anba: bò dwat yo aliye */
+  html[data-look="c"] #tablo .stile > b { font-size: 1.9rem; }
   html[data-look="c"] #tablo .nl { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
   html[data-look="c"] #tablo .nl a { min-height: 96px; padding: 16px 18px; gap: 14px; border: 1px solid var(--line); border-radius: var(--r); background: var(--card); transition: background-color .12s, border-color .12s; }
   html[data-look="c"] #tablo .nl > a > svg { width: 44px; height: 44px; padding: 10px; box-sizing: border-box; border-radius: 12px; background: var(--gold-bg); }
@@ -571,16 +588,22 @@ html[data-look="c"] .look-desk { color: var(--mut); display: block; }
   /* --- Kliyan: rechèch ≤ 760 px, lis 2 kolòn (3 a ≥ 1440) --- */
   html[data-look="c"] .search-row { max-width: 760px; }
   html[data-look="c"] .list.grid-t { gap: 0 32px; }
+  html[data-look="c"] .list.grid-t:not(.ep-2 .list.grid-t) > .row:is(:last-child, :last-of-type) { border-bottom: 1px solid var(--div); } /* lis 2–3 kolòn: dènye liy chak kolòn gen menm divizyon */
 
   /* --- Paramèt: 3 kat look yo sou yon liy (seksyon ≤ 720 px, gade main:has(> .form)) --- */
   html[data-look="c"] .looks { gap: 12px; }
   html[data-look="c"] .look-opt { padding: 10px; }
 }
-/* Laptop laj (≥ 1280 px): kolòn 5fr/7fr; lis long yo (tranzaksyon, validasyon, fich cycle, rapò) an 2 kolòn (si ≥ 4 liy) */
+/* Laptop laj (≥ 1280 px): kolòn 5fr/7fr; lis yo (tranzaksyon, demann, fidbak, rapò) an 2 kolòn depi 2 liy — pa liy ak bouton
+   (.row.col Apwouve/Refize: yo rete sou 1 kolòn ≤ 760 px). Yon sèl liy = lajè yon kolòn (anyen pa etire sou tout lajè a). */
 @media (min-width: 1280px) {
   html[data-look="c"][data-look="c"] { --g2: minmax(0, 5fr) minmax(0, 7fr); }
-  html[data-look="c"] :is(#ong, #cycle, #rapo) > .list:has(> .row:nth-child(4)) { display: block; columns: 2; column-gap: 32px; }
-  html[data-look="c"] :is(#ong, #cycle, #rapo) > .list:has(> .row:nth-child(4)) > .row { break-inside: avoid; }
+  html[data-look="c"] .fich-2 { grid-template-columns: var(--g2); }
+  html[data-look="c"] .heat i { height: 22px; }
+  html[data-look="c"] :is(#ong, #cycle, #rapo) > .list:has(> .row:nth-child(2)):not(:has(> .row.col)) { display: block; columns: 2; column-gap: 32px; }
+  html[data-look="c"] :is(#ong, #cycle, #rapo) > .list:has(> .row:nth-child(2)):not(:has(> .row.col)) > .row { break-inside: avoid; border-bottom: 1px solid var(--div); }
+  html[data-look="c"] :is(#ong, #cycle, #rapo) > .list:has(> .row:only-child) { max-width: calc(50% - 16px); }
+  html[data-look="c"] :is(#ong, #cycle, #rapo) > .list:has(> .row.col) { max-width: 760px; }
 }
 @media (min-width: 1440px) {
   html[data-look="c"] main { max-width: 1240px; }
@@ -597,7 +620,7 @@ html[data-look="c"] .look-desk { color: var(--mut); display: block; }
   html[data-look="c"] .btn.danger:not(:disabled):hover { background: var(--err-bg); }
   html[data-look="c"] .btn.danger-full:not(:disabled):hover { background: #ff9d94; border-color: #ff9d94; }
   html[data-look="c"] a.row, html[data-look="c"] .row.kr, html[data-look="c"] .nl a, html[data-look="c"] .cyc.lnk, html[data-look="c"] .chip, html[data-look="c"] .tab, html[data-look="c"] .segj button, html[data-look="c"] .look-opt { transition: background-color .12s, border-color .12s, color .12s; }
-  html[data-look="c"] a.row:hover, html[data-look="c"] .row.kr:hover, html[data-look="c"] #tablo .nl a:hover { background: var(--row-hov); }
+  html[data-look="c"] a.row:hover, html[data-look="c"] .row.kr:has(> a.lnk:hover), html[data-look="c"] #tablo .nl a:hover { background: var(--row-hov); } /* .kr: sèlman lè sourit la sou lyen an (avatar/vid pa klikab) */
   html[data-look="c"] .cyc.lnk:hover { background: var(--row-hov); border-color: var(--mut); }
   html[data-look="c"] .chip:not(.on):hover, html[data-look="c"] .segj button:not(.on):hover { background: rgba(255, 255, 255, .05); color: var(--ink); }
   html[data-look="c"] .tab:not(.on):hover { color: var(--ink); border-bottom-color: var(--line); }
