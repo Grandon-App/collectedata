@@ -11,6 +11,7 @@ html[data-look="a"] {
   --band: #14284b; --band-ink: #fff; --band-mut: #c9d3e6; --band-chip: rgba(255, 255, 255, .12); --band-line: rgba(255, 255, 255, .22);
   --nav: #14284b; --nav-ink: #a9b6cf; --toast: #121a2b; --seg: #e6e9f0; --seg-on: #fff; --band-edge: transparent;
   --halo: rgba(201, 162, 39, .35); --radio: #14284b;
+  --ring: #14284b; --row-hover-b: transparent; /* bag fokis: ble marin sou fon klè (lò a pa gen 3:1 sou #f3f5f9) */
   --sh: 0 10px 30px rgba(20, 40, 75, .12); --sh-s: 0 1px 2px rgba(20, 40, 75, .05); --sh-b: 0 6px 16px rgba(20, 40, 75, .18);
   --r: 18px; --gx: 16px;
   --ico-search: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235a6478' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E");
@@ -25,6 +26,7 @@ html[data-look="a"][data-theme="dark"] {
   --band: #0f1830; --band-ink: #e6ebf5; --band-mut: #aab6cc; --band-chip: rgba(255, 255, 255, .08); --band-line: rgba(255, 255, 255, .16);
   --nav: #0f1830; --nav-ink: #a9b6cf; --toast: #1a2440; --seg: #141c2e; --seg-on: #243052; --band-edge: rgba(255, 255, 255, .08);
   --halo: rgba(242, 214, 124, .45); --radio: #c9a227;
+  --ring: #c9a227; --row-hover-b: #8c7420;
   --sh: 0 10px 30px rgba(0, 0, 0, .35); --sh-s: 0 1px 2px rgba(0, 0, 0, .25); --sh-b: 0 6px 16px rgba(0, 0, 0, .3);
   --ico-search: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239aa6bd' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E");
   color-scheme: dark;
@@ -39,6 +41,7 @@ html[data-look="a"][data-theme="dark"] {
     --band: #0f1830; --band-ink: #e6ebf5; --band-mut: #aab6cc; --band-chip: rgba(255, 255, 255, .08); --band-line: rgba(255, 255, 255, .16);
     --nav: #0f1830; --nav-ink: #a9b6cf; --toast: #1a2440; --seg: #141c2e; --seg-on: #243052; --band-edge: rgba(255, 255, 255, .08);
     --halo: rgba(242, 214, 124, .45); --radio: #c9a227;
+    --ring: #c9a227; --row-hover-b: #8c7420;
     --sh: 0 10px 30px rgba(0, 0, 0, .35); --sh-s: 0 1px 2px rgba(0, 0, 0, .25); --sh-b: 0 6px 16px rgba(0, 0, 0, .3);
     --ico-search: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239aa6bd' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E");
     color-scheme: dark;
@@ -59,7 +62,7 @@ html[data-look="a"] .empty { color: var(--mut); text-align: center; padding: 26p
 html[data-look="a"] .list { gap: 10px; }
 html[data-look="a"] .list .empty { width: 100%; grid-column: 1 / -1; }
 html[data-look="a"] .nw { white-space: nowrap; }
-html[data-look="a"] :is(a, button, [role="tab"], select, textarea, input, [tabindex]):focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+html[data-look="a"] :is(a, button, [role="tab"], select, textarea, input, [tabindex]):focus-visible { outline: 3px solid var(--ring); outline-offset: 2px; }
 html[data-look="a"] #bar[hidden], html[data-look="a"] .tabbar[hidden] { display: none; }
 html[data-look="a"] .err-msg { color: var(--err); font-weight: 600; }
 html[data-look="a"] .reta { color: var(--err); font-weight: 700; }
@@ -73,7 +76,7 @@ html[data-look="a"] .brand { font-weight: 800; font-size: 1.15rem; gap: 10px; mi
 html[data-look="a"] .brand .mark { width: 34px; height: 34px; border-radius: 10px; border: 2px solid var(--gold); font-size: 1rem; color: var(--band-ink); }
 html[data-look="a"] .brand small { font-size: .66rem; border-color: var(--band-line); opacity: .9; }
 html[data-look="a"] .net { position: relative; background: var(--band-chip); color: var(--band-ink); font-size: .8rem; font-weight: 600; padding: 6px 12px; min-height: 36px; border-radius: 99px; }
-html[data-look="a"] .net::before { content: ""; position: absolute; inset: -5px; border-radius: 99px; }
+html[data-look="a"] .net::before { content: ""; position: absolute; inset: -5px 0; border-radius: 99px; } /* zòn peze 46 px wotè; pa laji sou kote (sou 320 px + gwo tèks li ta depase ekran an) */
 html[data-look="a"] .net .dot { width: 8px; height: 8px; background: #7ee2a0; } html[data-look="a"] .net.off .dot { background: #ffb3ad; }
 html[data-look="a"] .cnt { background: #fff; color: #14284b; }
 html[data-look="a"] .cnt.err { background: #ffd8d4; color: #8a1b12; }
@@ -154,6 +157,13 @@ html[data-look="a"] .kr > .pill, html[data-look="a"] .kr > .btns-v, html[data-lo
 html[data-look="a"] .btns { gap: 8px; margin-top: 10px; }
 html[data-look="a"] .btns-v { gap: 6px; }
 html[data-look="a"] .row.demande .btns { margin-top: 12px; }
+/* Liy fidbak (liSwivi, Epay › Fidbak ak paj cycle): kontni an kole anwo (nan gride 2 kolòn yon ti liy bò kote yon liy ak long nòt pa flote nan mitan);
+   yerachi: non (800) → fraz rezon (600) → liy gri (kont · dat · ajan) → nòt ajan an nan yon ti blòk lò. */
+html[data-look="a"] .row.swivi { align-items: flex-start; }
+html[data-look="a"] .swivi .rezon { font-weight: 600; margin-top: 1px; }
+html[data-look="a"] .swivi .mut.sm { margin-top: 2px; }
+html[data-look="a"] .swivi .nòt { margin-top: 8px; padding: 6px 10px; border-left: 3px solid var(--gold); background: var(--gold-soft); border-radius: 0 8px 8px 0; color: var(--ink); overflow-wrap: anywhere; }
+html[data-look="a"] .swivi .err-msg { margin-top: 6px; }
 html[data-look="a"] .thumb { width: 46px; height: 46px; background: var(--track); font-size: .9rem; font-weight: 800; }
 html[data-look="a"] .thumb.ph { background: var(--pri); color: var(--pri-ink); }
 html[data-look="a"] .thumb.ph.av-2 { background: var(--gold); color: var(--gold-ink); }
@@ -197,9 +207,11 @@ html[data-look="a"] .chip { min-height: 52px; border-radius: 14px; border: 1px s
 html[data-look="a"] .chip small { font-weight: 500; color: var(--mut); font-size: .75rem; }
 html[data-look="a"] .chip.on { background: var(--pri); color: var(--pri-ink); border-color: var(--pri); }
 html[data-look="a"] .chip.on small { color: inherit; opacity: 1; }
-html[data-look="a"] .chips.filt { display: flex; gap: 8px; margin: 0 0 10px; }
-html[data-look="a"] .chips.filt .chip { flex: 1; min-width: 0; min-height: 44px; flex-direction: row; gap: 6px; border-radius: 12px; font-size: .85rem; padding: 6px 8px; }
-html[data-look="a"] .chips.filt .chip small { background: var(--track); color: var(--mut); border-radius: 99px; padding: 0 7px; font-size: .72rem; font-weight: 700; }
+/* Yon chip pa janm pi etwat pase pi long mo li a (min-content): etikèt + bul kantite a pase sou 2 liy nan chip la (fr «Aujourd'hui» sou 320–390 px),
+   epi si 3 chip yo pa antre sou yon liy (gwo tèks + franse), dènye a desann sou pwòp liy li olye yon mo koupe oswa bul la soti deyò. */
+html[data-look="a"] .chips.filt { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 10px; }
+html[data-look="a"] .chips.filt .chip { flex: 1; min-width: min-content; min-height: 44px; flex-direction: row; flex-wrap: wrap; align-content: center; justify-content: center; gap: 2px 6px; border-radius: 12px; font-size: .85rem; padding: 6px 8px; line-height: 1.2; }
+html[data-look="a"] .chips.filt .chip small { flex: none; background: var(--track); color: var(--mut); border-radius: 99px; padding: 0 7px; font-size: .72rem; font-weight: 700; line-height: 1.5; }
 html[data-look="a"] .chips.filt .chip.on small { background: var(--gold); color: var(--gold-ink); }
 
 /* ===================== Onglè (kontwòl segmante) ===================== */
@@ -211,6 +223,11 @@ html[data-look="a"] .cnt-b { background: var(--gold); color: var(--gold-ink); fo
 /* Gwo tèks: "Tranzaksyon" dwe rete sou yon sèl liy nan 87 px (320 px, 3 onglè) — mezire: 14 px/-.01em = 87 px. */
 html[data-look="a"][data-teks="l"] .tab { font-size: .78rem; letter-spacing: -.01em; }
 html[data-look="a"][data-teks="xl"] .tab { font-size: .7rem; letter-spacing: -.01em; }
+/* 4 onglè (manadjè: Kont · Tranzaksyon · Fidbak · Validasyon) pa antre sou yon liy sou telefòn: gride 2 × 2, mo yo rete antye. */
+@media (max-width: 519px) {
+  html[data-look="a"] .tabs:has(> .tab:nth-child(4)) { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  html[data-look="a"] .tabs:has(> .tab:nth-child(4)) .tab { overflow-wrap: normal; padding: 4px 6px; }
+}
 
 /* ===================== Kat rezime ki flote (Epay / Tablo / Cycle) ===================== */
 html[data-look="a"] .sum { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 14px; align-items: center; padding: 16px; }
@@ -262,7 +279,7 @@ html[data-look="a"] .seg { gap: 8px; }
 html[data-look="a"] .seg label { min-width: 0; }
 html[data-look="a"] .seg span { min-height: 48px; padding: 6px 4px; border-radius: 12px; border: 1px solid var(--line); background: var(--field); font-weight: 600; font-size: .88rem; overflow-wrap: anywhere; }
 html[data-look="a"] .seg input:checked + span { background: var(--pri); color: var(--pri-ink); border-color: var(--pri); font-weight: 700; }
-html[data-look="a"] .seg input:focus-visible + span, html[data-look="a"] .jours input:focus-visible + span { outline: 3px solid var(--gold); outline-offset: 2px; }
+html[data-look="a"] .seg input:focus-visible + span, html[data-look="a"] .jours input:focus-visible + span { outline: 3px solid var(--ring); outline-offset: 2px; }
 html[data-look="a"] .jours { gap: 6px; }
 html[data-look="a"] .jours span { min-height: 46px; border-radius: 12px; border: 1px solid var(--line); background: var(--field); font-weight: 700; }
 html[data-look="a"] .jours input:checked + span { background: var(--pri); color: var(--pri-ink); border-color: var(--pri); }
@@ -380,7 +397,7 @@ html[data-look="a"] .modal-choix input[type="radio"]:checked { border-color: var
 html[data-look="a"] .modal-choix input[type="radio"]:checked::before { transform: scale(1); }
 html[data-look="a"] .modal-choix input[type="radio"]:focus { outline: none; box-shadow: none; border-color: var(--mut); background: var(--card); }
 html[data-look="a"] .modal-choix input[type="radio"]:checked:focus { border-color: var(--radio); }
-html[data-look="a"] .modal-choix input[type="radio"]:focus-visible, html[data-look="a"] label.chk input:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
+html[data-look="a"] .modal-choix input[type="radio"]:focus-visible, html[data-look="a"] label.chk input:focus-visible { outline: 3px solid var(--ring); outline-offset: 3px; }
 html[data-look="a"] label.chk input { accent-color: var(--radio); }
 html[data-look="a"] .zoom img { border-radius: 18px; }
 
@@ -405,7 +422,7 @@ html[data-look="a"] .looks { gap: 10px; }
 html[data-look="a"] .looks .look-opt { display: flex; flex-direction: column; gap: 6px; margin: 0; border-radius: 16px; border: 2px solid var(--line); background: var(--card); padding: 8px; font-size: .95rem; font-weight: 700; }
 html[data-look="a"] .look-nom, html[data-look="a"] .look-desk { display: block; }
 html[data-look="a"] .look-opt.on, html[data-look="a"] .look-opt:has(input:checked) { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(201, 162, 39, .25); }
-html[data-look="a"] .look-opt:has(input:focus-visible) { outline: 3px solid var(--gold); outline-offset: 2px; }
+html[data-look="a"] .look-opt:has(input:focus-visible) { outline: 3px solid var(--ring); outline-offset: 2px; }
 html[data-look="a"] .look-prev { border-radius: 10px; }
 html[data-look="a"] .look-desk { color: var(--mut); }
 html[data-look="a"] .center { text-align: center; }
@@ -441,7 +458,7 @@ html[data-look="a"] .center { text-align: center; }
   html[data-look="a"] .band .kpi.main b { font-size: 2.1rem; }
   html[data-look="a"] .tab { font-size: .78rem; padding: 4px 1px; }
   html[data-look="a"] .cnt-b { font-size: .66rem; }
-  html[data-look="a"] .chips.filt .chip { padding: 6px 4px; font-size: .8rem; gap: 4px; }
+  html[data-look="a"] .chips.filt .chip { padding: 6px 4px; font-size: .78rem; gap: 2px 4px; }
   html[data-look="a"] .kr .btn.sm { padding: 8px 10px; }
   html[data-look="a"] .kr .grow { min-width: 110px; }
   html[data-look="a"] .kr > .btns-v { flex-direction: row; justify-content: flex-end; width: 100%; }
@@ -519,6 +536,9 @@ html[data-look="a"] .center { text-align: center; }
   html[data-look="a"] .ep-2 .grid-t { grid-template-columns: minmax(0, 1fr); }
   html[data-look="a"] .ep-2 #q { max-width: 480px; }
   html[data-look="a"] #ong > .list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  /* Onglè fidbak: chip yo aliyen anba kontwòl onglè a (560 px) olye yo lonje sou tout lajè a; kantite a kole ak tit la (pa 1000 px pi lwen). */
+  html[data-look="a"] #ong > .chips.filt { max-width: 560px; }
+  html[data-look="a"] #ong > h2 { justify-content: flex-start; gap: 12px; }
   html[data-look="a"] #ong > .note { max-width: 760px; }
 
   /* --- Fich kliyan: band sou tout lajè; gòch = tuil + enfòmasyon, dwat = cycle yo (dènye liy lan fleksib pou kolòn gòch la rete kole) --- */
@@ -582,7 +602,7 @@ html[data-look="a"] .center { text-align: center; }
 @media (hover: hover) and (min-width: 1024px) {
   html[data-look="a"] .tabbar a:hover:not(.on) { background: var(--nav-hover, rgba(255, 255, 255, .08)); color: #fff; }
   html[data-look="a"] .row, html[data-look="a"] .tile, html[data-look="a"] .look-opt, html[data-look="a"] .chip, html[data-look="a"] .tab, html[data-look="a"] .jchip { transition: box-shadow .15s, background-color .15s, border-color .15s, color .15s; }
-  html[data-look="a"] a.row:hover, html[data-look="a"] .row.kr:hover, html[data-look="a"] .row:has(> a.lnk):hover { box-shadow: var(--sh); }
+  html[data-look="a"] a.row:hover, html[data-look="a"] .row.kr:hover, html[data-look="a"] .row:has(> a.lnk):hover { box-shadow: var(--sh); border-color: var(--row-hover-b); } /* fonse: lonbraj la pa parèt, bòdi a vin lò */
   html[data-look="a"] .tile:not(.off):hover { box-shadow: var(--sh); }
   html[data-look="a"] .tile.pri:hover { background: var(--pri-2); }
   html[data-look="a"] .btn:hover { background: color-mix(in srgb, var(--card) 92%, var(--ink)); }
