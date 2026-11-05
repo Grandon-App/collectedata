@@ -48,12 +48,13 @@ Paj "Tablo de bò" (poko devlope): yon akèy ak kèk chif + lyen `#/kliyan`, `#/
 ### `epay(ctx)` — paj Epay konplè
 ```
 ctx = { M, moi, man, today, t, lang, isoJou (1..7 pou today),
-  ong: "kont"|"tx"|"valid", ongs: [[id, label, countOrNull]],
+  ong: "kont"|"tx"|"fidbak"|"valid", ongs: [[id, label, countOrNull]],
   stats: { pouJodi, peye, kolekte, enAtant, aktif, anReta },
   filt: "jodi"|"tout"|"reta", q: "tèks rechèch",
   jodiHtml, kontHtml,            // liy kont yo, deja rann ak kontRow() (mete yo nan #jodi-list / #kont)
   nJodi, nKont, nEnAtant,
-  txHtml, demannHtml, validHtml  // lis deja rann (onglè tx / valid); vid pou lòt onglè yo
+  txHtml, demannHtml, validHtml, // lis deja rann (onglè tx / valid); vid pou lòt onglè yo
+  fidbakFilt, fidbakHtml, fidbakVid, nFidbak, filtFb   // onglè fidbak: chips [data-ffb] deja rann, liy yo (liSwivi), tèks si vid, kantite, filt aktif ("jodi"|"semen"|"tout")
 }
 ```
 Hook obligatwa:
@@ -62,6 +63,7 @@ Hook obligatwa:
 - Onglè kont: `#jodi-list` (gen `jodiHtml`, oswa `<p class="empty">Pa gen peman ki tonbe jodi a.</p>`), `#kont` (gen `kontHtml`), `<input id="q" type="search" aria-label="Chèche kont" value="${h(q)}">`, filt `[data-filt="jodi"|"tout"|"reta"]` (`.on` sou `filt`).
 - Lyen `#/chwazi/cycle` (nouvo cycle).
 - Onglè tx: `demannHtml` (si pa vid) + `txHtml` (oswa "Poko gen tranzaksyon."). Onglè valid: `validHtml` (oswa "Pa gen demann an atant.").
+- Onglè fidbak: tit "Fidbak yo" + `nFidbak`, `fidbakFilt` (chips `[data-ffb]`, app.js branche yo), `<div class="list" id="fidbak-list">` ak `fidbakHtml` (oswa `<p class="empty">${fidbakVid}</p>`). Liy yo se `a.row.swivi` (non kliyan, badj rezon, nimewo kont · rezon · lè · ajan, nòt).
 
 ### `kontRow(r)` — yon liy kont (itilize nan 2 lis Epay yo)
 ```

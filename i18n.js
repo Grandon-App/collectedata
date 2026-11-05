@@ -84,6 +84,8 @@ const FR = {
   "Klè, gwo bouton jòn safran. Fèt pou teren an, anba solèy.": "Clair, gros boutons jaune safran. Conçu pour le terrain, en plein soleil.",
   "Fonse, kontras fò, chif an premye. Ekonomi batri.": "Sombre, contraste fort, les chiffres d'abord. Économise la batterie.",
   "Ble marin ak lò. Elegan, pou kliyan ak manadjè.": "Bleu marine et or. Élégant, pour clients et managers.",
+  "Fidbak yo": "Retours", "7 jou": "7 jours", "Filt fidbak": "Filtre des retours", "Pa gen fidbak jodi a.": "Aucun retour aujourd'hui.", "Pa gen fidbak nan 7 dènye jou yo.": "Aucun retour ces 7 derniers jours.", "Poko gen fidbak.": "Aucun retour pour le moment.",
+  "Sa kliyan yo di lè yo pa peye (bouton «Pa peye»).": "Ce que les clients disent quand ils ne paient pas (bouton « Non payé »).",
   "Kont": "Compte", "Modifye": "Modifier", "Tranzaksyon yo": "Transactions", "Pa afekte kach la": "Sans effet sur la caisse",
   "Tranzaksyon mwen yo": "Mes transactions", "balans deklare": "solde déclaré", "depo": "dépôts",
   "tranzaksyon poko voye: yo konte nan rapò a, men sèvè a poko resevwa yo.": "transaction(s) non envoyée(s) : comptées dans le rapport, mais pas encore reçues par le serveur.",

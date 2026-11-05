@@ -107,6 +107,9 @@ export function epay(ctx) {
   } else if (ong === "tx") {
     body = `${ctx.demannHtml ? `<h2>Demann retrè ak viman</h2><div class="list">${ctx.demannHtml}</div>` : ""}
     <h2>Tranzaksyon yo</h2><div class="list">${ctx.txHtml || `<p class="empty">Poko gen tranzaksyon.</p>`}</div>`;
+  } else if (ong === "fidbak") {
+    body = `<h2>Fidbak yo <span class="cnt-h">${ctx.nFidbak}</span></h2><p class="mut sm sub">Sa kliyan yo di lè yo pa peye (bouton «Pa peye»).</p>
+    ${ctx.fidbakFilt}<div class="list grid-t" id="fidbak-list">${ctx.fidbakHtml || `<p class="empty">${ctx.fidbakVid}</p>`}</div>`;
   } else {
     body = `<p class="note info-note">Retrè ak viman yo bezwen otorizasyon yon manadjè. Lè ou apwouve, ekriti yo pase touswit sou kont yo.</p>
     <div class="list">${ctx.validHtml || `<p class="empty">Pa gen demann an atant.</p>`}</div>`;

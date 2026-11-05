@@ -531,8 +531,8 @@ html[data-look="c"] .look-desk { color: var(--mut); display: block; }
   html[data-look="c"] .ep-2 { display: grid; grid-template-columns: minmax(0, 11fr) minmax(0, 13fr); gap: 0 24px; align-items: start; } /* 1024–1279: kont aktif yo (meta, balans) bezwen yon ti plis plas; 5/7 + 32 px a ≥ 1280 */
   html[data-look="c"] .ep-col { min-width: 0; }
   html[data-look="c"] .ep-2 .list.grid-t { grid-template-columns: minmax(0, 1fr); gap: 0; }
-  html[data-look="c"] .ep-2 .chips.filt { width: fit-content; max-width: 100%; grid-template-columns: repeat(3, auto); margin: 2px 0 8px; } /* chak chip pran lajè tèks li (fr + gwo tèks pa kase sou 2 liy) */
-  html[data-look="c"] .ep-2 .chips.filt .chip { padding: 4px 10px; font-size: .78rem; } /* 1024–1279: 3 chip yo antre sou yon liy menm an fr + «Pi gwo» */
+  html[data-look="c"] .ep-2 .chips.filt, html[data-look="c"] .fb-tab .chips.filt { width: fit-content; max-width: 100%; grid-template-columns: repeat(3, auto); margin: 2px 0 8px; } /* chak chip pran lajè tèks li (fr + gwo tèks pa kase sou 2 liy) */
+  html[data-look="c"] .ep-2 .chips.filt .chip, html[data-look="c"] .fb-tab .chips.filt .chip { padding: 4px 10px; font-size: .78rem; } /* 1024–1279: 3 chip yo antre sou yon liy menm an fr + «Pi gwo» */
   html[data-look="c"] .ep-2 #q { max-width: 480px; margin-bottom: 4px; }
   html[data-look="c"] #ong > .note.info-note { max-width: 760px; }
   /* Liy demann / validasyon (.row.col): tèks agòch, bouton Apwouve · Refize adwat (pa etire sou tout lajè a) */
@@ -600,7 +600,7 @@ html[data-look="c"] .look-desk { color: var(--mut); display: block; }
 @media (min-width: 1280px) {
   html[data-look="c"][data-look="c"] { --g2: minmax(0, 5fr) minmax(0, 7fr); }
   html[data-look="c"] .ep-2 { grid-template-columns: var(--g2); gap: 0 32px; }
-  html[data-look="c"] .ep-2 .chips.filt .chip { padding: 4px 14px; font-size: .8rem; }
+  html[data-look="c"] .ep-2 .chips.filt .chip, html[data-look="c"] .fb-tab .chips.filt .chip { padding: 4px 14px; font-size: .8rem; }
   html[data-look="c"] .fich-2 { grid-template-columns: var(--g2); }
   html[data-look="c"] .heat i { height: 22px; }
   html[data-look="c"] :is(#ong, #cycle, #rapo) > .list:has(> .row:nth-child(2)):not(:has(> .row.col > .btns)) { display: block; columns: 2; column-gap: 32px; }

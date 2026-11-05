@@ -48,7 +48,7 @@ function savePrefs(p) {
   applyPrefs(n);
 }
 const { h, d, gd, datFr, lè, non, JOU, JOU_KOUT, lisJou, tel4, avatar, badgePend, badgeTx, badgeKont, badgeDm, ICO,
-  LABEL_TX, SIY, KLAS, MOTIFS, motifLabel, TYPES_FRE } = F;
+  LABEL_TX, SIY, KLAS, MOTIFS, motifLabel, MOTIF_KOUT, TYPES_FRE } = F;
 const adopteInfo = (r) => ({ id: r.id_personne, prenom: r.prenom, nom: r.nom, code_client: r.code_client, photo_url: r.photo_url, tel4: r.tel4 });
 const go = (hash) => { if (location.hash === hash) render(); else location.hash = hash; };
 
@@ -304,6 +304,18 @@ const jourTx = (tx) => (S.jouTx(tx) === S.jodi() ? t("jodi a") : datFr(S.jouTx(t
 const nomAjan = (id) => (id === moi?.id || id === "moi" ? t("Mwen") : (ajans[id] || ""));
 let ajans = {};
 
+// Yon liy fidbak ("Pa peye"): kliyan + rezon + lè + nòt. kliyan=false sou paj cycle la (kliyan an deja konnen).
+function liSwivi(M, x, { kliyan = true } = {}) {
+  const k = M.comptes.get(x.id_compte_epargne); const c = k && M.clients.get(k.id_personne);
+  const ajan = nomAjan(x.agent_id);
+  const kò = `<div class="grow">${kliyan ? `<b>${d(non(c))}</b> <span class="badge warn">${t(MOTIF_KOUT[x.motif] || "Fidbak")}</span>` : `<b>${t(motifLabel(x.motif))}</b>`} ${badgePend(x)}
+      ${kliyan ? `<div class="sm rezon">${t(motifLabel(x.motif))}</div>` : ""}
+      <div class="mut sm">${kliyan ? `${d(k?.no_compte || t("Cycle poko voye"))} · ` : ""}${lè(x.capture_le)}${ajan ? ` · ${d(ajan)}` : ""}</div>
+      ${x.note ? `<div class="sm nòt">${d(x.note)}</div>` : ""}
+      ${x._error ? `<div class="err-msg sm">${d(t(x._error))}</div>` : ""}</div>`;
+  return kliyan ? `<a class="row swivi" href="#/cycle/${x.id_compte_epargne}">${kò}</a>` : `<div class="row swivi">${kò}</div>`;
+}
+
 function liTx(M, tx, { kliyan = true } = {}) {
   const k = M.comptes.get(tx.id_compte_epargne); const c = k && M.clients.get(k.id_personne);
   const kind = S.txKind(tx);
@@ -365,7 +377,7 @@ async function paPeye(k, c) {
 }
 
 // ---------- 3. Epay: onglè Kont / Tranzaksyon / Validasyon ----------
-let filtEpay = "", ongEpay = "kont", filtKont = "tout";
+let filtEpay = "", ongEpay = "kont", filtKont = "tout", filtFidbak = "semen";
 function ctxKontRow(M, k, sekyon, swiviJodi) {
   const c = M.clients.get(k.id_personne) || {};
   return {
@@ -381,7 +393,11 @@ async function viewEpay() {
   const man = estManager();
   const enAtant = [...M.demandes.values()].filter((x) => x.statut === "en_attente").sort((a, b) => String(a.capture_le).localeCompare(String(b.capture_le)));
   if (ongEpay === "valid" && !man) ongEpay = "kont";
-  const ongs = [["kont", "Kont", null], ["tx", "Tranzaksyon", null], ...(man ? [["valid", "Validasyon", enAtant.length || null]] : [])];
+  const swivis = [...M.suivis.values()].sort((a, b) => String(b.capture_le).localeCompare(String(a.capture_le)));
+  const jouSwivi = (x) => S.jouLokal(new Date(x.capture_le));
+  const semenDe = S.ajouteJou(M.today, -6);
+  const nFbJodi = swivis.filter((x) => jouSwivi(x) === M.today).length, nFbSemen = swivis.filter((x) => jouSwivi(x) >= semenDe).length;
+  const ongs = [["kont", "Kont", null], ["tx", "Tranzaksyon", null], ["fidbak", "Fidbak", nFbJodi || null], ...(man ? [["valid", "Validasyon", enAtant.length || null]] : [])];
   const st = statsEpay(M);
   const swiviJodi = new Map([...M.suivis.values()].filter((x) => S.jouLokal(new Date(x.capture_le)) === M.today).map((x) => [x.id_compte_epargne, x.motif]));
   const pouJodi = [...M.comptes.values()].filter((k) => k._jodiPeman).sort((a, b) => (a._jodi >= a.montant_plan) - (b._jodi >= b.montant_plan));
@@ -397,8 +413,16 @@ async function viewEpay() {
   const ctx = {
     ...ctxBase(M), isoJou: S.isoJou(M.today), ong: ongEpay, ongs, stats: st, filt: filtKont, q: filtEpay, nJodi: pouJodi.length, nKont: aktif.length, nEnAtant: enAtant.length,
     jodiHtml: pouJodi.map((k) => P.kontRow(ctxKontRow(M, k, "jodi", swiviJodi))).join(""), kontHtml: rowsKont(),
-    txHtml: "", demannHtml: "", validHtml: "",
+    txHtml: "", demannHtml: "", validHtml: "", fidbakHtml: "", fidbakFilt: "", fidbakVid: "", nFidbak: 0, filtFb: filtFidbak,
   };
+  if (ongEpay === "fidbak") {
+    const lis = swivis.filter((x) => (filtFidbak === "jodi" ? jouSwivi(x) === M.today : filtFidbak === "semen" ? jouSwivi(x) >= semenDe : true));
+    const FF = [["jodi", "Jodi a", nFbJodi], ["semen", "7 jou", nFbSemen], ["tout", "Tout", swivis.length]];
+    ctx.fidbakFilt = `<div class="chips filt" role="group" aria-label="Filt fidbak">${FF.map(([v, l, n]) => `<button type="button" class="chip ${filtFidbak === v ? "on" : ""}" data-ffb="${v}" aria-pressed="${filtFidbak === v}">${l}<small>${n}</small></button>`).join("")}</div>`;
+    ctx.fidbakHtml = lis.map((x) => liSwivi(M, x)).join("");
+    ctx.nFidbak = lis.length;
+    ctx.fidbakVid = filtFidbak === "jodi" ? "Pa gen fidbak jodi a." : filtFidbak === "semen" ? "Pa gen fidbak nan 7 dènye jou yo." : "Poko gen fidbak.";
+  }
   if (ongEpay === "tx") {
     const mesDm = [...M.demandes.values()].filter((x) => man || x.agent_id === moi.id || x.agent_id === "moi")
       .sort((a, b) => String(b.capture_le).localeCompare(String(a.capture_le))).slice(0, 20);
@@ -410,6 +434,7 @@ async function viewEpay() {
   $app.innerHTML = `<div id="epay">${P.epay(ctx)}</div>`;
   $app.querySelectorAll("[data-ong]").forEach((b) => (b.onclick = () => { ongEpay = b.dataset.ong; viewEpay(); }));
   $app.querySelectorAll("[data-filt]").forEach((b) => (b.onclick = () => { filtKont = b.dataset.filt; viewEpay(); }));
+  $app.querySelectorAll("[data-ffb]").forEach((b) => (b.onclick = () => { filtFidbak = b.dataset.ffb; viewEpay(); }));
   const q = document.getElementById("q");
   if (q) q.oninput = () => { filtEpay = q.value; const box = document.getElementById("kont"); if (box) { box.innerHTML = rowsKont(); brancherKont(); } };
   const brancherKont = () => $app.querySelectorAll("[data-papeye]").forEach((b) => (b.onclick = () => { const k = M.comptes.get(b.dataset.papeye); paPeye(k, M.clients.get(k.id_personne) || {}); }));
@@ -828,10 +853,7 @@ async function viewCycle(id) {
   };
   $app.innerHTML = `<div id="cycle">${L().parts.cycleTop(ctx)}
   ${k._demandes.length ? `<h2>Demann retrè ak viman</h2><div class="list">${k._demandes.map((x) => liDemande(M, x, { decide: man })).join("")}</div>` : ""}
-  ${k._suivis.length ? `<h2>Fidbak</h2><div class="list">${k._suivis.map((x) => `<div class="row">
-      <div class="grow"><b>${t(motifLabel(x.motif))}</b> ${badgePend(x)}
-        <div class="mut sm">${lè(x.capture_le)}${nomAjan(x.agent_id) ? ` · ${d(nomAjan(x.agent_id))}` : ""}</div>
-        ${x.note ? `<div class="sm">${d(x.note)}</div>` : ""}</div></div>`).join("")}</div>` : ""}
+  ${k._suivis.length ? `<h2>Fidbak</h2><div class="list">${k._suivis.map((x) => liSwivi(M, x, { kliyan: false })).join("")}</div>` : ""}
   <h2>Tranzaksyon</h2>
   <div class="list">${k._txs.map((x) => liTx(M, x, { kliyan: false })).join("") || `<p class="empty">Poko gen tranzaksyon.</p>`}</div></div>`;
   document.getElementById("papeye")?.addEventListener("click", () => paPeye(k, c));
