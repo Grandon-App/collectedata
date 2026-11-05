@@ -108,3 +108,17 @@ LOOK=b PORT=8781 node tests/e2e.js      # 60+ tès, dwe pase pou chak look
 LOOK=b node tests/width.js              # 320/360/390/820 px, klè + fonse
 LOOK=b node tests/shots.js              # foto ekran yo nan tests/shots/b-*.png
 ```
+```bash
+PORT=8855 node tests/contrast.js b [--dark] [--manager]   # kontras tèks (WCAG) sou paj prensipal yo
+```
+
+### Espesifisite tokens (enpòtan)
+`app.css` gen règ fonse ak espesifisite (0,2,0) (`:root[data-theme="dark"]` ak `@media (prefers-color-scheme: dark) :root:not([data-theme="light"])`). Pou look ou a toujou genyen:
+```css
+/* Look ki gen 2 tèm (A, B) */
+html[data-look="a"] { /* tokens klè */ }
+html[data-look="a"][data-theme="dark"] { /* tokens fonse */ }
+@media (prefers-color-scheme: dark) { html[data-look="a"]:not([data-theme="light"]) { /* menm tokens fonse */ } }
+/* Look ki toujou fonse (C): double atribi a bay (0,2,1) */
+html[data-look="c"][data-look="c"] { /* tokens */ color-scheme: dark; }
+```
