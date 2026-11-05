@@ -189,3 +189,61 @@ a.lnk { text-decoration: none; color: inherit; }
   body.has-nav main { padding-bottom: 110px; }
   .tabbar a { font-size: .8rem; }
 }
+
+/* ---------- Popup (bwat dyalòg) ---------- */
+body.modal-open { overflow: hidden; }
+.modal-wrap { position: fixed; inset: 0; z-index: 100; display: flex; align-items: flex-end; justify-content: center;
+  background: rgba(8, 14, 28, .55); padding: 16px; padding-bottom: max(16px, env(safe-area-inset-bottom)); animation: fade .15s ease-out; }
+.modal-wrap.out { animation: fade .12s ease-in reverse forwards; }
+.modal { width: 100%; max-width: 440px; max-height: calc(100vh - 32px); overflow: auto; background: var(--card); color: var(--ink);
+  border-radius: 20px; padding: 20px; box-shadow: 0 20px 60px rgba(0, 0, 0, .35); animation: monte .18s ease-out; }
+@media (min-width: 600px) { .modal-wrap { align-items: center; } }
+@keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes monte { from { transform: translateY(24px); opacity: .6; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .modal-wrap, .modal { animation: none; } }
+.modal-h { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px; }
+.modal-h h2 { margin: 0; font-size: 1.15rem; }
+.modal-ico { width: 52px; height: 52px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  background: #14284b; color: #fff; font-size: 1.5rem; font-weight: 800; box-shadow: 0 0 0 5px color-mix(in srgb, var(--acc) 35%, transparent); }
+.modal-ico.danger { background: var(--err); box-shadow: 0 0 0 5px color-mix(in srgb, var(--err) 25%, transparent); }
+.modal-foto { width: 84px; height: 84px; border-radius: 50%; object-fit: cover; border: 3px solid var(--acc); cursor: zoom-in; }
+.modal-p { text-align: center; color: var(--mut); margin: 10px 0 0; }
+.modal-dl { margin: 14px 0 0; background: var(--bg); border-radius: 12px; padding: 4px 12px; }
+.modal-dl div { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.modal-dl div:last-child { border-bottom: 0; }
+.modal-dl dt { color: var(--mut); font-size: .88rem; }
+.modal-dl dd { margin: 0; font-weight: 700; text-align: right; overflow-wrap: anywhere; }
+.modal-l { display: block; margin-top: 12px; font-weight: 600; font-size: .92rem; }
+.modal-l input { margin-top: 6px; }
+.modal-b { display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); gap: 10px; margin-top: 18px; }
+.modal-b .btn { min-height: 48px; }
+.btn.danger-full { background: var(--err); border-color: var(--err); color: #fff; }
+
+/* Foto an gwo */
+.zoom { margin: 0; text-align: center; }
+.zoom img { max-width: 100%; max-height: 70vh; border-radius: 14px; display: block; margin: 0 auto; }
+.zoom figcaption { margin-top: 10px; font-weight: 700; }
+img.thumb, img.avatar, img.prev { cursor: zoom-in; }
+
+/* Rechèch + pozisyon */
+.search-row { display: grid; grid-template-columns: 1fr auto auto; gap: 8px; align-items: center; }
+.search-row .search { margin: 0; }
+.search-row select { width: auto; min-height: 46px; }
+.gps-btn { min-height: 46px; padding: 8px 12px; }
+.gps-btn svg { width: 20px; height: 20px; fill: var(--pri); }
+@media (max-width: 420px) {
+  .search-row { grid-template-columns: 1fr 1fr; }
+  .search-row .search { grid-column: 1 / -1; }
+}
+
+/* Fich kliyan */
+.page-head.sub { margin: 18px 0 8px; }
+.page-head.sub h2 { margin: 0; }
+.card.info .kv { padding: 9px 0; border-bottom: 1px solid var(--line); gap: 12px; align-items: center; }
+.card.info .kv:last-child { border-bottom: 0; }
+.card.info .kv b { text-align: right; overflow-wrap: anywhere; font-weight: 600; }
+
+/* Chwa lang (koneksyon) */
+.lang-sw { display: inline-flex; border: 1px solid var(--line); border-radius: 99px; padding: 3px; margin-top: 6px; background: var(--card); }
+.lang-sw button { border: 0; background: none; font: inherit; font-weight: 600; padding: 6px 14px; border-radius: 99px; color: var(--mut); cursor: pointer; min-height: 36px; }
+.lang-sw button.on { background: var(--pri); color: var(--pri-ink); }

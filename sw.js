@@ -1,8 +1,8 @@
 // Service worker: kenbe aplikasyon an sou telefòn nan pou l louvri san entènèt.
 // Chanje VERSION chak fwa ou pibliye yon nouvo vèsyon.
-const VERSION = "grandon-ajan-v4";
+const VERSION = "grandon-ajan-v5";
 const SHELL = [
-  "./", "index.html", "app.css", "app.js", "db.js", "api.js", "sync.js", "config.js",
+  "./", "index.html", "app.css", "app.js", "db.js", "api.js", "sync.js", "config.js", "ui.js", "i18n.js", "taxonomy.js",
   "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png", "icons/icon-maskable-512.png",
 ];
 
@@ -12,7 +12,7 @@ self.addEventListener("install", (e) => {
 
 self.addEventListener("activate", (e) => {
   e.waitUntil((async () => {
-    for (const k of await caches.keys()) if (k !== VERSION) await caches.delete(k);
+    for (const k of await caches.keys()) if (k !== VERSION && k !== "grandon-foto") await caches.delete(k);
     await self.clients.claim();
   })());
 });
@@ -22,6 +22,20 @@ self.addEventListener("message", (e) => { if (e.data === "skipWaiting") self.ski
 self.addEventListener("fetch", (e) => {
   const req = e.request;
   const url = new URL(req.url);
+  // Foto kliyan piblik yo: kenbe yo pou yo parèt menm offline.
+  if (req.method === "GET" && url.pathname.includes("/storage/v1/object/public/")) {
+    e.respondWith((async () => {
+      const cache = await caches.open("grandon-foto");
+      const hit = await cache.match(req);
+      if (hit) return hit;
+      try {
+        const r = await fetch(req);
+        if (r.ok) cache.put(req, r.clone());
+        return r;
+      } catch { return new Response("", { status: 504 }); }
+    })());
+    return;
+  }
   // Supabase ak lòt sit: pa manyen yo, se aplikasyon an ki jere offline la.
   if (req.method !== "GET" || url.origin !== self.location.origin) return;
   if (req.mode === "navigate") {

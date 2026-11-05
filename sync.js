@@ -83,6 +83,13 @@ async function remap(oldId, newId) {
 }
 
 const gpsArgs = (g) => ({ p_gps_lat: g?.lat ?? null, p_gps_lng: g?.lng ?? null, p_gps_precision: g?.acc ?? null });
+// Chan fich kliyan an (okipasyon, kote biznis la…)
+export const CHAN_FICH = ["adresse", "lieu_de_travail", "occupation", "secteur", "activite", "point_de_vente", "capacite_distribution"];
+const majArgs = (p) => ({
+  p_id_personne: p.id, p_adresse: p.adresse || null, p_lieu_de_travail: p.lieu_de_travail || null, p_occupation: p.occupation || null,
+  p_secteur: p.secteur || null, p_activite: p.activite || null, p_point_de_vente: p.point_de_vente || null,
+  p_capacite_distribution: p.capacite_distribution || null, ...gpsArgs(p.gps), p_capture_le: p.capture_le,
+});
 
 const EXEC = {
   async client(p) {
@@ -102,8 +109,10 @@ const EXEC = {
     });
     const id = r.id_personne;
     if (id !== p.id) await remap(p.id, id);
+    if (CHAN_FICH.some((k) => p[k])) await api.rpc("grandon_maj_client", { ...majArgs(p), p_id_personne: id });
     if (!(await db.get("clients", id)))
-      await db.put("clients", { id_personne: id, prenom: p.prenom, nom: p.nom, telephone: p.telephone, activite: p.activite, adresse: p.adresse, photo_url });
+      await db.put("clients", { id_personne: id, prenom: p.prenom, nom: p.nom, telephone: p.telephone, sexe: p.sexe, photo_url,
+        ...Object.fromEntries(CHAN_FICH.map((k) => [k, p[k] || null])), gps_lat: p.gps?.lat ?? null, gps_lng: p.gps?.lng ?? null });
     if (p.photo_id) await db.del("photos", p.photo_id);
     return r.deja ? `${p.prenom} ${p.nom} te deja nan baz la: nou itilize dosye ki te la a.` : null;
   },
@@ -115,6 +124,16 @@ const EXEC = {
     });
     if (!(await db.get("clients", p.id)))
       await db.put("clients", { id_personne: p.id, prenom: p.prenom, nom: p.nom, code_client: p.code_client, photo_url: p.photo_url, tel4: p.tel4 });
+  },
+
+  async maj(p) {
+    await api.rpc("grandon_maj_client", majArgs(p));
+    const c = await db.get("clients", p.id);
+    if (c) {
+      for (const k of CHAN_FICH) if (p[k]) c[k] = p[k];
+      if (p.gps) { c.gps_lat = p.gps.lat; c.gps_lng = p.gps.lng; }
+      await db.put("clients", c);
+    }
   },
 
   async cycle(p) {
@@ -209,7 +228,7 @@ export function run({ pull: doPull = true } = {}) {
 export async function pull() {
   const depi = ajouteJou(jodi(), -200);
   const [clients, comptes, plans, txs] = await Promise.all([
-    api.selectAll("grandon_v_clients?select=id_personne,prenom,nom,telephone,code_client,activite,adresse,photo_url&order=prenom"),
+    api.selectAll("grandon_v_clients?select=id_personne,prenom,nom,telephone,code_client,sexe,adresse,lieu_de_travail,occupation,secteur,activite,point_de_vente,capacite_distribution,photo_url,gps_lat,gps_lng&order=prenom"),
     api.selectAll("grandon_v_comptes?select=*&order=date_debut.desc"),
     api.selectAll("grandon_plans?actif=is.true&select=montant&order=montant"),
     api.selectAll(`grandon_v_transactions?date_transaction=gte.${depi}&select=id_transaction_epargne,id_compte_epargne,type_transaction,montant,date_transaction,validation_status,solde_apres_transactions,created_by,solde_declare&order=date_transaction`),
@@ -238,7 +257,14 @@ export async function model() {
     const p = o.payload;
     const pend = { _pending: true, _error: o.status === "erè" ? o.error : null, _seq: o.seq };
     if (o.kind === "client")
-      M.clients.set(p.id, { id_personne: p.id, prenom: p.prenom, nom: p.nom, telephone: p.telephone, activite: p.activite, adresse: p.adresse, photo_id: p.photo_id, ...pend });
+      M.clients.set(p.id, { id_personne: p.id, prenom: p.prenom, nom: p.nom, telephone: p.telephone, sexe: p.sexe, photo_id: p.photo_id,
+        ...Object.fromEntries(CHAN_FICH.map((k) => [k, p[k] || null])), gps_lat: p.gps?.lat ?? null, gps_lng: p.gps?.lng ?? null, ...pend });
+    if (o.kind === "maj" && M.clients.has(p.id)) {
+      const c = M.clients.get(p.id);
+      for (const k of CHAN_FICH) if (p[k]) c[k] = p[k];
+      if (p.gps) { c.gps_lat = p.gps.lat; c.gps_lng = p.gps.lng; }
+      c._majPending = true; if (pend._error) c._error = pend._error;
+    }
     if (o.kind === "adopte" && !M.clients.has(p.id))
       M.clients.set(p.id, { id_personne: p.id, prenom: p.prenom, nom: p.nom, code_client: p.code_client, photo_url: p.photo_url, tel4: p.tel4, ...pend });
     if (o.kind === "cycle")

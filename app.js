@@ -1,13 +1,16 @@
 import * as db from "./db.js";
 import * as api from "./api.js";
 import * as S from "./sync.js";
+import * as ui from "./ui.js";
+import * as TX from "./taxonomy.js";
+import { t, setLang, getLang, demarrerTraduction } from "./i18n.js";
 
 const $app = document.getElementById("app");
 const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "2.0";
+const APP_VERSION = "2.1";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin" };
 // Preferans aparans: pou aparèy sa a sèlman.
 function prefs() {
@@ -37,6 +40,8 @@ const nf = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 2 });
 const gd = (n) => `${nf.format(Number(n) || 0)} G`;
 const datFr = (iso) => (iso ? new Date(String(iso).slice(0, 10) + "T12:00:00Z").toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric", timeZone: "UTC" }) : "—");
 const lè = (iso) => (iso ? new Date(iso).toLocaleString("fr-FR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", timeZone: C.FUSEAU }) : "jamè");
+const d = (v) => `<span data-brut>${h(v)}</span>`;
+const adopteInfo = (r) => ({ id: r.id_personne, prenom: r.prenom, nom: r.nom, code_client: r.code_client, photo_url: r.photo_url, tel4: r.tel4 });
 const non = (c) => `${c?.prenom || ""} ${c?.nom || ""}`.trim() || "—";
 const go = (hash) => { if (location.hash === hash) render(); else location.hash = hash; };
 const JOU = ["", "Lendi", "Madi", "Mèkredi", "Jedi", "Vandredi", "Samdi", "Dimanch"];
@@ -45,12 +50,12 @@ const lisJou = (j) => (j?.length ? j.map((x) => JOU_KOUT[x]).join(" · ") : "—
 
 function toast(msg, kind = "ok", ms = 3500) {
   document.querySelectorAll(".toast:not(.update)").forEach((x) => x.remove());
-  const t = document.createElement("div");
-  t.className = `toast ${kind}`;
-  t.setAttribute("role", "status");
-  t.textContent = msg;
-  document.body.appendChild(t);
-  setTimeout(() => t.remove(), ms);
+  const el = document.createElement("div");
+  el.className = `toast ${kind}`;
+  el.setAttribute("role", "status");
+  el.textContent = t(msg);
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), ms);
 }
 
 function getGps(timeout = 10000) {
@@ -127,6 +132,7 @@ function viewLogin(expired) {
     <img src="icons/icon-192.png" alt="" width="76" height="76">
     <h1>Grandon</h1>
     <p class="mut">Aplikasyon ajan ${C.ANVIWONMAN ? `· ${h(C.ANVIWONMAN)}` : ""}</p>
+    <div class="lang-sw" role="group" aria-label="Lang"><button type="button" data-lang="ht" class="${getLang() === "ht" ? "on" : ""}" data-brut>Kreyòl</button><button type="button" data-lang="fr" class="${getLang() === "fr" ? "on" : ""}" data-brut>Français</button></div>
     ${expired ? `<p class="note warn">Sesyon w fini. Konekte ankò: done ki sou telefòn nan ap rete.</p>` : ""}
     <form id="f-login" class="card">
       <label>Telefòn<input name="tel" inputmode="tel" autocomplete="username" placeholder="3700 1234" required></label>
@@ -136,6 +142,7 @@ function viewLogin(expired) {
     </form>
     ${navigator.onLine ? "" : `<p class="note">Fòk ou gen entènèt pou premye koneksyon an.</p>`}
   </section>`;
+  $app.querySelectorAll("[data-lang]").forEach((b) => (b.onclick = () => { setLang(b.dataset.lang); location.reload(); }));
   document.getElementById("f-login").onsubmit = async (e) => {
     e.preventDefault();
     const f = e.target;
@@ -178,7 +185,7 @@ function viewLogin(expired) {
 // ---------- Lis kliyan (pati komen) ----------
 const tel4 = (c) => (c.telephone ? String(c.telephone).replace(/\D/g, "").slice(-4) : c.tel4 || "");
 const avatar = (c, cls = "thumb") => c.photo_url
-  ? `<img class="${cls}" src="${h(c.photo_url)}" alt="" loading="lazy">`
+  ? `<img class="${cls}" src="${h(c.photo_url)}" alt="" loading="lazy" data-legend="${h(non(c))}">`
   : `<span class="${cls} ph" aria-hidden="true">${h((c.prenom || "?")[0])}</span>`;
 function lisKliyan(M, filtre) {
   const q = filtre.trim().toLowerCase();
@@ -191,8 +198,8 @@ function liKliyan(M, c, href) {
   const ks = S.comptesDuClient(M, c.id_personne).filter((k) => k._actif);
   return `<a class="row" href="${href}">
     ${avatar(c)}
-    <div class="grow"><b>${h(non(c))}</b> ${badgePend(c)}
-      <div class="mut sm">${h(c.code_client || "ID poko vini")} · •••• ${h(tel4(c))}</div>
+    <div class="grow"><b>${d(non(c))}</b> ${badgePend(c)}
+      <div class="mut sm">${d(c.code_client || "ID poko vini")} · •••• ${h(tel4(c))}</div>
       <div class="mut sm">${ks.length ? `${ks.length} cycle aktif` : "San cycle aktif"}</div></div>
     <div class="right">${ks[0] ? badgeKont(ks[0]) : ""}</div></a>`;
 }
@@ -219,7 +226,11 @@ async function viewKliyan() {
   const M = await S.model();
   $app.innerHTML = `
   <div class="page-head"><h1>Kliyan</h1><a class="btn pri" href="#/kliyan/nouvo">＋ Nouvo kliyan</a></div>
-  <input id="q" type="search" class="search" placeholder="Chèche non, ID kliyan oswa telefòn…" aria-label="Chèche kliyan" value="${h(rechèch)}" autocomplete="off">
+  <div class="search-row">
+    <input id="q" type="search" class="search" placeholder="Chèche non, ID kliyan oswa telefòn…" aria-label="Chèche kliyan" value="${h(rechèch)}" autocomplete="off">
+    <button class="btn gps-btn" id="pre" type="button" title="Toupre m"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/></svg><span>Toupre m</span></button>
+    <select id="rayon" aria-label="Distans"><option value="100">100 m</option><option value="300" selected>300 m</option><option value="1000">1 km</option></select>
+  </div>
   <p class="mut sm" id="q-hint"></p>
   <div id="baz"></div>
   <h2 id="lok-t">Kliyan Grandon yo <small class="mut">(${M.clients.size})</small></h2>
@@ -228,6 +239,32 @@ async function viewKliyan() {
   const drawLocal = () => {
     document.getElementById("list").innerHTML = lisKliyan(M, rechèch).slice(0, 200).map((c) => liKliyan(M, c, `#/kliyan/${c.id_personne}`)).join("")
       || `<p class="empty">${rechèch ? "Pa gen kliyan Grandon ki koresponn." : "Pa gen kliyan."}</p>`;
+  };
+  const ligneBaz = (r) => `<div class="row">
+      ${avatar(r)}
+      <div class="grow"><b>${d(non(r))}</b><div class="mut sm">${d(r.code_client || "—")} · •••• ${d(r.tel4 || "")}${r.distance_m != null ? ` · <b>${r.distance_m} m</b>` : ""}</div></div>
+      ${M.clients.has(r.id_personne) ? `<a class="btn sm" href="#/kliyan/${r.id_personne}">Wè fich li</a>` : `<button class="btn sm pri" data-adopte='${h(JSON.stringify(adopteInfo(r)))}'>Ajoute</button>`}
+    </div>`;
+  const brancherAdopte = (box) => box.querySelectorAll("[data-adopte]").forEach((b) => (b.onclick = async () => {
+    const p = JSON.parse(b.dataset.adopte);
+    if (!(await ui.ask({ titre: "Ajoute kliyan sa a nan Grandon?", foto: p.photo_url, ok: "Ajoute",
+      detay: [["Non", `${p.prenom} ${p.nom}`], ["Kòd kliyan", p.code_client || "—"], ["Telefòn", `•••• ${p.tel4 || ""}`]] }))) return;
+    await S.enqueue("adopte", { ...p, gps: await getGps(4000), capture_le: new Date().toISOString() });
+    toast(`${p.prenom} ${p.nom} · ${t("Ajoute")} ✓`);
+    go(`#/kliyan/${p.id}`);
+  }));
+  document.getElementById("pre").onclick = async () => {
+    const box = document.getElementById("baz"), hint = document.getElementById("q-hint");
+    if (!navigator.onLine) { hint.textContent = t("Rechèch pa pozisyon bezwen entènèt."); return; }
+    hint.textContent = t("Ap chèche pozisyon w…");
+    const g = await getGps(12000);
+    if (!g) { hint.textContent = t("Pa ka jwenn pozisyon w. Aktive GPS la."); return; }
+    try {
+      const rs = await api.rechercherGps(g.lat, g.lng, Number(document.getElementById("rayon").value));
+      hint.textContent = rs.length ? `${t("Kliyan toupre w")} (±${g.acc} m)` : t("Pa gen moun nan baz la nan zòn sa a.");
+      box.innerHTML = rs.length ? `<h2>Kliyan toupre w</h2><div class="list grid-t">${rs.map(ligneBaz).join("")}</div>` : "";
+      brancherAdopte(box);
+    } catch (e) { hint.textContent = t(e.retry ? "Pa gen koneksyon: rechèch lokal sèlman." : e.message); }
   };
   const drawBaz = async () => {
     const box = document.getElementById("baz");
@@ -241,18 +278,8 @@ async function viewKliyan() {
       const rs = (await api.rechercher(v)).filter((r) => !M.clients.has(r.id_personne));
       if (rechèch.trim() !== v) return;
       hint.textContent = rs.length ? "Moun sa yo deja nan baz la. Si se li, ajoute l nan Grandon olye w kreye l ankò." : "Pa gen lòt moun nan baz la ki koresponn.";
-      box.innerHTML = rs.length ? `<h2>Nan baz la</h2><div class="list grid-t">${rs.map((r) => `<div class="row">
-          ${avatar(r)}
-          <div class="grow"><b>${h(non(r))}</b><div class="mut sm">${h(r.code_client || "—")} · •••• ${h(r.tel4 || "")}</div></div>
-          <button class="btn sm pri" data-adopte='${h(JSON.stringify({ id: r.id_personne, prenom: r.prenom, nom: r.nom, code_client: r.code_client, photo_url: r.photo_url, tel4: r.tel4 }))}'>Ajoute</button>
-        </div>`).join("")}</div>` : "";
-      box.querySelectorAll("[data-adopte]").forEach((b) => (b.onclick = async () => {
-        const p = JSON.parse(b.dataset.adopte);
-        if (!confirm(`Ajoute ${p.prenom} ${p.nom} (${p.code_client || ""}) nan kliyan Grandon yo?`)) return;
-        await S.enqueue("adopte", { ...p, gps: await getGps(4000), capture_le: new Date().toISOString() });
-        toast(`${p.prenom} ${p.nom} ajoute.`);
-        go(`#/kliyan/${p.id}`);
-      }));
+      box.innerHTML = rs.length ? `<h2>Nan baz la</h2><div class="list grid-t">${rs.map(ligneBaz).join("")}</div>` : "";
+      brancherAdopte(box);
     } catch (e) { hint.textContent = e.retry ? "Pa gen koneksyon: rechèch lokal sèlman." : e.message; box.innerHTML = ""; }
   };
   q.oninput = () => {
@@ -273,15 +300,15 @@ async function viewEpay() {
     .sort((a, b) => non(M.clients.get(a.id_personne)).localeCompare(non(M.clients.get(b.id_personne))));
   const txs = [...M.txs.values()].sort((a, b) => String(b.date_transaction).localeCompare(String(a.date_transaction))).slice(0, 30);
   const liKont = (k) => { const c = M.clients.get(k.id_personne) || {}; return `<div class="row">
-      <a class="grow lnk" href="#/cycle/${k.id_compte_epargne}"><b>${h(non(c))}</b> ${badgePend(k)}
-        <div class="mut sm">${h(k.no_compte || "Cycle poko voye")} · plan ${gd(k.montant_plan)}</div>
+      <a class="grow lnk" href="#/cycle/${k.id_compte_epargne}"><b>${d(non(c))}</b> ${badgePend(k)}
+        <div class="mut sm">${d(k.no_compte || "Cycle poko voye")} · plan ${gd(k.montant_plan)}</div>
         <div class="mut sm">${k.frequence_semaine ? `${k.frequence_semaine}×/sem · ${lisJou(k.jours_paiement)}` : "—"} · ${gd(k._total)}</div></a>
       <a class="btn sm pri" href="#/tx/nouvo/${k.id_compte_epargne}">Depo</a></div>`; };
   $app.innerHTML = `
   <div class="page-head"><h1>Epay</h1><a class="btn pri" href="#/chwazi/cycle">＋ Nouvo cycle</a></div>
   <h2>Peman jodi a <small class="mut">(${peye}/${pouJodi.length})</small></h2>
   <div class="list grid-t">${pouJodi.map((k) => { const c = M.clients.get(k.id_personne) || {}; return `<a class="row" href="#/tx/nouvo/${k.id_compte_epargne}">
-      ${avatar(c)}<div class="grow"><b>${h(non(c))}</b><div class="mut sm">${h(k.no_compte || "Cycle poko voye")} · plan ${gd(k.montant_plan)}</div></div>
+      ${avatar(c)}<div class="grow"><b>${d(non(c))}</b><div class="mut sm">${d(k.no_compte || "Cycle poko voye")} · plan ${gd(k.montant_plan)}</div></div>
       <div class="right">${k._jodi >= Number(k.montant_plan || 0) ? `<span class="badge ok">✓ ${gd(k._jodi)}</span>` : k._jodi > 0 ? `<span class="badge warn">${gd(k._jodi)}</span>` : `<span class="btn sm pri">Depo</span>`}</div></a>`; }).join("")
     || `<p class="empty">Pa gen peman ki tonbe jodi a.</p>`}</div>
   <h2>Kont ak cycle aktif <small class="mut">(${aktif.length})</small></h2>
@@ -289,8 +316,8 @@ async function viewEpay() {
   <div class="list grid-t" id="kont"></div>
   <h2>Dènye tranzaksyon yo</h2>
   <div class="list">${txs.map((t) => { const k = M.comptes.get(t.id_compte_epargne); const c = k && M.clients.get(k.id_personne); return `<a class="row" href="#/cycle/${t.id_compte_epargne}">
-      <div class="grow"><b>${t.type_transaction === "D" ? "Depo" : "Retrè"}</b> · ${h(non(c))} ${badgeTx(t)}
-        <div class="mut sm">${h(k?.no_compte || "")} · ${S.jouTx(t) === S.jodi() ? "jodi a" : datFr(S.jouTx(t))}</div></div>
+      <div class="grow"><b>${t.type_transaction === "D" ? "Depo" : "Retrè"}</b> · ${d(non(c))} ${badgeTx(t)}
+        <div class="mut sm">${d(k?.no_compte || "")} · ${S.jouTx(t) === S.jodi() ? "jodi a" : datFr(S.jouTx(t))}</div></div>
       <div class="right"><b class="${t.type_transaction === "D" ? "in" : "out"}">${t.type_transaction === "D" ? "+" : "−"}${gd(t.montant)}</b></div></a>`; }).join("") || `<p class="empty">Poko gen tranzaksyon.</p>`}</div>`;
   const q = document.getElementById("q");
   const draw = () => {
@@ -332,16 +359,47 @@ async function viewRapo() {
   ${poko ? `<p class="note warn">${poko} tranzaksyon poko voye: yo konte nan rapò a, men sèvè a poko resevwa yo.</p>` : ""}
   <h2>Tranzaksyon mwen yo <small class="mut">(${txs.length})</small></h2>
   <div class="list">${txs.map((t) => { const k = M.comptes.get(t.id_compte_epargne); const c = k && M.clients.get(k.id_personne); return `<div class="row">
-      <div class="grow"><b>${t.type_transaction === "D" ? "Depo" : "Retrè"}</b> · ${h(non(c))} ${badgeTx(t)}
-        <div class="mut sm">${h(k?.no_compte || "")}${t.solde_declare != null && t.solde_declare !== "" ? ` · balans deklare ${gd(t.solde_declare)}` : ""}</div></div>
+      <div class="grow"><b>${t.type_transaction === "D" ? "Depo" : "Retrè"}</b> · ${d(non(c))} ${badgeTx(t)}
+        <div class="mut sm">${d(k?.no_compte || "")}${t.solde_declare != null && t.solde_declare !== "" ? ` · balans deklare ${gd(t.solde_declare)}` : ""}</div></div>
       <div class="right"><b class="${t.type_transaction === "D" ? "in" : "out"}">${t.type_transaction === "D" ? "+" : "−"}${gd(t.montant)}</b></div></div>`; }).join("") || `<p class="empty">Pa gen tranzaksyon ${nonJou(jouRapo).toLowerCase()}.</p>`}</div>`;
   $app.querySelectorAll("[data-j]").forEach((b) => (b.onclick = () => { jouRapo = Number(b.dataset.j); viewRapo(); }));
+}
+
+// ---------- Chan okipasyon (komen pou nouvo kliyan ak modifye) ----------
+const opt = (v, cur, label = v) => `<option value="${h(v)}" ${v === cur ? "selected" : ""}>${h(label)}</option>`;
+function champsOccupation(c = {}) {
+  const sec = c.secteur || (c.activite && TX.secteurDe(c.activite)) || "";
+  return `
+    <label>Kote biznis la <small class="mut">(ri, mache, zòn)</small><input name="lieu_de_travail" value="${h(c.lieu_de_travail || "")}" autocomplete="off"></label>
+    <label>Adrès<input name="adresse" value="${h(c.adresse || "")}" autocomplete="off"></label>
+    <label>Okipasyon<input name="occupation" value="${h(c.occupation || "")}" placeholder="Commerçante, Entrepreneur…" autocomplete="off"></label>
+    <div class="grid2">
+      <label>Sektè<select name="secteur"><option value="">Chwazi…</option>${Object.keys(TX.SECTEURS).map((x) => opt(x, sec)).join("")}</select></label>
+      <label>Aktivite<select name="activite" ${sec ? "" : "disabled"}>${sec ? `<option value="">Chwazi…</option>${TX.SECTEURS[sec].map((x) => opt(x, c.activite)).join("")}` : `<option value="">Chwazi sektè a anvan</option>`}</select></label>
+    </div>
+    <div class="grid2">
+      <label>Pwen de vant<select name="point_de_vente"><option value="">Chwazi…</option>${TX.POINTS_DE_VENTE.map((x) => opt(x, c.point_de_vente)).join("")}</select></label>
+      <label>Kapasite distribisyon<select name="capacite_distribution"><option value="">Chwazi…</option>${TX.CAPACITES.map((x) => opt(x, c.capacite_distribution)).join("")}</select></label>
+    </div>`;
+}
+function brancherOccupation(f) {
+  f.secteur.onchange = () => {
+    const l = TX.SECTEURS[f.secteur.value];
+    f.activite.disabled = !l;
+    f.activite.innerHTML = l ? `<option value="">${t("Chwazi…")}</option>${l.map((x) => opt(x, "")).join("")}` : `<option value="">${t("Chwazi sektè a anvan")}</option>`;
+  };
+}
+const valeursOccupation = (v) => Object.fromEntries(S.CHAN_FICH.map((k) => [k, (v[k] || "").trim()]));
+function brancherGps(el, cb) {
+  const txt = el.querySelector(".gps-t");
+  const go_ = async () => { txt.textContent = t("GPS: ap chèche…"); const g = await getGps(); cb(g); txt.textContent = g ? `GPS: ✓ (±${g.acc} m)` : t("GPS: pa jwenn (pa obligatwa)"); };
+  el.querySelector("button").onclick = go_;
+  return go_;
 }
 
 // ---------- Nouvo kliyan ----------
 async function viewClientNew() {
   const M = await S.model();
-  const aktivite = [...new Set([...M.clients.values()].map((c) => c.activite).filter(Boolean))].sort();
   $app.innerHTML = `
   <a href="#/kliyan" class="back">‹ Kliyan</a>
   <h1>Nouvo kliyan</h1>
@@ -356,44 +414,37 @@ async function viewClientNew() {
       <label>NIF / CIN<input name="nif" autocomplete="off"></label>
       <label>Sèks<select name="sexe"><option value="">—</option><option value="F">Fi</option><option value="M">Gason</option></select></label>
     </div>
-    <label>Aktivite<input name="activite" list="dl-akt" autocomplete="off"><datalist id="dl-akt">${aktivite.map((a) => `<option value="${h(a)}">`).join("")}</datalist></label>
-    <label>Adrès<input name="adresse"></label>
+    ${champsOccupation()}
     <label>Foto kliyan an<input name="photo" type="file" accept="image/*" capture="environment"></label>
-    <img id="prev" class="prev" alt="Foto kliyan an" hidden>
-    <div class="gps"><span id="gps-t" class="mut sm" aria-live="polite">GPS: ap chèche…</span><button type="button" class="btn sm" id="gps-b">Rekòmanse</button></div>
+    <img id="prev" class="prev" alt="" hidden>
+    <div class="gps" id="gps"><span class="gps-t mut sm" aria-live="polite">GPS: ap chèche…</span><button type="button" class="btn sm">Rekòmanse</button></div>
     <label class="chk"><input type="checkbox" name="cycle" checked> Kreye yon cycle Grandon touswit apre</label>
     <p class="err-msg" id="err" role="alert"></p>
     <button class="btn pri" type="submit">Anrejistre kliyan an</button>
   </form>`;
   const f = document.getElementById("f");
   let gps = null, photo = null;
-  const gpsT = document.getElementById("gps-t");
-  const prendGps = async () => {
-    gpsT.textContent = "GPS: ap chèche…";
-    gps = await getGps();
-    gpsT.textContent = gps ? `GPS: ✓ (±${gps.acc} m)` : "GPS: pa jwenn (pa obligatwa)";
-  };
-  document.getElementById("gps-b").onclick = prendGps;
-  prendGps();
+  brancherOccupation(f);
+  brancherGps(document.getElementById("gps"), (g) => (gps = g))();
   // Anti-doublon: lè telefòn nan konplè, chèche l nan tout baz la.
   let dTel = "";
   f.telephone.oninput = async () => {
-    const t = api.telefon8(f.telephone.value);
+    const tl = api.telefon8(f.telephone.value);
     const box = document.getElementById("dbl");
-    if (!t) { box.innerHTML = ""; dTel = ""; return; }
-    if (t === dTel || !navigator.onLine) return;
-    dTel = t;
+    if (!tl) { box.innerHTML = ""; dTel = ""; return; }
+    if (tl === dTel || !navigator.onLine) return;
+    dTel = tl;
     try {
-      const rs = (await api.rechercher(t)).filter((r) => r.tel4 === t.slice(-4));
-      if (api.telefon8(f.telephone.value) !== t) return;
+      const rs = (await api.rechercher(tl)).filter((r) => r.tel4 === tl.slice(-4));
+      if (api.telefon8(f.telephone.value) !== tl) return;
       box.innerHTML = rs.length ? `<div class="note warn"><b>Telefòn sa a deja nan baz la:</b>
-        ${rs.map((r) => `<div class="row flat">${avatar(r)}<div class="grow"><b>${h(non(r))}</b><div class="mut sm">${h(r.code_client || "")} · •••• ${h(r.tel4)}</div></div>
+        ${rs.map((r) => `<div class="row flat">${avatar(r)}<div class="grow"><b>${d(non(r))}</b><div class="mut sm">${d(r.code_client || "")} · •••• ${d(r.tel4)}</div></div>
           ${M.clients.has(r.id_personne) ? `<a class="btn sm" href="#/kliyan/${r.id_personne}">Wè fich li</a>`
-            : `<button type="button" class="btn sm pri" data-adopte='${h(JSON.stringify({ id: r.id_personne, prenom: r.prenom, nom: r.nom, code_client: r.code_client, photo_url: r.photo_url, tel4: r.tel4 }))}'>Se li</button>`}</div>`).join("")}</div>` : "";
+            : `<button type="button" class="btn sm pri" data-adopte='${h(JSON.stringify(adopteInfo(r)))}'>Se li</button>`}</div>`).join("")}</div>` : "";
       box.querySelectorAll("[data-adopte]").forEach((b) => (b.onclick = async () => {
         const p = JSON.parse(b.dataset.adopte);
         await S.enqueue("adopte", { ...p, gps, capture_le: new Date().toISOString() });
-        toast(`${p.prenom} ${p.nom} ajoute nan kliyan Grandon yo.`);
+        toast(`${p.prenom} ${p.nom} · ${t("Ajoute")} ✓`);
         go(f.cycle.checked ? `#/cycle/nouvo/${p.id}` : `#/kliyan/${p.id}`);
       }));
     } catch { /* offline oswa erè: sèvè a ap verifye lè l voye */ }
@@ -413,19 +464,47 @@ async function viewClientNew() {
     const err = document.getElementById("err");
     const v = Object.fromEntries(new FormData(f));
     const tel = api.telefon8(v.telephone);
-    if (!v.prenom.trim() || !v.nom.trim()) return (err.textContent = "Mete prenon ak non kliyan an.");
-    if (!tel) return (err.textContent = "Nimewo telefòn nan dwe gen 8 chif.");
+    if (!v.prenom.trim() || !v.nom.trim()) return (err.textContent = t("Mete prenon ak non kliyan an."));
+    if (!tel) return (err.textContent = t("Nimewo telefòn nan dwe gen 8 chif."));
     const dbl = [...M.clients.values()].find((c) => String(c.telephone || "").replace(/\D/g, "").endsWith(tel));
-    if (dbl && !confirm(`${non(dbl)} gen menm telefòn lan deja.\nSe menm moun nan? Peze Anile pou w ale sou fich li.`)) return go(`#/kliyan/${dbl.id_personne}`);
+    if (dbl && !(await ui.ask({ titre: "Kliyan sa a deja egziste?", tekst: `${non(dbl)} · ${t("gen menm telefòn lan.")}`, foto: dbl.photo_url,
+      ok: "Kreye yon lòt kanmenm", anile: "Wè fich li", ikon: "!" }))) return go(`#/kliyan/${dbl.id_personne}`);
     const id = S.uuid();
     let photo_id = null;
     if (photo) { photo_id = S.uuid(); await db.put("photos", { id: photo_id, blob: photo }); }
     await S.enqueue("client", {
       id, prenom: v.prenom.trim(), nom: v.nom.trim(), telephone: tel, nif: v.nif.trim(), sexe: v.sexe,
-      activite: v.activite.trim(), adresse: v.adresse.trim(), gps, photo_id, capture_le: new Date().toISOString(),
+      ...valeursOccupation(v), gps, photo_id, capture_le: new Date().toISOString(),
     });
     toast(navigator.onLine ? "Kliyan anrejistre." : "Kliyan anrejistre sou telefòn nan. L ap voye lè gen entènèt.");
     go(f.cycle.checked ? `#/cycle/nouvo/${id}` : `#/kliyan/${id}`);
+  };
+}
+
+// ---------- Modifye fich kliyan an ----------
+async function viewClientEdit(id) {
+  const M = await S.model();
+  const c = M.clients.get(id);
+  if (!c) return go("#/kliyan");
+  $app.innerHTML = `
+  <a href="#/kliyan/${id}" class="back">‹ ${d(non(c))}</a>
+  <h1>Modifye enfòmasyon yo</h1>
+  <form id="f" class="card form" novalidate>
+    ${champsOccupation(c)}
+    <div class="gps" id="gps"><span class="gps-t mut sm" aria-live="polite">${c.gps_lat != null ? "GPS aktive" : "Pa gen GPS"}</span><button type="button" class="btn sm">Pran pozisyon kounye a</button></div>
+    <p class="err-msg" id="err" role="alert"></p>
+    <button class="btn pri" type="submit">Mete ajou</button>
+  </form>`;
+  const f = document.getElementById("f");
+  let gps = null;
+  brancherOccupation(f);
+  brancherGps(document.getElementById("gps"), (g) => (gps = g));
+  f.onsubmit = async (e) => {
+    e.preventDefault();
+    const v = valeursOccupation(Object.fromEntries(new FormData(f)));
+    await S.enqueue("maj", { id, ...v, gps, capture_le: new Date().toISOString() }, c._pending ? [id] : []);
+    toast("Enfòmasyon yo anrejistre.");
+    go(`#/kliyan/${id}`);
   };
 }
 
@@ -437,20 +516,33 @@ async function viewClient(id) {
   const ks = S.comptesDuClient(M, id);
   let photo = c.photo_url || null;
   if (c.photo_id) { const ph = await db.get("photos", c.photo_id); if (ph) photo = URL.createObjectURL(ph.blob); }
+  const gpsOk = c.gps_lat != null && c.gps_lng != null;
+  const li = (k, v, brut = true) => `<div class="kv"><span>${k}</span><b>${v ? (brut ? d(v) : v) : `<span class="mut">—</span>`}</b></div>`;
   $app.innerHTML = `
   <a href="#/kliyan" class="back">‹ Kliyan</a>
   <div class="card head">
-    ${photo ? `<img class="avatar" src="${h(photo)}" alt="">` : `<div class="avatar ph" aria-hidden="true">${h((c.prenom || "?")[0])}</div>`}
-    <div><h1>${h(non(c))}</h1>
-      <div class="mut">${h(c.telephone || "")}${c.code_client ? ` · ${h(c.code_client)}` : ""}</div>
-      <div class="mut sm">${h([c.activite, c.adresse].filter(Boolean).join(" · "))}</div>
+    ${photo ? `<img class="avatar" src="${h(photo)}" alt="" data-legend="${d(non(c))}" title="Peze foto a pou wè l pi gwo">` : `<div class="avatar ph" aria-hidden="true">${h((c.prenom || "?")[0])}</div>`}
+    <div class="grow"><h1>${d(non(c))}</h1>
+      <div class="mut">${d(c.code_client || t("ID poko vini"))}</div>
       ${badgePend(c)}</div>
   </div>
-  ${c._error ? `<p class="note err">${h(c._error)} <a href="#/param">Wè</a></p>` : ""}
+  ${c._error ? `<p class="note err">${d(t(c._error))} <a href="#/param">Wè</a></p>` : ""}
+  <div class="page-head sub"><h2>Enfòmasyon kliyan an</h2><a class="btn sm" href="#/kliyan/${id}/modifye">Modifye</a></div>
+  <div class="card info">
+    ${li("Telefòn", c.telephone ? `<a href="tel:${h(String(c.telephone).replace(/\D/g, ""))}" data-brut>${h(c.telephone)}</a>` : c.tel4 ? `•••• ${c.tel4}` : "", false)}
+    ${li("Adrès", c.adresse)}
+    ${li("Kote biznis la", c.lieu_de_travail)}
+    ${li("GPS", gpsOk ? `<span class="badge ok">GPS aktive</span> <a href="https://maps.google.com/?q=${c.gps_lat},${c.gps_lng}" target="_blank" rel="noopener">Wè sou kat la</a>` : `<span class="badge warn">Pa gen GPS</span>`, false)}
+    ${li("Okipasyon", c.occupation)}
+    ${li("Sektè", c.secteur || (c.activite && TX.secteurDe(c.activite)))}
+    ${li("Aktivite", c.activite)}
+    ${li("Pwen de vant", c.point_de_vente)}
+    ${li("Kapasite distribisyon", c.capacite_distribution)}
+  </div>
   <a class="btn pri block" href="#/cycle/nouvo/${c.id_personne}">＋ Nouvo cycle Grandon</a>
   <h2>Cycle yo</h2>
   <div class="list">${ks.map((k) => `<a class="row" href="#/cycle/${k.id_compte_epargne}">
-      <div><b>${h(k.no_compte || "Cycle poko voye")}</b> ${badgePend(k)}
+      <div class="grow"><b>${d(k.no_compte || t("Cycle poko voye"))}</b> ${badgePend(k)}
         <div class="mut sm">Plan ${gd(k.montant_plan)} · ${k.frequence_semaine ? `${k.frequence_semaine}×/sem (${lisJou(k.jours_paiement)})` : "—"}</div>
         <div class="mut sm">${datFr(k.date_debut)} → ${datFr(k.date_fin)}</div></div>
       <div class="right"><b>${gd(k._total)}</b><br>${badgeKont(k)}</div></a>`).join("") || `<p class="empty">Pa gen cycle.</p>`}</div>`;
@@ -490,9 +582,9 @@ async function viewCycleNew(idPersonne) {
   let jours = dènye?.jours_paiement?.length === freq ? [...dènye.jours_paiement] : [...JOU_DEFO[freq]];
   const planDef = plans.includes(Number(dènye?.montant_plan)) ? Number(dènye.montant_plan) : plans[0];
   $app.innerHTML = `
-  <a href="#/kliyan/${idPersonne}" class="back">‹ ${h(non(c))}</a>
+  <a href="#/kliyan/${idPersonne}" class="back">‹ ${d(non(c))}</a>
   <h1>Nouvo cycle Grandon</h1>
-  <p class="mut">${h(non(c))} · ${h(c.telephone || "")}</p>
+  <p class="mut">${d(non(c))} · ${h(c.telephone || "")}</p>
   <form id="f" class="card form" novalidate>
     <fieldset class="field"><legend>Dire * <small class="mut">(kantite mwa)</small></legend>
       <div class="seg s5">${[2, 3, 4, 5, 6].map((m) => `<label><input type="radio" name="duree" value="${m}" ${m === (dènye?.duree_mois || 4) ? "checked" : ""}><span>${m}</span></label>`).join("")}</div>
@@ -553,7 +645,9 @@ async function viewCycleNew(idPersonne) {
     if (!plans.includes(plan)) return (err.textContent = "Chwazi plan an.");
     if (!debut || debut < S.ajouteJou(S.jodi(), -30) || debut > S.ajouteJou(S.jodi(), 30)) return (err.textContent = "Dat kòmansman an dwe ant 30 jou pase ak 30 jou devan.");
     const js = [...jours].sort();
-    if (!confirm(`Kreye cycle Grandon pou ${non(c)}?\n${duree} mwa · ${freq}×/semèn (${lisJou(js)})\nPlan: ${gd(plan)} chak fwa`)) return;
+    if (!(await ui.ask({ titre: "Kreye cycle Grandon sa a?", ok: "Kreye cycle a", foto: c.photo_url, detay: [
+      ["Kliyan", non(c)], ["Dire", `${duree} ${t("mwa")}`], ["Frekans", `${freq}× ${t("pa semèn")}`],
+      ["Jou peman", js.map((j) => t(JOU[j])).join(", ")], ["Plan", `${gd(plan)}`], ["Fen cycle a", datFr(S.ajouteMwa(debut, duree))]] }))) return;
     const b = f.querySelector("button[type=submit]"); b.disabled = true;
     const id = S.uuid();
     const gps = await getGps(5000);
@@ -575,7 +669,7 @@ async function viewCycle(id) {
   const fè = k._joursPeye.size, prevu = k._prevu;
   $app.innerHTML = `
   <a href="#/epay" class="back">‹ Epay</a>
-  <h1>${h(k.no_compte || "Cycle poko voye")} ${badgeKont(k)} ${badgePend(k)}</h1>
+  <h1>${d(k.no_compte || "Cycle poko voye")} ${badgeKont(k)} ${badgePend(k)}</h1>
   ${k._error ? `<p class="note err">${h(k._error)} <a href="#/param">Wè</a></p>` : ""}
   <div class="card solde"><span>Total kliyan an mete</span><b>${gd(k._total)}</b>
     <small class="mut">Balans valide: ${gd(k.solde_actuel)}${Number(k.depo_an_atant) ? ` · an atant validasyon: ${gd(k.depo_an_atant)}` : ""}${k._local ? ` · poko voye: ${gd(k._local)}` : ""}</small></div>
@@ -606,9 +700,9 @@ async function viewTxNew(compteId) {
   const plan = Number(k.montant_plan || 0);
   const disponib = Number(k.solde_actuel || 0) + Math.min(0, k._local); // retrè: sèlman balans valide
   $app.innerHTML = `
-  <a href="#/cycle/${k.id_compte_epargne}" class="back">‹ ${h(k.no_compte || "Cycle")}</a>
+  <a href="#/cycle/${k.id_compte_epargne}" class="back">‹ ${d(k.no_compte || "Cycle")}</a>
   <h1>Depo / Retrè</h1>
-  <p class="mut">${h(non(c))} · ${h(k.no_compte || "cycle poko voye")} · plan ${gd(plan)}</p>
+  <p class="mut">${d(non(c))} · ${d(k.no_compte || "cycle poko voye")} · plan ${gd(plan)}</p>
   <form id="f" class="card form" novalidate>
     <fieldset class="field"><legend class="sr">Tip</legend><div class="seg">
       <label><input type="radio" name="type" value="D" checked><span>Depo</span></label>
@@ -631,29 +725,33 @@ async function viewTxNew(compteId) {
   f.onsubmit = async (e) => {
     e.preventDefault();
     const err = document.getElementById("err");
-    const t = f.type.value, m = Number(f.montant.value);
+    const typ = f.type.value, m = Number(f.montant.value);
     if (!(m > 0)) return (err.textContent = "Mete montan an.");
-    if (t === "D" && plan && m < plan && !confirm(`${gd(m)} pi piti pase minimòm plan an (${gd(plan)}). Kontinye?`)) return;
-    if (t === "R" && m > disponib) return (err.textContent = `Retrè a depase balans valide a (${gd(disponib)}).`);
+    if (typ === "D" && plan && m < plan && !(await ui.ask({ titre: "Montan an pi piti pase plan an", ikon: "!", ok: "Kontinye",
+      detay: [["Montan (goud)", gd(m)], ["Minimòm plan an", gd(plan)]] }))) return;
+    if (typ === "R" && m > disponib) return (err.textContent = `Retrè a depase balans valide a (${gd(disponib)}).`);
     const solde = f.solde.value === "" ? null : Number(f.solde.value);
-    if (!confirm(`${t === "D" ? "Depo" : "Retrè"}: ${gd(m)}\n${non(c)}\nKonfime?`)) return;
+    if (!(await ui.ask({ titre: typ === "D" ? "Depo" : "Retrè", ok: "Konfime", foto: c?.photo_url, ikon: typ === "D" ? "+" : "−",
+      detay: [["Kliyan", non(c)], ["Kont", k.no_compte || t("cycle poko voye")], ["Montan (goud)", gd(m)],
+        ...(f.solde.value !== "" ? [["Balans sou kanè a apre tranzaksyon an", gd(f.solde.value)]] : [])] }))) return;
     const b = f.querySelector("button[type=submit]"); b.disabled = true;
     const gps = await getGps(5000);
     await S.enqueue("tx", {
-      id: S.uuid(), compte: k.id_compte_epargne, type: t, montant: m, solde_declare: solde, note: f.note.value.trim() || null,
+      id: S.uuid(), compte: k.id_compte_epargne, type: typ, montant: m, solde_declare: solde, note: f.note.value.trim() || null,
       gps, capture_le: new Date().toISOString(), appareil: S.appareil(),
     }, k._pending ? [k.id_compte_epargne] : []);
-    toast(t === "D" ? "Depo anrejistre." : "Retrè anrejistre.");
+    toast(typ === "D" ? "Depo anrejistre." : "Retrè anrejistre.");
     go(`#/cycle/${k.id_compte_epargne}`);
   };
 }
 
 // ---------- Senkronizasyon ----------
-const KIND = { client: "Kliyan", adopte: "Kliyan (ajoute)", cycle: "Cycle", tx: "Tranzaksyon" };
+const KIND = { client: "Kliyan", adopte: "Kliyan (ajoute)", maj: "Enfòmasyon kliyan an", cycle: "Cycle", tx: "Tranzaksyon" };
 function resume(o, M) {
   const p = o.payload;
   if (o.kind === "client") return `${p.prenom} ${p.nom} · ${p.telephone}`;
   if (o.kind === "adopte") return `${p.prenom} ${p.nom} · ${p.code_client || ""}`;
+  if (o.kind === "maj") return non(M.clients.get(p.id));
   if (o.kind === "cycle") return `${non(M.clients.get(p.id_personne))} · ${p.duree} mwa · ${p.frequence}×/sem · ${gd(p.montant)}`;
   const k = M.comptes.get(p.compte);
   return `${p.type === "D" ? "Depo" : "Retrè"} ${gd(p.montant)} · ${non(k && M.clients.get(k.id_personne))}`;
@@ -672,6 +770,7 @@ async function viewSync() {
   </div>
   <h2>Aparans</h2>
   <div class="card form">
+    <fieldset class="field"><legend>Lang</legend><div class="seg"><label><input type="radio" name="lang" value="ht" ${getLang() === "ht" ? "checked" : ""}><span data-brut>Kreyòl</span></label><label><input type="radio" name="lang" value="fr" ${getLang() === "fr" ? "checked" : ""}><span data-brut>Français</span></label></div></fieldset>
     <fieldset class="field"><legend>Tèm</legend><div class="seg s3">
       ${[["auto", "Otomatik"], ["light", "Klè"], ["dark", "Fonse"]].map(([v, l]) => `<label><input type="radio" name="tem" value="${v}" ${pref.tem === v ? "checked" : ""}><span>${l}</span></label>`).join("")}</div></fieldset>
     <fieldset class="field"><legend>Gwosè tèks</legend><div class="seg s3">
@@ -695,6 +794,7 @@ async function viewSync() {
   ${moi.admin ? `<h2>Administrasyon</h2><a class="btn block" href="#/ajan">Jere ajan yo</a>` : ""}
   <button class="btn block danger" id="logout">Dekonekte</button>
   <p class="mut sm center">Grandon · vèsyon ${h(APP_VERSION)}</p>`;
+  $app.querySelectorAll('input[name="lang"]').forEach((r) => (r.onchange = () => { setLang(r.value); location.reload(); }));
   $app.querySelectorAll('input[name="tem"], input[name="teks"]').forEach((r) => (r.onchange = () => {
     savePrefs({ tem: $app.querySelector('input[name="tem"]:checked').value, teks: $app.querySelector('input[name="teks"]:checked').value });
   }));
@@ -706,14 +806,14 @@ async function viewSync() {
   };
   $app.querySelectorAll("[data-retry]").forEach((b) => (b.onclick = () => S.retryOp(Number(b.dataset.retry)).then(render)));
   $app.querySelectorAll("[data-drop]").forEach((b) => (b.onclick = async () => {
-    if (!confirm("Efase operasyon sa a ak tout sa ki depann de li? Sa p ap ka defèt.")) return;
+    if (!(await ui.ask({ titre: "Efase operasyon sa a?", tekst: "Operasyon sa a ak tout sa ki depann de li ap efase. Sa p ap ka defèt.", ok: "Efase", danje: true, ikon: "!" }))) return;
     const n = await S.dropOp(Number(b.dataset.drop));
     toast(`${n} operasyon efase.`);
     render();
   }));
   document.getElementById("logout").onclick = async () => {
-    if (M.outbox.length) return alert(`Gen ${M.outbox.length} operasyon ki poko voye. Senkronize yo anvan w dekonekte.`);
-    if (!confirm("Dekonekte? Done yo ap efase sou telefòn nan.")) return;
+    if (M.outbox.length) return ui.info("Gen operasyon ki poko voye", `${M.outbox.length} · ${t("Senkronize yo anvan w dekonekte.")}`);
+    if (!(await ui.ask({ titre: "Dekonekte?", tekst: "Done yo ap efase sou telefòn nan.", ok: "Dekonekte", danje: true }))) return;
     await db.wipe();
     moi = null;
     await api.clearSession();
@@ -747,13 +847,13 @@ async function viewAjan() {
           <button class="btn sm ${a.actif ? "danger" : ""}" data-ak="${a.actif ? "desactiver" : "reactiver"}" data-tel="${h(a.telephone)}">${a.actif ? "Dezaktive" : "Reaktive"}</button></div>`}
       </div>`).join("") || `<p class="empty">Pa gen ajan.</p>`;
       lis.querySelectorAll("[data-mp]").forEach((b) => (b.onclick = async () => {
-        const mp = prompt("Nouvo modpas (omwen 8 karaktè):");
+        const mp = await ui.askText({ titre: "Nouvo modpas", label: "Modpas (omwen 8 karaktè)", min: 8 });
         if (!mp) return;
         try { await api.kont({ aksyon: "modpas", telefon: b.dataset.mp, modpas: mp }); toast("Modpas la chanje."); }
         catch (e) { toast(e.message, "err"); }
       }));
       lis.querySelectorAll("[data-ak]").forEach((b) => (b.onclick = async () => {
-        if (b.dataset.ak === "desactiver" && !confirm("Dezaktive kont sa a? Ajan an p ap ka konekte ankò.")) return;
+        if (b.dataset.ak === "desactiver" && !(await ui.ask({ titre: "Dezaktive kont sa a?", tekst: "Ajan an p ap ka konekte ankò.", ok: "Dezaktive", danje: true, ikon: "!" }))) return;
         try { await api.kont({ aksyon: b.dataset.ak, telefon: b.dataset.tel }); charge(); }
         catch (e) { toast(e.message, "err"); }
       }));
@@ -779,7 +879,7 @@ async function viewAjan() {
 }
 
 // ---------- Routè ----------
-const FORM = /^#\/(kliyan\/nouvo|cycle\/nouvo|tx\/nouvo|ajan)/;
+const FORM = /^#\/(kliyan\/nouvo|kliyan\/[\w-]+\/modifye|cycle\/nouvo|tx\/nouvo|ajan)/;
 async function render() {
   const r = location.hash || "#/";
   const s = api.getSession();
@@ -792,6 +892,7 @@ async function render() {
   if (r === "#/epay") return viewEpay();
   if (r === "#/rapo") return viewRapo();
   if (r === "#/kliyan/nouvo") return viewClientNew();
+  if ((m = r.match(/^#\/kliyan\/([\w-]+)\/modifye$/))) return viewClientEdit(m[1]);
   if ((m = r.match(/^#\/kliyan\/([\w-]+)$/))) return viewClient(m[1]);
   if ((m = r.match(/^#\/chwazi\/(cycle|tx)$/))) return viewPick(m[1]);
   if ((m = r.match(/^#\/cycle\/nouvo\/([\w-]+)$/))) return viewCycleNew(m[1]);
@@ -816,6 +917,18 @@ S.onChange(() => {
 
 async function boot() {
   applyPrefs();
+  demarrerTraduction();
+  ui.activerZoom();
+  // Foto ki pa ka chaje (offline, lyen kase): montre inisyal kliyan an.
+  document.addEventListener("error", (e) => {
+    const img = e.target;
+    if (!(img instanceof HTMLImageElement) || !img.matches(".thumb, .avatar")) return;
+    const sp = document.createElement("span");
+    sp.className = `${img.className} ph`;
+    sp.setAttribute("aria-hidden", "true");
+    sp.textContent = (img.dataset.legend || "?").trim()[0] || "?";
+    img.replaceWith(sp);
+  }, true);
   await api.loadSession();
   moi = (await db.meta("moi")) || null;
   addEventListener("hashchange", () => { clearTimeout(pendingRender); render(); scrollTo(0, 0); });
