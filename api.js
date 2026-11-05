@@ -136,6 +136,7 @@ export async function selectAll(path, size = 1000) {
 export async function rpc(name, args) {
   return (await raw(`/rest/v1/rpc/${name}`, { method: "POST", body: args })).data;
 }
+export const rechercher = (q) => rpc("grandon_rechercher", { p_q: q });
 export const publicUrl = (path) => `${C.SUPABASE_URL}/storage/v1/object/public/${C.BUCKET_FOTO}/${path}`;
 export async function upload(path, blob) {
   try {

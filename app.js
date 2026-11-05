@@ -7,6 +7,31 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
+const APP_VERSION = "2.0";
+const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin" };
+// Preferans aparans: pou aparèy sa a sèlman.
+function prefs() {
+  try { return { tem: "auto", teks: "n", ...JSON.parse(localStorage.getItem("grandon-prefs") || "{}") }; }
+  catch { return { tem: "auto", teks: "n" }; }
+}
+function applyPrefs(p = prefs()) {
+  const r = document.documentElement;
+  if (p.tem === "auto") delete r.dataset.theme; else r.dataset.theme = p.tem;
+  r.dataset.teks = p.teks;
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.content = "#14284b";
+}
+function savePrefs(p) {
+  try { localStorage.setItem("grandon-prefs", JSON.stringify(p)); } catch { /* navigatè prive */ }
+  applyPrefs(p);
+}
+const ICO = {
+  tablo: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 13h6V4H4zm0 7h6v-5H4zm10 0h6v-9h-6zm0-16v5h6V4z"/></svg>',
+  kliyan: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm0 2c-3.3 0-7 1.7-7 4v2h14v-2c0-2.3-3.7-4-7-4zm8-2a3 3 0 1 0 0-6v6zm1 2.2c1.8.6 4 1.7 4 3.8v2h-4v-2c0-1.5-.7-2.8-1.8-3.8z"/></svg>',
+  epay: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 7V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2zm-2-2v2H5V5zm2 14H5V9h14zm-4-6h3v3h-3z"/></svg>',
+  rapo: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h10l4 4v14H5zm2 2v14h10V8h-3V5zm2 7h6v2H9zm0 4h6v2H9zm0-8h3v2H9z"/></svg>',
+  param: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.4 13a7.5 7.5 0 0 0 0-2l2.1-1.6-2-3.5-2.5 1a7.4 7.4 0 0 0-1.7-1L15 3h-4l-.3 2.9a7.4 7.4 0 0 0-1.7 1l-2.5-1-2 3.5L6.6 11a7.5 7.5 0 0 0 0 2l-2.1 1.6 2 3.5 2.5-1c.5.4 1.1.7 1.7 1L11 21h4l.3-2.9c.6-.3 1.2-.6 1.7-1l2.5 1 2-3.5zM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z"/></svg>',
+};
 const h = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 const nf = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 2 });
 const gd = (n) => `${nf.format(Number(n) || 0)} G`;
@@ -67,13 +92,32 @@ async function updateBar() {
   $bar.hidden = false;
   $bar.innerHTML = `
     <a href="#/" class="brand"><img src="icons/icon-192.png" alt="" width="26" height="26">Grandon ${C.ANVIWONMAN ? `<small>${h(C.ANVIWONMAN)}</small>` : ""}</a>
-    <a href="#/senk" class="net ${on ? "on" : "off"}" aria-label="Senkronizasyon: ${on ? "anliy" : "offline"}, ${pend} poko voye, ${err} erè">
+    <a href="#/param" class="net ${on ? "on" : "off"}" aria-label="Senkronizasyon: ${on ? "anliy" : "offline"}, ${pend} poko voye, ${err} erè">
       <span class="dot"></span>${on ? "Anliy" : "Offline"}
       ${S.isRunning() ? `<span class="spin" aria-hidden="true"></span>` : ""}
       ${pend ? `<span class="cnt">${pend}</span>` : ""}
       ${err ? `<span class="cnt err">${err}!</span>` : ""}
       ${s?.expired ? `<span class="cnt err">Konekte</span>` : ""}
     </a>`;
+}
+
+// ---------- Ba navigasyon anba ----------
+const $nav = document.getElementById("nav");
+const TABS = [["tablo", "#/", "Tablo"], ["kliyan", "#/kliyan", "Kliyan"], ["epay", "#/epay", "Epay"], ["rapo", "#/rapo", "Rapò"], ["param", "#/param", "Paramèt"]];
+function tabActif(r) {
+  if (/^#\/(kliyan)/.test(r)) return "kliyan";
+  if (/^#\/(epay|cycle|tx|chwazi)/.test(r)) return "epay";
+  if (/^#\/rapo/.test(r)) return "rapo";
+  if (/^#\/(param|ajan)/.test(r)) return "param";
+  return "tablo";
+}
+function updateNav() {
+  const r = location.hash || "#/";
+  if (!moi || r === "#/login") { $nav.hidden = true; document.body.classList.remove("has-nav"); return; }
+  const a = tabActif(r);
+  $nav.hidden = false;
+  document.body.classList.add("has-nav");
+  $nav.innerHTML = TABS.map(([k, href, label]) => `<a href="${href}" class="${k === a ? "on" : ""}" ${k === a ? 'aria-current="page"' : ""}>${ICO[k]}<span>${label}</span></a>`).join("");
 }
 
 // ---------- Koneksyon ----------
@@ -116,7 +160,7 @@ function viewLogin(expired) {
       }
       if (prev && prev !== s.user.id) { const keep = await db.meta("session"); await db.wipe(); await db.meta("session", keep); }
       moi = ga?.actif
-        ? { id: s.user.id, nom: ga.nom, role: ga.role, admin: ga.role === "admin" }
+        ? { id: s.user.id, nom: ga.nom, role: ga.role, admin: ga.role === "admin", tel: api.telefon8(f.tel.value) }
         : { id: s.user.id, nom: `${p.firstname || ""} ${p.name || ""}`.trim() || s.user.email, role: Number(p.role), admin: Number(p.role) === 1 };
       await db.meta("owner", s.user.id);
       await db.meta("moi", moi);
@@ -131,49 +175,167 @@ function viewLogin(expired) {
   };
 }
 
-// ---------- Akèy ----------
-let rechèch = "";
+// ---------- Lis kliyan (pati komen) ----------
+const tel4 = (c) => (c.telephone ? String(c.telephone).replace(/\D/g, "").slice(-4) : c.tel4 || "");
+const avatar = (c, cls = "thumb") => c.photo_url
+  ? `<img class="${cls}" src="${h(c.photo_url)}" alt="" loading="lazy">`
+  : `<span class="${cls} ph" aria-hidden="true">${h((c.prenom || "?")[0])}</span>`;
 function lisKliyan(M, filtre) {
   const q = filtre.trim().toLowerCase();
   const qd = q.replace(/\D/g, "");
   return [...M.clients.values()]
-    .filter((c) => !q || non(c).toLowerCase().includes(q) || (qd.length >= 3 && String(c.telephone || "").replace(/\D/g, "").includes(qd)) || String(c.code_client || "").toLowerCase().includes(q))
+    .filter((c) => !q || non(c).toLowerCase().includes(q) || (qd.length >= 3 && String(c.telephone || c.tel4 || "").replace(/\D/g, "").includes(qd)) || String(c.code_client || "").toLowerCase().includes(q))
     .sort((a, b) => (b._pending ? 1 : 0) - (a._pending ? 1 : 0) || non(a).localeCompare(non(b)));
 }
 function liKliyan(M, c, href) {
   const ks = S.comptesDuClient(M, c.id_personne).filter((k) => k._actif);
   return `<a class="row" href="${href}">
-    <div><b>${h(non(c))}</b> ${badgePend(c)}
-      <div class="mut sm">${h(c.telephone || "")}${ks.length ? ` · ${ks.length} cycle aktif` : " · San cycle aktif"}</div></div>
+    ${avatar(c)}
+    <div class="grow"><b>${h(non(c))}</b> ${badgePend(c)}
+      <div class="mut sm">${h(c.code_client || "ID poko vini")} · •••• ${h(tel4(c))}</div>
+      <div class="mut sm">${ks.length ? `${ks.length} cycle aktif` : "San cycle aktif"}</div></div>
     <div class="right">${ks[0] ? badgeKont(ks[0]) : ""}</div></a>`;
 }
 
-async function viewHome() {
-  const M = await S.model();
+// ---------- 1. Tablo de bò ----------
+async function viewTablo() {
   const today = S.jodi();
+  $app.innerHTML = `
+  <p class="hello">Bonjou ${h(moi.nom.split(" ")[0])} · <span class="mut">${JOU[S.isoJou(today)]} ${datFr(today)}</span></p>
+  <div class="card soon">
+    <div class="soon-ico" aria-hidden="true">${ICO.tablo}</div>
+    <h1>Tablo de bò</h1>
+    <p class="mut">Paj sa a ap vini byento.</p>
+    <div class="soon-links">
+      <a class="btn" href="#/kliyan">Kliyan</a><a class="btn" href="#/epay">Epay</a><a class="btn" href="#/rapo">Rapò</a>
+    </div>
+  </div>`;
+}
+
+// ---------- 2. Kliyan: chèche nan tout baz la (anti-doublon) + kreye ----------
+let rechèch = "";
+let chèchTimer = null;
+async function viewKliyan() {
+  const M = await S.model();
+  $app.innerHTML = `
+  <div class="page-head"><h1>Kliyan</h1><a class="btn pri" href="#/kliyan/nouvo">＋ Nouvo kliyan</a></div>
+  <input id="q" type="search" class="search" placeholder="Chèche non, ID kliyan oswa telefòn…" aria-label="Chèche kliyan" value="${h(rechèch)}" autocomplete="off">
+  <p class="mut sm" id="q-hint"></p>
+  <div id="baz"></div>
+  <h2 id="lok-t">Kliyan Grandon yo <small class="mut">(${M.clients.size})</small></h2>
+  <div class="list grid-t" id="list"></div>`;
+  const q = document.getElementById("q");
+  const drawLocal = () => {
+    document.getElementById("list").innerHTML = lisKliyan(M, rechèch).slice(0, 200).map((c) => liKliyan(M, c, `#/kliyan/${c.id_personne}`)).join("")
+      || `<p class="empty">${rechèch ? "Pa gen kliyan Grandon ki koresponn." : "Pa gen kliyan."}</p>`;
+  };
+  const drawBaz = async () => {
+    const box = document.getElementById("baz");
+    const hint = document.getElementById("q-hint");
+    const v = rechèch.trim();
+    const okLen = v.replace(/\D/g, "").length >= 4 || v.length >= 2;
+    if (!v || !okLen) { box.innerHTML = ""; hint.textContent = "Chèche anvan w kreye yon kliyan, pou evite doublon."; return; }
+    if (!navigator.onLine) { box.innerHTML = ""; hint.textContent = "Offline: rechèch la fèt sèlman nan kliyan ki sou telefòn nan."; return; }
+    hint.textContent = "Ap chèche nan baz la…";
+    try {
+      const rs = (await api.rechercher(v)).filter((r) => !M.clients.has(r.id_personne));
+      if (rechèch.trim() !== v) return;
+      hint.textContent = rs.length ? "Moun sa yo deja nan baz la. Si se li, ajoute l nan Grandon olye w kreye l ankò." : "Pa gen lòt moun nan baz la ki koresponn.";
+      box.innerHTML = rs.length ? `<h2>Nan baz la</h2><div class="list grid-t">${rs.map((r) => `<div class="row">
+          ${avatar(r)}
+          <div class="grow"><b>${h(non(r))}</b><div class="mut sm">${h(r.code_client || "—")} · •••• ${h(r.tel4 || "")}</div></div>
+          <button class="btn sm pri" data-adopte='${h(JSON.stringify({ id: r.id_personne, prenom: r.prenom, nom: r.nom, code_client: r.code_client, photo_url: r.photo_url, tel4: r.tel4 }))}'>Ajoute</button>
+        </div>`).join("")}</div>` : "";
+      box.querySelectorAll("[data-adopte]").forEach((b) => (b.onclick = async () => {
+        const p = JSON.parse(b.dataset.adopte);
+        if (!confirm(`Ajoute ${p.prenom} ${p.nom} (${p.code_client || ""}) nan kliyan Grandon yo?`)) return;
+        await S.enqueue("adopte", { ...p, gps: await getGps(4000), capture_le: new Date().toISOString() });
+        toast(`${p.prenom} ${p.nom} ajoute.`);
+        go(`#/kliyan/${p.id}`);
+      }));
+    } catch (e) { hint.textContent = e.retry ? "Pa gen koneksyon: rechèch lokal sèlman." : e.message; box.innerHTML = ""; }
+  };
+  q.oninput = () => {
+    rechèch = q.value; drawLocal();
+    clearTimeout(chèchTimer); chèchTimer = setTimeout(drawBaz, 350);
+  };
+  drawLocal(); drawBaz();
+}
+
+// ---------- 3. Epay: kont ak cycle aktif, tranzaksyon ----------
+let filtEpay = "";
+async function viewEpay() {
+  const M = await S.model();
   const pouJodi = [...M.comptes.values()].filter((k) => k._jodiPeman)
     .sort((a, b) => (a._jodi >= a.montant_plan) - (b._jodi >= b.montant_plan));
   const peye = pouJodi.filter((k) => k._jodi >= Number(k.montant_plan || 0)).length;
+  const aktif = [...M.comptes.values()].filter((k) => k._actif)
+    .sort((a, b) => non(M.clients.get(a.id_personne)).localeCompare(non(M.clients.get(b.id_personne))));
+  const txs = [...M.txs.values()].sort((a, b) => String(b.date_transaction).localeCompare(String(a.date_transaction))).slice(0, 30);
+  const liKont = (k) => { const c = M.clients.get(k.id_personne) || {}; return `<div class="row">
+      <a class="grow lnk" href="#/cycle/${k.id_compte_epargne}"><b>${h(non(c))}</b> ${badgePend(k)}
+        <div class="mut sm">${h(k.no_compte || "Cycle poko voye")} · plan ${gd(k.montant_plan)}</div>
+        <div class="mut sm">${k.frequence_semaine ? `${k.frequence_semaine}×/sem · ${lisJou(k.jours_paiement)}` : "—"} · ${gd(k._total)}</div></a>
+      <a class="btn sm pri" href="#/tx/nouvo/${k.id_compte_epargne}">Depo</a></div>`; };
   $app.innerHTML = `
-  <p class="hello">Bonjou ${h(moi.nom.split(" ")[0])} · <span class="mut">${JOU[S.isoJou(today)]} ${datFr(today)}</span></p>
-  <div class="actions">
-    <a class="act" href="#/kliyan/nouvo"><span aria-hidden="true">＋</span>Nouvo kliyan</a>
-    <a class="act" href="#/chwazi/cycle"><span aria-hidden="true">↻</span>Nouvo cycle</a>
-    <a class="act" href="#/chwazi/tx"><span aria-hidden="true">G</span>Depo / Retrè</a>
-  </div>
+  <div class="page-head"><h1>Epay</h1><a class="btn pri" href="#/chwazi/cycle">＋ Nouvo cycle</a></div>
   <h2>Peman jodi a <small class="mut">(${peye}/${pouJodi.length})</small></h2>
-  <div class="list">${pouJodi.map((k) => { const c = M.clients.get(k.id_personne); return `<a class="row" href="#/tx/nouvo/${k.id_compte_epargne}">
-      <div><b>${h(non(c))}</b><div class="mut sm">${h(k.no_compte || "Cycle poko voye")} · plan ${gd(k.montant_plan)}</div></div>
+  <div class="list grid-t">${pouJodi.map((k) => { const c = M.clients.get(k.id_personne) || {}; return `<a class="row" href="#/tx/nouvo/${k.id_compte_epargne}">
+      ${avatar(c)}<div class="grow"><b>${h(non(c))}</b><div class="mut sm">${h(k.no_compte || "Cycle poko voye")} · plan ${gd(k.montant_plan)}</div></div>
       <div class="right">${k._jodi >= Number(k.montant_plan || 0) ? `<span class="badge ok">✓ ${gd(k._jodi)}</span>` : k._jodi > 0 ? `<span class="badge warn">${gd(k._jodi)}</span>` : `<span class="btn sm pri">Depo</span>`}</div></a>`; }).join("")
     || `<p class="empty">Pa gen peman ki tonbe jodi a.</p>`}</div>
-  <h2>Kliyan yo <small class="mut">(${M.clients.size})</small></h2>
-  <input id="q" type="search" class="search" placeholder="Chèche non, telefòn, kòd…" aria-label="Chèche kliyan" value="${h(rechèch)}">
-  <div class="list" id="list">${lisKliyan(M, rechèch).slice(0, 200).map((c) => liKliyan(M, c, `#/kliyan/${c.id_personne}`)).join("") || `<p class="empty">Pa gen kliyan.</p>`}</div>`;
+  <h2>Kont ak cycle aktif <small class="mut">(${aktif.length})</small></h2>
+  <input id="q" type="search" class="search" placeholder="Chèche kliyan oswa nimewo kont…" aria-label="Chèche kont" value="${h(filtEpay)}">
+  <div class="list grid-t" id="kont"></div>
+  <h2>Dènye tranzaksyon yo</h2>
+  <div class="list">${txs.map((t) => { const k = M.comptes.get(t.id_compte_epargne); const c = k && M.clients.get(k.id_personne); return `<a class="row" href="#/cycle/${t.id_compte_epargne}">
+      <div class="grow"><b>${t.type_transaction === "D" ? "Depo" : "Retrè"}</b> · ${h(non(c))} ${badgeTx(t)}
+        <div class="mut sm">${h(k?.no_compte || "")} · ${S.jouTx(t) === S.jodi() ? "jodi a" : datFr(S.jouTx(t))}</div></div>
+      <div class="right"><b class="${t.type_transaction === "D" ? "in" : "out"}">${t.type_transaction === "D" ? "+" : "−"}${gd(t.montant)}</b></div></a>`; }).join("") || `<p class="empty">Poko gen tranzaksyon.</p>`}</div>`;
   const q = document.getElementById("q");
-  q.oninput = () => {
-    rechèch = q.value;
-    document.getElementById("list").innerHTML = lisKliyan(M, rechèch).slice(0, 200).map((c) => liKliyan(M, c, `#/kliyan/${c.id_personne}`)).join("") || `<p class="empty">Anyen pa koresponn.</p>`;
+  const draw = () => {
+    const v = filtEpay.trim().toLowerCase();
+    const l = aktif.filter((k) => !v || non(M.clients.get(k.id_personne)).toLowerCase().includes(v) || String(k.no_compte || "").toLowerCase().includes(v));
+    document.getElementById("kont").innerHTML = l.map(liKont).join("") || `<p class="empty">${v ? "Anyen pa koresponn." : "Pa gen kont ak cycle aktif."}</p>`;
   };
+  q.oninput = () => { filtEpay = q.value; draw(); };
+  draw();
+}
+
+// ---------- 4. Rapò ajan an (3 dènye jou) ----------
+let jouRapo = 0;
+async function viewRapo() {
+  const M = await S.model();
+  const jou = [0, 1, 2].map((n) => S.ajouteJou(S.jodi(), -n));
+  const D = jou[jouRapo];
+  const mwen = (x) => x.created_by === moi.id || x.created_by === "moi";
+  const txs = [...M.txs.values()].filter((t) => mwen(t) && S.jouTx(t) === D && t.validation_status !== "rejected")
+    .sort((a, b) => String(b.date_transaction).localeCompare(String(a.date_transaction)));
+  const dep = txs.filter((t) => t.type_transaction === "D"), ret = txs.filter((t) => t.type_transaction === "R");
+  const sum = (l) => l.reduce((a, t) => a + Number(t.montant || 0), 0);
+  const depo = sum(dep), retre = sum(ret);
+  const deklare = txs.reduce((a, t) => a + Number(t.solde_declare || 0), 0);
+  const nDeklare = txs.filter((t) => t.solde_declare != null && t.solde_declare !== "").length;
+  const cycles = [...M.comptes.values()].filter((k) => mwen(k) && k.created_at && S.jouLokal(new Date(k.created_at)) === D).length;
+  const poko = txs.filter((t) => t._pending).length;
+  const nonJou = (n) => (n === 0 ? "Jodi a" : n === 1 ? "Yè" : "Avan-yè");
+  $app.innerHTML = `
+  <div class="page-head"><h1>Rapò</h1></div>
+  <div class="chips" role="tablist">${jou.map((d, i) => `<button role="tab" aria-selected="${i === jouRapo}" class="chip ${i === jouRapo ? "on" : ""}" data-j="${i}">${nonJou(i)}<small>${datFr(d)}</small></button>`).join("")}</div>
+  <div class="kpis">
+    <div class="kpi"><span>Depo ankese</span><b class="in">${gd(depo)}</b><small>${dep.length} depo</small></div>
+    <div class="kpi"><span>Retrè</span><b class="out">${ret.length}</b><small>${gd(retre)}</small></div>
+    <div class="kpi"><span>Balans deklare (total)</span><b>${gd(deklare)}</b><small>${nDeklare} kont deklare</small></div>
+    <div class="kpi"><span>Cycle kreye</span><b>${cycles}</b><small>${nonJou(jouRapo).toLowerCase()}</small></div>
+    <div class="kpi main"><span>Kach nan men pou remèt nan kès</span><b>${gd(depo - retre)}</b><small>Depo − retrè</small></div>
+  </div>
+  ${poko ? `<p class="note warn">${poko} tranzaksyon poko voye: yo konte nan rapò a, men sèvè a poko resevwa yo.</p>` : ""}
+  <h2>Tranzaksyon mwen yo <small class="mut">(${txs.length})</small></h2>
+  <div class="list">${txs.map((t) => { const k = M.comptes.get(t.id_compte_epargne); const c = k && M.clients.get(k.id_personne); return `<div class="row">
+      <div class="grow"><b>${t.type_transaction === "D" ? "Depo" : "Retrè"}</b> · ${h(non(c))} ${badgeTx(t)}
+        <div class="mut sm">${h(k?.no_compte || "")}${t.solde_declare != null && t.solde_declare !== "" ? ` · balans deklare ${gd(t.solde_declare)}` : ""}</div></div>
+      <div class="right"><b class="${t.type_transaction === "D" ? "in" : "out"}">${t.type_transaction === "D" ? "+" : "−"}${gd(t.montant)}</b></div></div>`; }).join("") || `<p class="empty">Pa gen tranzaksyon ${nonJou(jouRapo).toLowerCase()}.</p>`}</div>`;
+  $app.querySelectorAll("[data-j]").forEach((b) => (b.onclick = () => { jouRapo = Number(b.dataset.j); viewRapo(); }));
 }
 
 // ---------- Nouvo kliyan ----------
@@ -181,7 +343,7 @@ async function viewClientNew() {
   const M = await S.model();
   const aktivite = [...new Set([...M.clients.values()].map((c) => c.activite).filter(Boolean))].sort();
   $app.innerHTML = `
-  <a href="#/" class="back">‹ Retounen</a>
+  <a href="#/kliyan" class="back">‹ Kliyan</a>
   <h1>Nouvo kliyan</h1>
   <form id="f" class="card form" novalidate>
     <div class="grid2">
@@ -189,6 +351,7 @@ async function viewClientNew() {
       <label>Non *<input name="nom" required autocomplete="off"></label>
     </div>
     <label>Telefòn * <small class="mut">(8 chif)</small><input name="telephone" inputmode="tel" required placeholder="3700 1234"></label>
+    <div id="dbl" aria-live="polite"></div>
     <div class="grid2">
       <label>NIF / CIN<input name="nif" autocomplete="off"></label>
       <label>Sèks<select name="sexe"><option value="">—</option><option value="F">Fi</option><option value="M">Gason</option></select></label>
@@ -212,6 +375,29 @@ async function viewClientNew() {
   };
   document.getElementById("gps-b").onclick = prendGps;
   prendGps();
+  // Anti-doublon: lè telefòn nan konplè, chèche l nan tout baz la.
+  let dTel = "";
+  f.telephone.oninput = async () => {
+    const t = api.telefon8(f.telephone.value);
+    const box = document.getElementById("dbl");
+    if (!t) { box.innerHTML = ""; dTel = ""; return; }
+    if (t === dTel || !navigator.onLine) return;
+    dTel = t;
+    try {
+      const rs = (await api.rechercher(t)).filter((r) => r.tel4 === t.slice(-4));
+      if (api.telefon8(f.telephone.value) !== t) return;
+      box.innerHTML = rs.length ? `<div class="note warn"><b>Telefòn sa a deja nan baz la:</b>
+        ${rs.map((r) => `<div class="row flat">${avatar(r)}<div class="grow"><b>${h(non(r))}</b><div class="mut sm">${h(r.code_client || "")} · •••• ${h(r.tel4)}</div></div>
+          ${M.clients.has(r.id_personne) ? `<a class="btn sm" href="#/kliyan/${r.id_personne}">Wè fich li</a>`
+            : `<button type="button" class="btn sm pri" data-adopte='${h(JSON.stringify({ id: r.id_personne, prenom: r.prenom, nom: r.nom, code_client: r.code_client, photo_url: r.photo_url, tel4: r.tel4 }))}'>Se li</button>`}</div>`).join("")}</div>` : "";
+      box.querySelectorAll("[data-adopte]").forEach((b) => (b.onclick = async () => {
+        const p = JSON.parse(b.dataset.adopte);
+        await S.enqueue("adopte", { ...p, gps, capture_le: new Date().toISOString() });
+        toast(`${p.prenom} ${p.nom} ajoute nan kliyan Grandon yo.`);
+        go(f.cycle.checked ? `#/cycle/nouvo/${p.id}` : `#/kliyan/${p.id}`);
+      }));
+    } catch { /* offline oswa erè: sèvè a ap verifye lè l voye */ }
+  };
   f.photo.onchange = async () => {
     const file = f.photo.files[0];
     if (!file) return;
@@ -247,12 +433,12 @@ async function viewClientNew() {
 async function viewClient(id) {
   const M = await S.model();
   const c = M.clients.get(id);
-  if (!c) { $app.innerHTML = `<a href="#/" class="back">‹ Retounen</a><p class="empty">Kliyan sa a pa sou telefòn nan.</p>`; return; }
+  if (!c) { $app.innerHTML = `<a href="#/kliyan" class="back">‹ Kliyan</a><p class="empty">Kliyan sa a pa sou telefòn nan.</p>`; return; }
   const ks = S.comptesDuClient(M, id);
   let photo = c.photo_url || null;
   if (c.photo_id) { const ph = await db.get("photos", c.photo_id); if (ph) photo = URL.createObjectURL(ph.blob); }
   $app.innerHTML = `
-  <a href="#/" class="back">‹ Retounen</a>
+  <a href="#/kliyan" class="back">‹ Kliyan</a>
   <div class="card head">
     ${photo ? `<img class="avatar" src="${h(photo)}" alt="">` : `<div class="avatar ph" aria-hidden="true">${h((c.prenom || "?")[0])}</div>`}
     <div><h1>${h(non(c))}</h1>
@@ -260,7 +446,7 @@ async function viewClient(id) {
       <div class="mut sm">${h([c.activite, c.adresse].filter(Boolean).join(" · "))}</div>
       ${badgePend(c)}</div>
   </div>
-  ${c._error ? `<p class="note err">${h(c._error)} <a href="#/senk">Wè</a></p>` : ""}
+  ${c._error ? `<p class="note err">${h(c._error)} <a href="#/param">Wè</a></p>` : ""}
   <a class="btn pri block" href="#/cycle/nouvo/${c.id_personne}">＋ Nouvo cycle Grandon</a>
   <h2>Cycle yo</h2>
   <div class="list">${ks.map((k) => `<a class="row" href="#/cycle/${k.id_compte_epargne}">
@@ -284,8 +470,8 @@ async function viewPick(kind) {
   const titre = kind === "cycle" ? "Nouvo cycle: chwazi kliyan an" : "Depo / Retrè: chwazi kliyan an";
   const draw = (q) => lisKliyan({ ...M, clients: new Map(items.map((c) => [c.id_personne, c])) }, q).map((c) => liKliyan(M, c, link(c))).join("")
     || `<p class="empty">${kind === "cycle" ? "Pa gen kliyan. Kreye yon nouvo kliyan." : "Pa gen kliyan ki gen yon cycle aktif."}</p>`;
-  $app.innerHTML = `<a href="#/" class="back">‹ Retounen</a><h1>${titre}</h1>
-    ${kind === "cycle" ? `<a class="btn block" href="#/kliyan/nouvo">＋ Nouvo kliyan</a>` : ""}
+  $app.innerHTML = `<a href="#/epay" class="back">‹ Epay</a><h1>${titre}</h1>
+    ${kind === "cycle" ? `<p class="mut sm">Kliyan an pa nan lis la? Chèche l nan <a href="#/kliyan">Kliyan</a>.</p>` : ""}
     <input id="q" type="search" class="search" placeholder="Chèche…" aria-label="Chèche kliyan"><div class="list" id="list">${draw("")}</div>`;
   const q = document.getElementById("q");
   q.oninput = () => (document.getElementById("list").innerHTML = draw(q.value));
@@ -297,7 +483,7 @@ const JOU_DEFO = { 1: [1], 2: [1, 4], 3: [1, 3, 5], 6: [1, 2, 3, 4, 5, 6] };
 async function viewCycleNew(idPersonne) {
   const M = await S.model();
   const c = M.clients.get(idPersonne);
-  if (!c) { $app.innerHTML = `<a href="#/" class="back">‹ Retounen</a><p class="empty">Kliyan an pa jwenn.</p>`; return; }
+  if (!c) { $app.innerHTML = `<a href="#/epay" class="back">‹ Epay</a><p class="empty">Kliyan an pa jwenn.</p>`; return; }
   const plans = M.plans.length ? M.plans : [1000, 1500, 2000, 2500, 3000, 4000, 5000, 7500, 10000, 15000, 20000, 25000, 30000, 35000, 40000, 50000, 75000, 100000];
   const dènye = S.comptesDuClient(M, idPersonne)[0];
   let freq = FREKANS.includes(dènye?.frequence_semaine) ? dènye.frequence_semaine : 2;
@@ -384,13 +570,13 @@ async function viewCycleNew(idPersonne) {
 async function viewCycle(id) {
   const M = await S.model();
   const k = M.comptes.get(id);
-  if (!k) { $app.innerHTML = `<a href="#/" class="back">‹ Retounen</a><p class="empty">Cycle sa a pa sou telefòn nan.</p>`; return; }
+  if (!k) { $app.innerHTML = `<a href="#/epay" class="back">‹ Epay</a><p class="empty">Cycle sa a pa sou telefòn nan.</p>`; return; }
   const c = M.clients.get(k.id_personne);
   const fè = k._joursPeye.size, prevu = k._prevu;
   $app.innerHTML = `
-  <a href="${c ? `#/kliyan/${c.id_personne}` : "#/"}" class="back">‹ ${h(c ? non(c) : "Retounen")}</a>
+  <a href="#/epay" class="back">‹ Epay</a>
   <h1>${h(k.no_compte || "Cycle poko voye")} ${badgeKont(k)} ${badgePend(k)}</h1>
-  ${k._error ? `<p class="note err">${h(k._error)} <a href="#/senk">Wè</a></p>` : ""}
+  ${k._error ? `<p class="note err">${h(k._error)} <a href="#/param">Wè</a></p>` : ""}
   <div class="card solde"><span>Total kliyan an mete</span><b>${gd(k._total)}</b>
     <small class="mut">Balans valide: ${gd(k.solde_actuel)}${Number(k.depo_an_atant) ? ` · an atant validasyon: ${gd(k.depo_an_atant)}` : ""}${k._local ? ` · poko voye: ${gd(k._local)}` : ""}</small></div>
   <div class="card stats">
@@ -416,7 +602,7 @@ async function viewTxNew(compteId) {
   const M = await S.model();
   const k = M.comptes.get(compteId);
   const c = k && M.clients.get(k.id_personne);
-  if (!k) { $app.innerHTML = `<a href="#/" class="back">‹ Retounen</a><p class="empty">Cycle la pa jwenn.</p>`; return; }
+  if (!k) { $app.innerHTML = `<a href="#/epay" class="back">‹ Epay</a><p class="empty">Cycle la pa jwenn.</p>`; return; }
   const plan = Number(k.montant_plan || 0);
   const disponib = Number(k.solde_actuel || 0) + Math.min(0, k._local); // retrè: sèlman balans valide
   $app.innerHTML = `
@@ -463,10 +649,11 @@ async function viewTxNew(compteId) {
 }
 
 // ---------- Senkronizasyon ----------
-const KIND = { client: "Kliyan", cycle: "Cycle", tx: "Tranzaksyon" };
+const KIND = { client: "Kliyan", adopte: "Kliyan (ajoute)", cycle: "Cycle", tx: "Tranzaksyon" };
 function resume(o, M) {
   const p = o.payload;
   if (o.kind === "client") return `${p.prenom} ${p.nom} · ${p.telephone}`;
+  if (o.kind === "adopte") return `${p.prenom} ${p.nom} · ${p.code_client || ""}`;
   if (o.kind === "cycle") return `${non(M.clients.get(p.id_personne))} · ${p.duree} mwa · ${p.frequence}×/sem · ${gd(p.montant)}`;
   const k = M.comptes.get(p.compte);
   return `${p.type === "D" ? "Depo" : "Retrè"} ${gd(p.montant)} · ${non(k && M.clients.get(k.id_personne))}`;
@@ -474,14 +661,27 @@ function resume(o, M) {
 async function viewSync() {
   const M = await S.model();
   const s = api.getSession();
+  const pref = prefs();
   $app.innerHTML = `
-  <a href="#/" class="back">‹ Retounen</a>
-  <h1>Senkronizasyon</h1>
+  <div class="page-head"><h1>Paramèt</h1></div>
+  <h2>Kont mwen</h2>
+  <div class="card">
+    <div class="kv"><span>Non</span><b>${h(moi.nom)}</b></div>
+    ${moi.tel ? `<div class="kv"><span>Telefòn</span><b>${h(moi.tel)}</b></div>` : ""}
+    <div class="kv"><span>Wòl</span><b>${h(WOL[moi.role] || "Anplwaye")}</b></div>
+  </div>
+  <h2>Aparans</h2>
+  <div class="card form">
+    <fieldset class="field"><legend>Tèm</legend><div class="seg s3">
+      ${[["auto", "Otomatik"], ["light", "Klè"], ["dark", "Fonse"]].map(([v, l]) => `<label><input type="radio" name="tem" value="${v}" ${pref.tem === v ? "checked" : ""}><span>${l}</span></label>`).join("")}</div></fieldset>
+    <fieldset class="field"><legend>Gwosè tèks</legend><div class="seg s3">
+      ${[["n", "Nòmal"], ["l", "Gwo"], ["xl", "Pi gwo"]].map(([v, l]) => `<label><input type="radio" name="teks" value="${v}" ${pref.teks === v ? "checked" : ""}><span>${l}</span></label>`).join("")}</div></fieldset>
+  </div>
+  <h2>Senkronizasyon</h2>
   <div class="card">
     <div class="kv"><span>Koneksyon</span><b>${navigator.onLine ? "Anliy" : "Offline"}</b></div>
     <div class="kv"><span>Dènye senk</span><b>${lè(await db.meta("last_sync"))}</b></div>
     <div class="kv"><span>Dènye telechajman</span><b>${lè(await db.meta("last_pull"))}</b></div>
-    <div class="kv"><span>Ajan</span><b>${h(moi.nom)}</b></div>
     ${s?.expired ? `<p class="note warn">Sesyon w fini. <a href="#/login">Konekte ankò</a> pou voye done yo.</p>` : ""}
     <button class="btn pri block" id="sync" ${navigator.onLine ? "" : "disabled"}>Senkronize kounye a</button>
   </div>
@@ -492,8 +692,12 @@ async function viewSync() {
         ${o.error ? `<div class="err-msg sm">${h(o.error)}</div>` : ""}</div>
       ${o.status === "erè" ? `<div class="btns"><button class="btn sm" data-retry="${o.seq}">Eseye ankò</button><button class="btn sm danger" data-drop="${o.seq}">Efase</button></div>` : ""}
     </div>`).join("") || `<p class="empty">Tout bagay voye ✓</p>`}</div>
-  ${moi.admin ? `<a class="btn block" href="#/ajan">Jere ajan yo</a>` : ""}
-  <button class="btn block" id="logout">Dekonekte</button>`;
+  ${moi.admin ? `<h2>Administrasyon</h2><a class="btn block" href="#/ajan">Jere ajan yo</a>` : ""}
+  <button class="btn block danger" id="logout">Dekonekte</button>
+  <p class="mut sm center">Grandon · vèsyon ${h(APP_VERSION)}</p>`;
+  $app.querySelectorAll('input[name="tem"], input[name="teks"]').forEach((r) => (r.onchange = () => {
+    savePrefs({ tem: $app.querySelector('input[name="tem"]:checked').value, teks: $app.querySelector('input[name="teks"]:checked').value });
+  }));
   document.getElementById("sync").onclick = async () => {
     const r = await S.run();
     r.notices.forEach((n) => toast(n, "info", 6000));
@@ -518,9 +722,8 @@ async function viewSync() {
 }
 
 // ---------- Jesyon ajan (admin, anliy sèlman) ----------
-const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin" };
 async function viewAjan() {
-  $app.innerHTML = `<a href="#/senk" class="back">‹ Retounen</a><h1>Ajan yo</h1>
+  $app.innerHTML = `<a href="#/param" class="back">‹ Paramèt</a><h1>Ajan yo</h1>
     ${navigator.onLine ? `<div class="list" id="lis"><p class="empty">Ap chaje…</p></div>` : `<p class="note warn">Fòk ou gen entènèt pou jere ajan yo.</p>`}
     <h2>Nouvo ajan</h2>
     <form id="f" class="card form" novalidate>
@@ -581,16 +784,20 @@ async function render() {
   const r = location.hash || "#/";
   const s = api.getSession();
   await updateBar();
+  updateNav();
   if (!s || !moi || r === "#/login") return viewLogin(s?.expired);
   let m;
-  if (r === "#/" || r === "#") return viewHome();
+  if (r === "#/" || r === "#") return viewTablo();
+  if (r === "#/kliyan") return viewKliyan();
+  if (r === "#/epay") return viewEpay();
+  if (r === "#/rapo") return viewRapo();
   if (r === "#/kliyan/nouvo") return viewClientNew();
   if ((m = r.match(/^#\/kliyan\/([\w-]+)$/))) return viewClient(m[1]);
   if ((m = r.match(/^#\/chwazi\/(cycle|tx)$/))) return viewPick(m[1]);
   if ((m = r.match(/^#\/cycle\/nouvo\/([\w-]+)$/))) return viewCycleNew(m[1]);
   if ((m = r.match(/^#\/cycle\/([\w-]+)$/))) return viewCycle(m[1]);
   if ((m = r.match(/^#\/tx\/nouvo\/([\w-]+)$/))) return viewTxNew(m[1]);
-  if (r === "#/senk") return viewSync();
+  if (r === "#/param" || r === "#/senk") return viewSync();
   if (r === "#/ajan" && moi.admin) return viewAjan();
   go("#/");
 }
@@ -608,6 +815,7 @@ S.onChange(() => {
 });
 
 async function boot() {
+  applyPrefs();
   await api.loadSession();
   moi = (await db.meta("moi")) || null;
   addEventListener("hashchange", () => { clearTimeout(pendingRender); render(); scrollTo(0, 0); });

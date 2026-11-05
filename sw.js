@@ -1,6 +1,6 @@
 // Service worker: kenbe aplikasyon an sou telefòn nan pou l louvri san entènèt.
 // Chanje VERSION chak fwa ou pibliye yon nouvo vèsyon.
-const VERSION = "grandon-ajan-v3";
+const VERSION = "grandon-ajan-v4";
 const SHELL = [
   "./", "index.html", "app.css", "app.js", "db.js", "api.js", "sync.js", "config.js",
   "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png", "icons/icon-maskable-512.png",

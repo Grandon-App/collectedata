@@ -108,6 +108,15 @@ const EXEC = {
     return r.deja ? `${p.prenom} ${p.nom} te deja nan baz la: nou itilize dosye ki te la a.` : null;
   },
 
+  async adopte(p) {
+    await api.rpc("grandon_inscrire_client", {
+      p_id: p.id, p_prenom: p.prenom || "-", p_nom: p.nom || "-", p_telephone: "00000000",
+      ...gpsArgs(p.gps), p_capture_le: p.capture_le,
+    });
+    if (!(await db.get("clients", p.id)))
+      await db.put("clients", { id_personne: p.id, prenom: p.prenom, nom: p.nom, code_client: p.code_client, photo_url: p.photo_url, tel4: p.tel4 });
+  },
+
   async cycle(p) {
     const r = await api.rpc("grandon_creer_cycle", {
       p_id: p.id, p_id_personne: p.id_personne, p_duree: p.duree, p_frequence: p.frequence, p_jours: p.jours,
@@ -117,6 +126,7 @@ const EXEC = {
       id_compte_epargne: p.id, no_compte: r.no_compte, id_personne: p.id_personne, solde_actuel: 0, montant_plan: p.montant,
       duree_mois: p.duree, frequence_semaine: p.frequence, jours_paiement: p.jours, date_debut: p.date_debut,
       date_fin: ajouteMwa(p.date_debut, p.duree), depo_an_atant: 0,
+      created_by: api.getSession()?.user?.id, created_at: p.capture_le,
     });
   },
 
@@ -128,6 +138,7 @@ const EXEC = {
     await db.put("transactions", {
       id_transaction_epargne: p.id, id_compte_epargne: p.compte, type_transaction: p.type, montant: p.montant,
       date_transaction: p.capture_le, validation_status: r.statut, solde_apres_transactions: r.solde_apres,
+      created_by: api.getSession()?.user?.id, solde_declare: p.solde_declare ?? null, _local_date: true,
     });
     const k = await db.get("comptes", p.compte);
     if (k) {
@@ -201,7 +212,7 @@ export async function pull() {
     api.selectAll("grandon_v_clients?select=id_personne,prenom,nom,telephone,code_client,activite,adresse,photo_url&order=prenom"),
     api.selectAll("grandon_v_comptes?select=*&order=date_debut.desc"),
     api.selectAll("grandon_plans?actif=is.true&select=montant&order=montant"),
-    api.selectAll(`grandon_v_transactions?date_transaction=gte.${depi}&select=id_transaction_epargne,id_compte_epargne,type_transaction,montant,date_transaction,validation_status,solde_apres_transactions&order=date_transaction`),
+    api.selectAll(`grandon_v_transactions?date_transaction=gte.${depi}&select=id_transaction_epargne,id_compte_epargne,type_transaction,montant,date_transaction,validation_status,solde_apres_transactions,created_by,solde_declare&order=date_transaction`),
   ]);
   await db.replaceAll("clients", clients);
   await db.replaceAll("comptes", comptes);
@@ -211,7 +222,7 @@ export async function pull() {
 }
 
 // ---------- Modèl lokal: done sèvè + sa ki nan file a ----------
-const jouTx = (t) => (t._pending ? jouLokal(new Date(t.date_transaction)) : String(t.date_transaction).slice(0, 10));
+export const jouTx = (t) => (t._pending || t._local_date ? jouLokal(new Date(t.date_transaction)) : String(t.date_transaction).slice(0, 10));
 
 export async function model() {
   const [clients, comptes, txs, outbox, plans] = await Promise.all(
@@ -228,15 +239,17 @@ export async function model() {
     const pend = { _pending: true, _error: o.status === "erè" ? o.error : null, _seq: o.seq };
     if (o.kind === "client")
       M.clients.set(p.id, { id_personne: p.id, prenom: p.prenom, nom: p.nom, telephone: p.telephone, activite: p.activite, adresse: p.adresse, photo_id: p.photo_id, ...pend });
+    if (o.kind === "adopte" && !M.clients.has(p.id))
+      M.clients.set(p.id, { id_personne: p.id, prenom: p.prenom, nom: p.nom, code_client: p.code_client, photo_url: p.photo_url, tel4: p.tel4, ...pend });
     if (o.kind === "cycle")
       M.comptes.set(p.id, {
         id_compte_epargne: p.id, no_compte: null, id_personne: p.id_personne, solde_actuel: 0, montant_plan: p.montant,
         duree_mois: p.duree, frequence_semaine: p.frequence, jours_paiement: p.jours, date_debut: p.date_debut,
-        date_fin: ajouteMwa(p.date_debut, p.duree), depo_an_atant: 0, ...pend });
+        date_fin: ajouteMwa(p.date_debut, p.duree), depo_an_atant: 0, created_at: p.capture_le, created_by: "moi", ...pend });
     if (o.kind === "tx")
       M.txs.set(p.id, {
         id_transaction_epargne: p.id, id_compte_epargne: p.compte, type_transaction: p.type, montant: p.montant,
-        date_transaction: p.capture_le, validation_status: null, solde_declare: p.solde_declare, note: p.note, ...pend });
+        date_transaction: p.capture_le, validation_status: null, solde_declare: p.solde_declare, note: p.note, created_by: "moi", ...pend });
   }
   const today = jodi();
   for (const k of M.comptes.values()) Object.assign(k, { _txs: [], _local: 0, _jodi: 0, _joursPeye: new Set() });
