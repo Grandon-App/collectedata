@@ -28,6 +28,7 @@ export function tablo(ctx) {
   const { stats } = ctx;
   return `
   <div class="band">${hello(ctx)}<h1>Tablo de bò</h1></div>
+  <div class="tablo-g">
   <div class="card float sum">
     ${ring(pct(stats.peye, stats.pouJodi), `${stats.peye}/${stats.pouJodi}`)}
     <div class="grow"><span class="sum-l">Peman jodi a</span><b class="sum-v">${gd(stats.kolekte)}</b><small>${soutit(stats)}</small></div>
@@ -42,6 +43,7 @@ export function tablo(ctx) {
     <a class="tile" href="#/kliyan">${ICO.kliyan}<span>Kliyan</span></a>
     <a class="tile pri" href="#/epay">${ICO.epay}<span>Epay</span></a>
     <a class="tile" href="#/rapo">${ICO.rapo}<span>Rapò</span></a>
+  </div>
   </div>`;
 }
 
@@ -75,13 +77,16 @@ export function epay(ctx) {
   const FILT = [["jodi", "Jodi a", stats.pouJodi], ["tout", "Tout", stats.aktif], ["reta", "An reta", stats.anReta]];
   let body = "";
   if (ong === "kont") {
-    body = `
+    // Wrapper .ep-2 / section yo: sou laptop 2 kolòn (Peman jodi a | Kont ak cycle aktif); sou telefòn yo pa chanje anyen.
+    body = `<div class="ep-2"><section class="ep-jodi">
     <h2>Peman jodi a <small>${stats.peye}/${stats.pouJodi}</small></h2>
     <div class="list grid-t" id="jodi-list">${ctx.jodiHtml || `<p class="empty">Pa gen peman ki tonbe jodi a.</p>`}</div>
+    </section><section class="ep-kont">
     <h2>Kont ak cycle aktif <small>${stats.aktif}</small></h2>
     <div class="chips filt" role="group" aria-label="Filt">${FILT.map(([v, l, n]) => `<button type="button" class="chip ${filt === v ? "on" : ""}" data-filt="${v}">${l}<small>${n}</small></button>`).join("")}</div>
     <input id="q" type="search" class="search" placeholder="Chèche kliyan oswa nimewo kont…" aria-label="Chèche kont" value="${h(q)}" autocomplete="off">
-    <div class="list grid-t" id="kont">${ctx.kontHtml}</div>`;
+    <div class="list grid-t" id="kont">${ctx.kontHtml}</div>
+    </section></div>`;
   } else if (ong === "tx") {
     body = `${ctx.demannHtml ? `<h2>Demann retrè ak viman</h2><div class="list">${ctx.demannHtml}</div>` : ""}
     <h2>Tranzaksyon yo</h2><div class="list">${ctx.txHtml || `<p class="empty">Poko gen tranzaksyon.</p>`}</div>`;
@@ -110,6 +115,7 @@ export function fich(ctx) {
   const akt = I.aktivite?.html ? I.aktivite : I.sekte?.html ? I.sekte : I.aktivite || { label: "Aktivite", html: "" };
   const aktSub = (I.aktivite?.html ? [I.sekte?.html, I.kapasite?.html] : [I.kapasite?.html]).filter(Boolean).join(" · ");
   return `
+  <div class="fich-g">
   <div class="band fich-h">
     <div class="band-top"><a href="#/kliyan" class="back">‹ Kliyan</a><a class="btn gold" href="${ctx.hrefModifye}">${ICO.modifye}Modifye</a></div>
     <div class="fich-id">
@@ -141,6 +147,7 @@ export function fich(ctx) {
         ${man && x.solde != null ? `<div class="sm bal">${t("Balans")}: <b>${gd(x.solde)}</b></div>` : ""}
         ${bar(x.pwosan)}</a>`).join("") || `<p class="empty">Pa gen cycle.</p>`}</div>
     </div>
+  </div>
   </div>`;
 }
 
@@ -148,6 +155,7 @@ export function fich(ctx) {
 export function cycleTop(ctx) {
   const { k, c, man, fè, prevu } = ctx;
   return `
+  <div class="cyc-g">
   <div class="band cyc-b">
     <div class="band-top"><a href="#/epay" class="back">‹ Epay</a><a class="band-k" href="${ctx.hrefKliyan}">${av(c, "thumb", true)}<span>${d(non(c))}</span>${ICO.retou}</a></div>
     <h1>${d(k.no_compte || t("Cycle poko voye"))} ${ctx.badges.kont} ${ctx.badges.pend}</h1>
@@ -169,7 +177,8 @@ export function cycleTop(ctx) {
     ${k.jours_paiement?.length ? `<div class="wide"><span>Peman jiska jodi a</span><b>${fè} ${t("jou peye")} · ${prevu} ${t("jou prevwa")}${ctx.anReta ? ` · <span class="reta">${ctx.anReta} jou an reta</span>` : ""}</b>
       ${bar(pct(fè, prevu), "", "Peman jiska jodi a")}</div>` : ""}
   </div>
-  ${k._actif ? `<div class="btn-row"><a class="btn pri" href="${ctx.hrefTx}" data-act="tx">＋ Tranzaksyon</a><button type="button" class="btn" id="papeye">Pa peye · Fidbak</button></div>` : ""}`;
+  ${k._actif ? `<div class="btn-row"><a class="btn pri" href="${ctx.hrefTx}" data-act="tx">＋ Tranzaksyon</a><button type="button" class="btn" id="papeye">Pa peye · Fidbak</button></div>` : ""}
+  </div>`;
 }
 
 // ---------- Rapò ----------
@@ -186,6 +195,7 @@ export function rapo(ctx) {
     <div class="jr" role="tablist" aria-label="Jou">${jou.map((x) => `<button type="button" role="tab" aria-selected="${x.on}" class="jchip ${x.on ? "on" : ""}" data-j="${x.i}">${x.label}<small>${datKout(x.date)}</small></button>`).join("")}</div>
     ${K("kach", "Kach nan men pou remèt nan kès", kpi.kach, gd(kpi.kach), `Depo − retrè peye · ${t("frè ak viman pa ladan l")}`, "main")}
   </div>
+  <div class="rapo-g">
   <div class="kpis">
     ${K("depo", "Depo ankese", kpi.depo, `<span class="in">${gd(kpi.depo)}</span>`, `${kpi.nDepo} depo`)}
     ${K("retre", "Retrè peye", kpi.retre, `<span class="out">${gd(kpi.retre)}</span>`, `${kpi.nRetre} retrè`)}
@@ -205,9 +215,12 @@ export function rapo(ctx) {
       <div class="legend"><span class="l1"><b>${sw?.peye || 0}</b> Peye</span><span class="l2"><b>${sw?.fidbak || 0}</b> Fidbak</span><span class="l3"><b>${sw?.pokoWe || 0}</b> Poko wè</span></div>
     </div>
   </div>
+  <div class="rapo-tx">
   ${poko ? `<p class="note warn">${poko} tranzaksyon poko voye: yo konte nan rapò a, men sèvè a poko resevwa yo.</p>` : ""}
   <h2>Tranzaksyon mwen yo <small>${ctx.nTx}</small></h2>
-  <div class="list">${ctx.txHtml || `<p class="empty">Pa gen tranzaksyon ${jouTxt}.</p>`}</div>`;
+  <div class="list">${ctx.txHtml || `<p class="empty">Pa gen tranzaksyon ${jouTxt}.</p>`}</div>
+  </div>
+  </div>`;
 }
 
 export default {

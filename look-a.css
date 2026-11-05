@@ -449,3 +449,140 @@ html[data-look="a"] .center { text-align: center; }
   html[data-look="a"] *, html[data-look="a"] *::before, html[data-look="a"] *::after { transition: none !important; animation: none !important; }
   html[data-look="a"] .btn:active { transform: none; }
 }
+
+/* ===================== Laptop / ekran laj (≥ 1024 px) =====================
+   Navigasyon an vin yon kolòn ble marin agòch anba ba a (lajè --nav-w); kontni an pi laj ak gride 2 kolòn.
+   Règ telefòn/tablèt yo (pilil ki flote, padding anba, ba santre) remèt a zewo isit la. Kontra: LOOKS.md § Laptop.
+   Wrapper yo (.tablo-g, .ep-2, .fich-g, .cyc-g, .rapo-g, .rapo-tx) soti nan look-a.js; sou telefòn yo se blòk senp. */
+@media (min-width: 1024px) {
+  html[data-look="a"] { --nav-w: 240px; --gx: 32px; --nav-item: rgba(223, 230, 243, .78); --nav-dim: rgba(223, 230, 243, .66); --nav-hover: rgba(255, 255, 255, .08); --nav-line: rgba(255, 255, 255, .08); }
+
+  /* --- Ba anwo: rete ble marin, sou tout lajè a (pa santre ankò); mak la aliyen ak ikòn kolòn nan (12 + 14 px) --- */
+  html[data-look="a"] #bar { padding-left: 26px; padding-right: 28px; }
+  html[data-look="a"] body.has-nav #bar { margin-left: calc(-1 * var(--nav-w)); } /* body gen padding-left = --nav-w; ba a dwe kouvri tout lajè a */
+
+  /* --- Kolòn navigasyon (fixed, anba ba a, jiska anba ekran an; li ka woule si ekran an kout) --- */
+  html[data-look="a"] .tabbar { position: fixed; left: 0; right: auto; top: var(--bar-h, 64px); bottom: 0; width: var(--nav-w); transform: none; z-index: 20;
+    display: flex; flex-direction: column; gap: 8px; padding: 16px 12px; background: var(--nav); border: 0; border-right: 1px solid var(--nav-line); border-radius: 0; box-shadow: none;
+    overflow-y: auto; overflow-x: hidden; }
+  html[data-look="a"] .tabbar a { flex-direction: row; justify-content: flex-start; align-items: center; gap: 12px; flex-shrink: 0; min-height: 48px; padding: 0 14px; border-radius: 12px;
+    color: var(--nav-item); font-size: .95rem; font-weight: 600; letter-spacing: 0; transition: background-color .15s, color .15s; }
+  html[data-look="a"] .tabbar svg, html[data-look="a"] .tabbar a.on svg { width: 22px; height: 22px; flex-shrink: 0; }
+  html[data-look="a"] .tabbar a.on { background: var(--gold); color: var(--gold-ink); font-weight: 800; }
+  html[data-look="a"] .nav-foot { display: flex; flex-direction: column; gap: 2px; flex-shrink: 0; margin-top: auto; padding: 14px 14px 4px; border-top: 1px solid var(--nav-line); font-size: .8rem; color: var(--nav-item); }
+  html[data-look="a"] .nav-foot .nav-moi { color: #fff; font-weight: 700; font-size: .9rem; overflow-wrap: anywhere; }
+  html[data-look="a"] .nav-foot .nav-ver { color: var(--nav-dim); font-size: .75rem; }
+
+  /* --- Kontni: kolòn santre 1160 px (1240 a ≥ 1440), pa gen ba anba ankò --- */
+  html[data-look="a"] main { max-width: 1160px; padding: 0 var(--gx) 40px; }
+  html[data-look="a"] body.has-nav main { padding-bottom: 40px; }
+  html[data-look="a"] body.has-nav .toast { left: auto; right: 24px; bottom: 24px; max-width: 420px; margin: 0; }
+  html[data-look="a"] h2 { font-size: 1.1rem; margin: 24px 0 12px; }
+  html[data-look="a"] .card { padding: 18px 20px; }
+  html[data-look="a"] .card.info { padding: 4px 20px; }
+  html[data-look="a"] .row { padding: 14px 16px; }
+
+  /* --- Band ble marin: sou tout kolòn kontni an, tèks li aliyen ak kontni an (--gx) --- */
+  html[data-look="a"] .band { padding-top: 16px; padding-left: var(--gx); padding-right: var(--gx); }
+  html[data-look="a"] .band h1 { font-size: 1.85rem; }
+  html[data-look="a"] .band .hello { margin-top: 4px; font-size: .88rem; }
+  html[data-look="a"] .band.cyc-b { padding-bottom: 56px; }
+  html[data-look="a"] main > .page-head { padding: 20px var(--gx) 46px; margin-bottom: 16px; }
+  html[data-look="a"] main > .page-head h1 { font-size: 1.85rem; }
+  html[data-look="a"] main > .page-head + .search-row { max-width: 760px; }
+  /* Paj segondè (.back + h1): tit santre, kontni an yon kolòn 720 px santre (fòm, lis, nòt). Band lan rete sou tout lajè a. */
+  html[data-look="a"] main > .back ~ * { max-width: 720px; margin-left: auto; margin-right: auto; }
+  html[data-look="a"] main > .back + h1 { max-width: none; padding: 50px var(--gx) 40px; font-size: 1.85rem; justify-content: center; text-align: center; }
+  html[data-look="a"] main > .back + h1 + p.mut { max-width: none; padding: 0 var(--gx) 40px; text-align: center; font-size: .95rem; }
+  html[data-look="a"] main > .back + h1:has(+ h2), html[data-look="a"] main > .back + h1 + p.mut:has(+ h2) { padding-bottom: 24px; }
+  html[data-look="a"] .form { max-width: 720px; }
+  /* Paramèt (.page-head + h2): seksyon yo ≤ 760 px; kat look yo deja sou yon liy (3 kolòn). */
+  html[data-look="a"] main:has(> .page-head + h2) > :not(.page-head) { max-width: 760px; }
+
+  /* --- Tablo de bò: kat rezime (7fr) + 3 tuil yo (5fr, youn anba lòt, ikòn + etikèt) sou yon sèl liy ki flote sou band lan --- */
+  html[data-look="a"] .tablo-g { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 16px; align-items: stretch; margin-top: -44px; position: relative; }
+  html[data-look="a"] .tablo-g .card.float { margin: 0; }
+  html[data-look="a"] .tablo-g .tiles { margin: 0; grid-template-columns: minmax(0, 1fr); grid-auto-rows: minmax(0, 1fr); gap: 10px; }
+  html[data-look="a"] .tablo-g .tile { flex-direction: row; justify-content: flex-start; gap: 14px; min-height: 52px; padding: 8px 20px; font-size: .95rem; text-align: left; box-shadow: var(--sh-s); }
+  html[data-look="a"] .tablo-g .tile.pri { box-shadow: var(--sh-b); }
+  html[data-look="a"] .tablo-g .tile svg { width: 24px; height: 24px; }
+  html[data-look="a"] .sum { padding: 18px 24px; gap: 18px; }
+
+  /* --- Epay: rezime + onglè anlè; onglè Kont = «Peman jodi a» | «Kont ak cycle aktif» kòt a kòt --- */
+  html[data-look="a"] .tabs { max-width: 560px; margin-top: 20px; }
+  html[data-look="a"] .ep-2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 28px; align-items: start; }
+  html[data-look="a"] .ep-2 .grid-t { grid-template-columns: minmax(0, 1fr); }
+  html[data-look="a"] .ep-2 #q { max-width: 480px; }
+  html[data-look="a"] #ong > .list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  html[data-look="a"] #ong > .note { max-width: 760px; }
+
+  /* --- Fich kliyan: band sou tout lajè; gòch = tuil + enfòmasyon, dwat = cycle yo (dènye liy lan fleksib pou kolòn gòch la rete kole) --- */
+  html[data-look="a"] .fich-g { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto auto auto 1fr; column-gap: 28px; row-gap: 0; align-items: start; }
+  html[data-look="a"] .fich-g > .band { grid-area: 1 / 1 / 2 / 3; }
+  html[data-look="a"] .fich-g > .note { grid-area: 2 / 1 / 3 / 3; }
+  html[data-look="a"] .fich-g > .tiles { grid-area: 3 / 1 / 4 / 2; margin-top: 16px; }
+  html[data-look="a"] .fich-2 { display: contents; }
+  html[data-look="a"] .fich-2 > div:first-child { grid-area: 4 / 1 / 5 / 2; }
+  html[data-look="a"] .fich-2 > div:last-child { grid-area: 3 / 2 / 5 / 3; }
+  html[data-look="a"] .fich-2 > div > h2 { margin-top: 20px; }
+  html[data-look="a"] .fich-id { gap: 20px; margin-top: 12px; }
+  html[data-look="a"] .fich-id .avatar { width: 96px; height: 96px; font-size: 2.1rem; }
+  html[data-look="a"] .fich-id h1 { font-size: 1.75rem; }
+
+  /* --- Fich cycle: solde (gòch) + estatistik (dwat) flote ansanm sou band lan; bouton yo anba solde a; lis yo anba --- */
+  html[data-look="a"] .cyc-g { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto auto 1fr auto; column-gap: 24px; row-gap: 0; align-items: start; }
+  html[data-look="a"] .cyc-g > .band { grid-area: 1 / 1 / 2 / 3; }
+  html[data-look="a"] .cyc-g > .solde { grid-area: 2 / 1 / 3 / 2; }
+  html[data-look="a"] .cyc-g > .btn-row { grid-area: 3 / 1 / 4 / 2; }
+  html[data-look="a"] .cyc-g > .stats { grid-area: 2 / 2 / 4 / 3; grid-template-columns: repeat(2, 1fr); margin-top: -44px; position: relative; border-radius: 20px; box-shadow: var(--sh); padding: 18px 20px; }
+  html[data-look="a"] .cyc-g > .stats > .wide:last-child { grid-column: 1 / -1; } /* «Peman jiska jodi a» + ba pwogrè sou tout lajè kat la */
+  html[data-look="a"] .cyc-g > .note { grid-area: 4 / 1 / 5 / 3; }
+
+  /* --- Rapò: band = tit + 3 chip jou yo sou menm liy, gwo KPI anba; KPI 4 pa liy; swivi (gòch) | tranzaksyon (dwat) --- */
+  html[data-look="a"] .band.rapo-h { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 24px; align-items: center; }
+  html[data-look="a"] .band.rapo-h h1 { grid-area: 1 / 1; }
+  html[data-look="a"] .band.rapo-h .jr { grid-area: 1 / 2; display: flex; gap: 8px; margin-top: 0; }
+  html[data-look="a"] .band.rapo-h .jchip { min-width: 128px; padding: 6px 16px; }
+  html[data-look="a"] .band.rapo-h .kpi.main { grid-area: 2 / 1 / 3 / 3; }
+  html[data-look="a"] .rapo-g { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 28px; align-items: start; }
+  html[data-look="a"] .rapo-g > .kpis { grid-column: 1 / -1; margin-top: 16px; }
+  html[data-look="a"] .rapo-g > .rapo-2 { display: block; }
+  html[data-look="a"] .rapo-tx > h2 { margin-top: 10px; }
+
+  /* --- Koneksyon: band sou tout lajè ekran an, kat 440 px santre --- */
+  html[data-look="a"] main:has(> .login) { max-width: none; padding: 0; }
+  html[data-look="a"] .login { padding: 48px var(--gx) 40px; }
+  html[data-look="a"] .login::before { left: 0; right: 0; height: 23rem; }
+  html[data-look="a"] .login form.card, html[data-look="a"] .login .note { max-width: 440px; margin-left: auto; margin-right: auto; }
+  html[data-look="a"] .login form.card { padding: 24px; }
+}
+/* Laptop laj (≥ 1280 px): kolòn 5fr/7fr, estatistik cycle 4 pa liy, lis cycle yo an 2 kolòn */
+@media (min-width: 1280px) {
+  html[data-look="a"] .ep-2, html[data-look="a"] .fich-g, html[data-look="a"] .rapo-g, html[data-look="a"] .cyc-g { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); }
+  html[data-look="a"] .cyc-g > .stats { grid-template-columns: repeat(4, 1fr); }
+  html[data-look="a"] #cycle > .list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+}
+@media (min-width: 1440px) {
+  html[data-look="a"] main { max-width: 1240px; }
+}
+/* Eta hover (laptop ak sourit/trackpad sèlman): liy ak kat yo leve yon ti kras, bouton yo vin pi fonse, chip/onglè yo pran yon ti koulè.
+   Limite a ≥ 1024 px pou foto telefòn/tablèt yo rete idantik (pwentè Playwright la ta deklanche l). */
+@media (hover: hover) and (min-width: 1024px) {
+  html[data-look="a"] .tabbar a:hover:not(.on) { background: var(--nav-hover, rgba(255, 255, 255, .08)); color: #fff; }
+  html[data-look="a"] .row, html[data-look="a"] .tile, html[data-look="a"] .look-opt, html[data-look="a"] .chip, html[data-look="a"] .tab, html[data-look="a"] .jchip { transition: box-shadow .15s, background-color .15s, border-color .15s, color .15s; }
+  html[data-look="a"] a.row:hover, html[data-look="a"] .row.kr:hover, html[data-look="a"] .row:has(> a.lnk):hover { box-shadow: var(--sh); }
+  html[data-look="a"] .tile:not(.off):hover { box-shadow: var(--sh); }
+  html[data-look="a"] .tile.pri:hover { background: var(--pri-2); }
+  html[data-look="a"] .btn:hover { background: color-mix(in srgb, var(--card) 92%, var(--ink)); }
+  html[data-look="a"] .btn.pri:hover, html[data-look="a"] .sum .sum-b:hover { background: var(--pri-2); }
+  html[data-look="a"] .btn.gold:hover, html[data-look="a"] main > .page-head .btn:hover { background: color-mix(in srgb, var(--gold) 92%, #000); }
+  html[data-look="a"] .btn.danger:hover { background: var(--err-bg); }
+  html[data-look="a"] .btn.danger-full:hover { background: color-mix(in srgb, var(--err-fill) 92%, #000); }
+  html[data-look="a"] .btn:disabled:hover { background: var(--card); }
+  html[data-look="a"] .chip:hover:not(.on) { background: var(--track); }
+  html[data-look="a"] .tab:hover:not(.on) { color: var(--ink); background: color-mix(in srgb, var(--seg-on) 55%, transparent); }
+  html[data-look="a"] .jchip:hover:not(.on) { background: var(--band-chip); }
+  html[data-look="a"] .look-opt:hover:not(.on) { border-color: var(--gold-l); }
+  html[data-look="a"] .lang-sw button:hover:not(.on) { background: var(--track); color: var(--ink); }
+  html[data-look="a"] .back:hover, html[data-look="a"] .band-k:hover span, html[data-look="a"] a.lnk:hover > b { text-decoration: underline; }
+}

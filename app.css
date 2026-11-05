@@ -145,6 +145,7 @@ b.in { color: var(--ok); } b.out { color: var(--err); }
    Chak look re-ekri règ sa yo ak pwòp estil li (gade LOOKS.md § Laptop). */
 @media (min-width: 1024px) {
   body.has-nav { padding-left: var(--nav-w, 0px); } /* chak look mete --nav-w (sinon pa gen kolòn) */
+  body.has-nav #bar { margin-left: calc(-1 * var(--nav-w, 0px)); } /* ba a soti nan padding body a: li sou tout lajè a */
   body.has-nav main { padding-bottom: 40px; }
   body.has-nav .toast { left: auto; right: 24px; bottom: 24px; transform: none; max-width: 420px; }
   .tabbar { position: fixed; left: 0; right: auto; top: var(--bar-h, 56px); bottom: 0; width: var(--nav-w, 232px); transform: none;
