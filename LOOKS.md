@@ -132,6 +132,7 @@ Estrikti obligatwa sou laptop:
 - `#nav.tabbar`: `position: fixed; left: 0; top: var(--bar-h); bottom: 0; width: var(--nav-w)` (look la chwazi 220–260 px e mete `--nav-w` sou `html[data-look="x"]`), kolòn vètikal: chak `a` = ikòn + etikèt sou yon liy (≥ 48 px wotè), eta aktif klè, hover (`@media (hover: hover)`), `:focus-visible`. `.nav-foot` (non ajan an, wòl, vèsyon) parèt anba kolòn nan (`margin-top: auto`).
 - `body.has-nav { padding-left: var(--nav-w) }` (deja nan app.css; li aktif sèlman lè look la mete `--nav-w`); `main` 1120–1240 px maks, padding 24–32 px; `body.has-nav main { padding-bottom: 40px }` (pa gen ba anba ankò). Toast anba adwat. Modal santre.
 - Paj yo (gride laptop): Epay = rezime/estatistik sou tout lajè, lis «Peman jodi a» ak «Kont ak cycle aktif» kòt a kòt (2 kolòn, ~5fr/7fr) oswa liy yo an 2 kolòn; rechèch `#q` ≤ 480 px. Tablo = tuil yo sou yon liy. Kliyan = `.list.grid-t` 2 kolòn (3 a ≥ 1440 px, deja nan app.css). Fich = kolòn gòch (avatar, aksyon, enfòmasyon) + kolòn dwat (cycle yo). Cycle = tèt la an 2 kolòn (solde + estatistik), lis yo anba. Rapò = KPI 4 pa liy, swivi/graf + tranzaksyon kòt a kòt. Fòm = 720 px maks, santre. Paramèt = kat look yo sou yon liy, seksyon ≤ 760 px. Koneksyon = kat santre ~440 px.
+- Look C: tokens laptop yo (`--nav-w`, `--gx`…) dwe sou `html[data-look="c"][data-look="c"]` (doub atribi) anndan `@media` a, sinon règ tokens baz la (menm espesifisite (0,2,1)) genyen.
 - Pa kraze telefòn/tablèt: tout tès yo dwe pase toujou.
 
 ```bash
