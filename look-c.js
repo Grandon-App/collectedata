@@ -132,8 +132,8 @@ export function epay(ctx) {
     ${stile("Kolekte jodi a", mG(stats.kolekte, "ok"), `<span class="mono">${stats.peye} / ${stats.pouJodi}</span> kliyan`)}
     ${stile("Demann", `<b class="mono ${stats.enAtant ? "gold" : ""}">${stats.enAtant}</b>`, "retrè · viman")}
   </div>
-  <div class="tabs" role="tablist">${ongs.map(([k, l, n]) => `<button type="button" role="tab" class="tab ${k === ong ? "on" : ""}" aria-selected="${k === ong}" data-ong="${k}">${l}${n ? `<span class="cnt-b mono">${n}</span>` : ""}</button>`).join("")}</div>
-  <div id="ong">${body}</div>`;
+  <div class="tabs" role="tablist">${ongs.map(([k, l, n]) => `<button type="button" role="tab" id="tab-${k}" class="tab ${k === ong ? "on" : ""}" aria-selected="${k === ong}" aria-controls="ong" data-ong="${k}">${l}${n ? `<span class="cnt-b mono">${n}</span>` : ""}</button>`).join("")}</div>
+  <div id="ong" role="tabpanel" aria-labelledby="tab-${ong}">${body}</div>`;
 }
 
 // ---------- Fich kliyan ----------
