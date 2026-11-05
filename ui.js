@@ -14,7 +14,7 @@ function ouvrir(html, { onOpen } = {}) {
     const fin = (v) => {
       wrap.classList.add("out");
       document.removeEventListener("keydown", key, true);
-      setTimeout(() => { wrap.remove(); if (!document.querySelector(".modal-wrap")) document.body.classList.remove("modal-open"); prev?.focus?.(); }, 120);
+      setTimeout(() => { wrap.remove(); if (!document.querySelector(".modal-wrap")) document.body.classList.remove("modal-open"); remetFokis(prev); }, 120);
       resolve(v);
     };
     const key = (e) => {
@@ -117,4 +117,20 @@ export function askChoice({ titre, tekst = "", options, noteLabel = "Nòt", note
       <label class="modal-l">${h(t(noteLabel))}<textarea name="note" rows="2"></textarea></label>
     </form>
     <div class="modal-b"><button class="btn" data-v="no">${h(t("Anile"))}</button><button class="btn pri" data-v="ok">${h(t(ok))}</button></div>`, opts);
+}
+
+// Remete fokis la apre yon popup fèmen: sou eleman ki te genyen l, oswa (si paj la re-rann epi eleman an disparèt)
+// sou menm eleman an (menm data-papeye / id / href), sinon sou tit paj la.
+function remetFokis(prev, ankò = true) {
+  // Paj la ka re-rann kèk milisegonn apre (anrejistreman): re-verifye 2 fwa si fokis la tonbe sou <body>.
+  if (ankò) [300, 900].forEach((ms) => setTimeout(() => { if (document.activeElement === document.body && !document.querySelector(".modal-wrap")) remetFokis(prev, false); }, ms));
+  if (prev && prev.isConnected && prev !== document.body) { prev.focus?.(); return; }
+  let sel = null;
+  if (prev?.dataset?.papeye) sel = `[data-papeye="${CSS.escape(prev.dataset.papeye)}"]`;
+  else if (prev?.id) sel = `#${CSS.escape(prev.id)}`;
+  else if (prev?.getAttribute?.("href")) sel = `a[href="${CSS.escape(prev.getAttribute("href"))}"]`;
+  const same = sel ? document.querySelector(sel) : null;
+  if (same) { same.focus?.(); return; }
+  const h1 = document.querySelector("#app h1");
+  if (h1) { if (!h1.hasAttribute("tabindex")) h1.setAttribute("tabindex", "-1"); h1.focus({ preventScroll: true }); }
 }
