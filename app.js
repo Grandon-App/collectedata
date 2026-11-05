@@ -432,9 +432,11 @@ async function viewEpay() {
   }
   if (ongEpay === "valid") ctx.validHtml = enAtant.map((x) => liDemande(M, x, { decide: true })).join("");
   $app.innerHTML = `<div id="epay">${P.epay(ctx)}</div>`;
-  $app.querySelectorAll("[data-ong]").forEach((b) => (b.onclick = () => { ongEpay = b.dataset.ong; viewEpay(); }));
-  $app.querySelectorAll("[data-filt]").forEach((b) => (b.onclick = () => { filtKont = b.dataset.filt; viewEpay(); }));
-  $app.querySelectorAll("[data-ffb]").forEach((b) => (b.onclick = () => { filtFidbak = b.dataset.ffb; viewEpay(); }));
+  // Apre yon klik sou onglè/filt, paj la re-rann: remete fokis la sou menm bouton an (klavye / lektè ekran).
+  const reRann = (sel) => viewEpay().then(() => requestAnimationFrame(() => $app.querySelector(sel)?.focus({ preventScroll: true })));
+  $app.querySelectorAll("[data-ong]").forEach((b) => (b.onclick = () => { ongEpay = b.dataset.ong; reRann(`[data-ong="${ongEpay}"]`); }));
+  $app.querySelectorAll("[data-filt]").forEach((b) => (b.onclick = () => { filtKont = b.dataset.filt; reRann(`[data-filt="${filtKont}"]`); }));
+  $app.querySelectorAll("[data-ffb]").forEach((b) => (b.onclick = () => { filtFidbak = b.dataset.ffb; reRann(`[data-ffb="${filtFidbak}"]`); }));
   const q = document.getElementById("q");
   if (q) q.oninput = () => { filtEpay = q.value; const box = document.getElementById("kont"); if (box) { box.innerHTML = rowsKont(); brancherKont(); } };
   const brancherKont = () => $app.querySelectorAll("[data-papeye]").forEach((b) => (b.onclick = () => { const k = M.comptes.get(b.dataset.papeye); paPeye(k, M.clients.get(k.id_personne) || {}); }));
@@ -477,7 +479,7 @@ async function viewRapo() {
     parLe: S.kolekParLe(txs), poko, txHtml: txs.map((x) => liTx(M, x)).join(""), nTx: txs.length,
   };
   $app.innerHTML = `<div id="rapo">${L().parts.rapo(ctx)}</div>`;
-  $app.querySelectorAll("[data-j]").forEach((b) => (b.onclick = () => { jouRapo = Number(b.dataset.j); viewRapo(); }));
+  $app.querySelectorAll("[data-j]").forEach((b) => (b.onclick = () => { jouRapo = Number(b.dataset.j); viewRapo().then(() => requestAnimationFrame(() => $app.querySelector(`[data-j="${jouRapo}"]`)?.focus({ preventScroll: true }))); }));
 }
 
 // ---------- Chan okipasyon (komen pou nouvo kliyan ak modifye) ----------
