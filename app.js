@@ -10,7 +10,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "2.1";
+const APP_VERSION = "2.2";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin" };
 // Preferans aparans: pou aparèy sa a sèlman.
 function prefs() {
@@ -382,6 +382,54 @@ function champsOccupation(c = {}) {
       <label>Kapasite distribisyon<select name="capacite_distribution"><option value="">Chwazi…</option>${TX.CAPACITES.map((x) => opt(x, c.capacite_distribution)).join("")}</select></label>
     </div>`;
 }
+const PIECES = ["NIF", "CIN", "Passeport"];
+const ageMax = () => S.ajouteJou(S.jodi(), -16 * 365 - 4);
+function champsIdentite(c = {}) {
+  return `
+    <label>Pseudo <small class="mut">(non yo konnen l)</small><input name="pseudo" value="${h(c.pseudo || "")}" autocomplete="off"></label>
+    <label>Dat nesans<input name="date_naissance" type="date" value="${h(c.date_naissance || "")}" max="${ageMax()}" min="1915-01-01"></label>
+    <div class="grid2">
+      <label>Pyès idantifikasyon<select name="piece"><option value="">Chwazi…</option>${PIECES.map((x) => opt(x, c.piece)).join("")}</select></label>
+      <label>Nimewo idantifikasyon<input name="numero_piece" value="${h(c.numero_piece || "")}" autocomplete="off" ${c.piece ? "" : "disabled"} placeholder="${c.piece === "NIF" ? "000-000-000-0" : ""}"></label>
+    </div>
+    <p class="mut sm" id="piece-hint"></p>`;
+}
+// NIF: 10 chif, fòma 000-000-000-0. CIN: 10 chif. Paspò: 6 a 12 lèt/chif.
+function verifierPiece(type, num) {
+  const n = String(num || "").trim();
+  if (!type || !n) return null;
+  const dg = n.replace(/\D/g, "");
+  if (type === "NIF" && dg.length !== 10) return "Yon NIF dwe gen 10 chif (000-000-000-0).";
+  if (type === "CIN" && dg.length !== 10) return "Yon CIN dwe gen 10 chif.";
+  if (type === "Passeport" && !/^[A-Za-z0-9]{6,12}$/.test(n.replace(/[\s-]/g, ""))) return "Yon nimewo paspò dwe gen 6 a 12 lèt oswa chif.";
+  return null;
+}
+function brancherIdentite(f) {
+  const hint = () => (document.getElementById("piece-hint").textContent = t(verifierPiece(f.piece.value, f.numero_piece.value) || ""));
+  f.piece.onchange = () => {
+    f.numero_piece.disabled = !f.piece.value;
+    f.numero_piece.placeholder = f.piece.value === "NIF" ? "000-000-000-0" : "";
+    if (f.piece.value) f.numero_piece.focus();
+    hint();
+  };
+  f.numero_piece.oninput = () => {
+    if (f.piece.value === "NIF") { // fòma otomatik 000-000-000-0
+      const dg = f.numero_piece.value.replace(/\D/g, "").slice(0, 10);
+      f.numero_piece.value = [dg.slice(0, 3), dg.slice(3, 6), dg.slice(6, 9), dg.slice(9)].filter(Boolean).join("-");
+    }
+    hint();
+  };
+}
+async function okIdentite(f, err) {
+  const v = Object.fromEntries(new FormData(f));
+  if (v.piece && !String(v.numero_piece || "").trim()) { err.textContent = t("Mete nimewo pyès la."); return false; }
+  if (v.date_naissance && v.date_naissance > ageMax()) { err.textContent = t("Kliyan an dwe gen omwen 16 an."); return false; }
+  const pb = verifierPiece(v.piece, v.numero_piece);
+  if (pb && !(await ui.ask({ titre: "Verifye nimewo pyès la", tekst: pb, ok: "Kontinye", anile: "Korije", ikon: "!" }))) return false;
+  return true;
+}
+const age = (iso) => { if (!iso) return null; const [y, m, j] = iso.split("-").map(Number); const n = new Date(); let a = n.getFullYear() - y; if (n.getMonth() + 1 < m || (n.getMonth() + 1 === m && n.getDate() < j)) a--; return a; };
+
 function brancherOccupation(f) {
   f.secteur.onchange = () => {
     const l = TX.SECTEURS[f.secteur.value];
@@ -410,10 +458,8 @@ async function viewClientNew() {
     </div>
     <label>Telefòn * <small class="mut">(8 chif)</small><input name="telephone" inputmode="tel" required placeholder="3700 1234"></label>
     <div id="dbl" aria-live="polite"></div>
-    <div class="grid2">
-      <label>NIF / CIN<input name="nif" autocomplete="off"></label>
-      <label>Sèks<select name="sexe"><option value="">—</option><option value="F">Fi</option><option value="M">Gason</option></select></label>
-    </div>
+    <label>Sèks<select name="sexe"><option value="">—</option><option value="F">Fi</option><option value="M">Gason</option></select></label>
+    ${champsIdentite()}
     ${champsOccupation()}
     <label>Foto kliyan an<input name="photo" type="file" accept="image/*" capture="environment"></label>
     <img id="prev" class="prev" alt="" hidden>
@@ -424,6 +470,7 @@ async function viewClientNew() {
   </form>`;
   const f = document.getElementById("f");
   let gps = null, photo = null;
+  brancherIdentite(f);
   brancherOccupation(f);
   brancherGps(document.getElementById("gps"), (g) => (gps = g))();
   // Anti-doublon: lè telefòn nan konplè, chèche l nan tout baz la.
@@ -466,6 +513,7 @@ async function viewClientNew() {
     const tel = api.telefon8(v.telephone);
     if (!v.prenom.trim() || !v.nom.trim()) return (err.textContent = t("Mete prenon ak non kliyan an."));
     if (!tel) return (err.textContent = t("Nimewo telefòn nan dwe gen 8 chif."));
+    if (!(await okIdentite(f, err))) return;
     const dbl = [...M.clients.values()].find((c) => String(c.telephone || "").replace(/\D/g, "").endsWith(tel));
     if (dbl && !(await ui.ask({ titre: "Kliyan sa a deja egziste?", tekst: `${non(dbl)} · ${t("gen menm telefòn lan.")}`, foto: dbl.photo_url,
       ok: "Kreye yon lòt kanmenm", anile: "Wè fich li", ikon: "!" }))) return go(`#/kliyan/${dbl.id_personne}`);
@@ -473,7 +521,7 @@ async function viewClientNew() {
     let photo_id = null;
     if (photo) { photo_id = S.uuid(); await db.put("photos", { id: photo_id, blob: photo }); }
     await S.enqueue("client", {
-      id, prenom: v.prenom.trim(), nom: v.nom.trim(), telephone: tel, nif: v.nif.trim(), sexe: v.sexe,
+      id, prenom: v.prenom.trim(), nom: v.nom.trim(), telephone: tel, sexe: v.sexe,
       ...valeursOccupation(v), gps, photo_id, capture_le: new Date().toISOString(),
     });
     toast(navigator.onLine ? "Kliyan anrejistre." : "Kliyan anrejistre sou telefòn nan. L ap voye lè gen entènèt.");
@@ -490,6 +538,7 @@ async function viewClientEdit(id) {
   <a href="#/kliyan/${id}" class="back">‹ ${d(non(c))}</a>
   <h1>Modifye enfòmasyon yo</h1>
   <form id="f" class="card form" novalidate>
+    ${champsIdentite(c)}
     ${champsOccupation(c)}
     <div class="gps" id="gps"><span class="gps-t mut sm" aria-live="polite">${c.gps_lat != null ? "GPS aktive" : "Pa gen GPS"}</span><button type="button" class="btn sm">Pran pozisyon kounye a</button></div>
     <p class="err-msg" id="err" role="alert"></p>
@@ -497,10 +546,12 @@ async function viewClientEdit(id) {
   </form>`;
   const f = document.getElementById("f");
   let gps = null;
+  brancherIdentite(f);
   brancherOccupation(f);
   brancherGps(document.getElementById("gps"), (g) => (gps = g));
   f.onsubmit = async (e) => {
     e.preventDefault();
+    if (!(await okIdentite(f, document.getElementById("err")))) return;
     const v = valeursOccupation(Object.fromEntries(new FormData(f)));
     await S.enqueue("maj", { id, ...v, gps, capture_le: new Date().toISOString() }, c._pending ? [id] : []);
     toast("Enfòmasyon yo anrejistre.");
@@ -530,6 +581,9 @@ async function viewClient(id) {
   <div class="page-head sub"><h2>Enfòmasyon kliyan an</h2><a class="btn sm" href="#/kliyan/${id}/modifye">Modifye</a></div>
   <div class="card info">
     ${li("Telefòn", c.telephone ? `<a href="tel:${h(String(c.telephone).replace(/\D/g, ""))}" data-brut>${h(c.telephone)}</a>` : c.tel4 ? `•••• ${c.tel4}` : "", false)}
+    ${li("Pseudo", c.pseudo)}
+    ${li("Dat nesans", c.date_naissance ? `${datFr(c.date_naissance)} · ${age(c.date_naissance)} ${getLang() === "fr" ? "ans" : "an"}` : "", false)}
+    ${li("Pyès idantifikasyon", c.piece ? `${h(c.piece)} · ${d(c.numero_piece || "—")}` : c.numero_piece ? d(c.numero_piece) : "", false)}
     ${li("Adrès", c.adresse)}
     ${li("Kote biznis la", c.lieu_de_travail)}
     ${li("GPS", gpsOk ? `<span class="badge ok">GPS aktive</span> <a href="https://maps.google.com/?q=${c.gps_lat},${c.gps_lng}" target="_blank" rel="noopener">Wè sou kat la</a>` : `<span class="badge warn">Pa gen GPS</span>`, false)}

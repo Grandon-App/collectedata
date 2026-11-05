@@ -111,6 +111,14 @@ const FR = {
   "Dezaktive kont sa a?": "Désactiver ce compte ?", "Ajan an p ap ka konekte ankò.": "L'agent ne pourra plus se connecter.",
   "omwen 8 karaktè": "au moins 8 caractères", "Kliyan sa a deja egziste?": "Ce client existe déjà ?",
   "gen menm telefòn lan.": "a le même téléphone.", "Kreye yon lòt kanmenm": "Créer quand même",
+  // Idantite
+  "Pseudo": "Pseudo", "non yo konnen l": "surnom", "Dat nesans": "Date de naissance", "Pyès idantifikasyon": "Pièce d'identification",
+  "Nimewo idantifikasyon": "Numéro d'identification", "Mete nimewo pyès la.": "Indiquez le numéro de la pièce.",
+  "Kliyan an dwe gen omwen 16 an.": "Le client doit avoir au moins 16 ans.", "Verifye nimewo pyès la": "Vérifiez le numéro de la pièce",
+  "Yon NIF dwe gen 10 chif (000-000-000-0).": "Un NIF doit avoir 10 chiffres (000-000-000-0).", "Yon CIN dwe gen 10 chif.": "Une CIN doit avoir 10 chiffres.",
+  "Yon nimewo paspò dwe gen 6 a 12 lèt oswa chif.": "Un numéro de passeport doit avoir 6 à 12 lettres ou chiffres.",
+  "Korije": "Corriger", "Nimewo pyès": "Numéro de pièce", "deja anrejistre pou yon lòt kliyan.": "déjà enregistré pour un autre client.",
+  "Dat nesans lan pa bon": "Date de naissance invalide",
   // Jou
   "Lendi": "Lundi", "Madi": "Mardi", "Mèkredi": "Mercredi", "Jedi": "Jeudi", "Vandredi": "Vendredi", "Samdi": "Samedi", "Dimanch": "Dimanche",
   "Len": "Lun", "Mad": "Mar", "Mèk": "Mer", "Jed": "Jeu", "Van": "Ven", "Sam": "Sam", "Dim": "Dim",

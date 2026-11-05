@@ -84,11 +84,13 @@ async function remap(oldId, newId) {
 
 const gpsArgs = (g) => ({ p_gps_lat: g?.lat ?? null, p_gps_lng: g?.lng ?? null, p_gps_precision: g?.acc ?? null });
 // Chan fich kliyan an (okipasyon, kote biznis la…)
-export const CHAN_FICH = ["adresse", "lieu_de_travail", "occupation", "secteur", "activite", "point_de_vente", "capacite_distribution"];
+export const CHAN_FICH = ["pseudo", "date_naissance", "piece", "numero_piece",
+  "adresse", "lieu_de_travail", "occupation", "secteur", "activite", "point_de_vente", "capacite_distribution"];
 const majArgs = (p) => ({
   p_id_personne: p.id, p_adresse: p.adresse || null, p_lieu_de_travail: p.lieu_de_travail || null, p_occupation: p.occupation || null,
   p_secteur: p.secteur || null, p_activite: p.activite || null, p_point_de_vente: p.point_de_vente || null,
   p_capacite_distribution: p.capacite_distribution || null, ...gpsArgs(p.gps), p_capture_le: p.capture_le,
+  p_pseudo: p.pseudo || null, p_date_naissance: p.date_naissance || null, p_piece: p.piece || null, p_numero_piece: p.numero_piece || null,
 });
 
 const EXEC = {
@@ -103,7 +105,7 @@ const EXEC = {
       }
     }
     const r = await api.rpc("grandon_inscrire_client", {
-      p_id: p.id, p_prenom: p.prenom, p_nom: p.nom, p_telephone: p.telephone, p_nif: p.nif || null,
+      p_id: p.id, p_prenom: p.prenom, p_nom: p.nom, p_telephone: p.telephone, p_nif: p.numero_piece || p.nif || null,
       p_sexe: p.sexe || null, p_adresse: p.adresse || null, p_activite: p.activite || null, p_photo_url: photo_url,
       ...gpsArgs(p.gps), p_capture_le: p.capture_le,
     });
@@ -228,7 +230,7 @@ export function run({ pull: doPull = true } = {}) {
 export async function pull() {
   const depi = ajouteJou(jodi(), -200);
   const [clients, comptes, plans, txs] = await Promise.all([
-    api.selectAll("grandon_v_clients?select=id_personne,prenom,nom,telephone,code_client,sexe,adresse,lieu_de_travail,occupation,secteur,activite,point_de_vente,capacite_distribution,photo_url,gps_lat,gps_lng&order=prenom"),
+    api.selectAll("grandon_v_clients?select=id_personne,prenom,nom,pseudo,telephone,code_client,sexe,date_naissance,piece,numero_piece,adresse,lieu_de_travail,occupation,secteur,activite,point_de_vente,capacite_distribution,photo_url,gps_lat,gps_lng&order=prenom"),
     api.selectAll("grandon_v_comptes?select=*&order=date_debut.desc"),
     api.selectAll("grandon_plans?actif=is.true&select=montant&order=montant"),
     api.selectAll(`grandon_v_transactions?date_transaction=gte.${depi}&select=id_transaction_epargne,id_compte_epargne,type_transaction,montant,date_transaction,validation_status,solde_apres_transactions,created_by,solde_declare&order=date_transaction`),
