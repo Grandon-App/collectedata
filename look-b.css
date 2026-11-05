@@ -202,6 +202,9 @@ html[data-look="b"] .tiles3.mini .tile { align-items: center; text-align: center
 html[data-look="b"] .tiles3.mini .tile > b { font-size: 1.5rem; }
 html[data-look="b"] .tile.dek { margin: 8px 0 0; }
 html[data-look="b"] .tile.dek > b.amt { font-size: 1.375rem; }
+/* "Balans deklare" se 4yèm tuil nan .tiles3.mini (pou laptop); sou telefòn li rete yon tuil laj, tèks agòch */
+html[data-look="b"] .tiles3.mini .tile.dek { align-items: stretch; text-align: left; margin: 0; }
+html[data-look="b"] .tiles3.mini .tile.dek > b.amt { font-size: 1.375rem; }
 html[data-look="b"] .bigl { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
 html[data-look="b"] .bigl a { display: flex; align-items: center; gap: 14px; min-height: 76px; padding: 12px 14px; border: 1px solid var(--line); border-radius: var(--r); color: var(--ink); text-decoration: none; }
 html[data-look="b"] .bigl a b { display: block; font-size: 1.125rem; font-weight: 800; }
@@ -471,4 +474,147 @@ html[data-look="b"] .soon-ico svg { fill: none; stroke: var(--acc); }
 @media (prefers-reduced-motion: reduce) {
   html[data-look="b"] .modal-wrap, html[data-look="b"] .modal, html[data-look="b"] .spin { animation: none; }
   html[data-look="b"] * { transition: none !important; }
+}
+
+/* ======================================================================
+   LAPTOP / EKRAN LAJ (≥ 1024 px) — kontra: LOOKS.md § "Laptop / ekran laj"
+   Navigasyon an vin yon kolòn fiks agòch anba #bar (lajè --nav-w = 248 px);
+   kontni an pi laj (1160 px, 1240 a ≥ 1440) ak gride 2 kolòn sou paj yo.
+   Règ telefòn/tablèt yo (left/transform/bottom/rayon/FAB ki leve) re-ekri
+   isit la paske yo gen plis espesifisite pase app.css.
+   ====================================================================== */
+@media (min-width: 1024px) {
+  html[data-look="b"] { --nav-w: 248px; }
+
+  /* --- Ba anwo: blan, sou tout lajè a, liy 1 px anba; mak agòch, pil Anliy adwat --- */
+  html[data-look="b"] #bar { padding: 8px 24px; padding-top: max(8px, env(safe-area-inset-top)); }
+  /* body.has-nav gen padding-left --nav-w (app.css): ba a soti nan padding sa a pou l kouvri tout lajè a */
+  html[data-look="b"] body.has-nav #bar { margin-left: calc(-1 * var(--nav-w)); }
+  html[data-look="b"] .brand { font-size: 1.25rem; }
+
+  /* --- Kolòn navigasyon agòch (reset pil tablèt la ak FAB Epay a) --- */
+  html[data-look="b"] .tabbar { position: fixed; left: 0; right: auto; top: var(--bar-h, 61px); bottom: 0; width: var(--nav-w); transform: none;
+    display: flex; flex-direction: column; align-items: stretch; gap: 4px; padding: 16px 12px 12px;
+    background: var(--card); border: 0; border-right: 1px solid var(--line); border-radius: 0; box-shadow: none; overflow-y: auto; overscroll-behavior: contain; }
+  html[data-look="b"] .tabbar a { flex: 0 0 auto; flex-direction: row; justify-content: flex-start; align-items: center; gap: 12px; min-height: 52px; padding: 0 12px 0 10px;
+    border-radius: var(--rb); font-size: 1.0625rem; font-weight: 700; color: var(--ink); }
+  html[data-look="b"] .tabbar a.on { background: var(--t-b); color: var(--i-b); font-weight: 800; }
+  html[data-look="b"] .tabbar svg, html[data-look="b"] .tabbar a.on svg { width: 36px; height: 36px; padding: 6px; margin: 0; border-radius: 10px; background: none; border: 0; box-shadow: none; stroke-width: 2.2; flex-shrink: 0; }
+  html[data-look="b"] .tabbar a.on svg { stroke-width: 2.5; }
+  /* Epay = aksyon prensipal: ikòn li nan yon ti kare safran 36 px (ikòn navy), san FAB ki leve (pa gen chevochman, pa gen transform) */
+  html[data-look="b"] .tabbar a[href="#/epay"] svg, html[data-look="b"] .tabbar a[href="#/epay"].on svg { width: 36px; height: 36px; padding: 7px; margin: 0; border-radius: 10px; border: 0; box-shadow: none;
+    background: var(--acc); color: var(--acc-ink); stroke-width: 2.4; }
+  html[data-look="b"] .tabbar a:focus-visible, html[data-look="b"] .tabbar a[href="#/epay"]:focus-visible { outline: 3px solid var(--focus); outline-offset: -3px; }
+  html[data-look="b"] .tabbar a[href="#/epay"]:focus-visible svg { box-shadow: none; }
+  /* Pye kolòn nan: non ajan an (800), wòl, vèsyon */
+  html[data-look="b"] .nav-foot { flex: 0 0 auto; margin-top: auto; padding: 14px 12px 4px; gap: 1px; border-top: 1px solid var(--line); font-size: .8125rem; font-weight: 600; color: var(--mut); }
+  html[data-look="b"] .nav-foot .nav-moi { font-size: .9375rem; font-weight: 800; color: var(--ink); overflow-wrap: anywhere; }
+  html[data-look="b"] .nav-foot .nav-ver { font-size: .75rem; }
+
+  /* --- Kontni: pa gen ba anba ankò; toast anba adwat; main 1160 px --- */
+  html[data-look="b"] body.has-nav main { padding-bottom: 40px; }
+  html[data-look="b"] body.has-nav .toast { left: auto; right: 24px; bottom: 24px; max-width: 420px; }
+  html[data-look="b"] main { max-width: 1160px; padding: 28px 32px 40px; }
+  html[data-look="b"] h1 { font-size: 2rem; }
+  html[data-look="b"] .page-head h1 { font-size: 2rem; }
+  html[data-look="b"] .page-head { margin: 0 0 16px; }
+  html[data-look="b"] h2 { font-size: 1.125rem; margin: 24px 0 12px; }
+  /* Paj etwat (fòm, paj ak lyen retou, koneksyon, Paramèt): 720 px santre */
+  html[data-look="b"] main:has(> .form), html[data-look="b"] main:has(> .back), html[data-look="b"] main:has(> .login) { max-width: 784px; }
+  html[data-look="b"] .form { max-width: 720px; margin-left: auto; margin-right: auto; }
+  html[data-look="b"] .login { max-width: 440px; margin: 0 auto; padding-top: 56px; }
+  html[data-look="b"] .modal { max-width: 480px; padding: 28px 28px 24px; }
+
+  /* --- Epay: tèt (dat·non, tit, bouton), onglè, zouti (rechèch ≤ 520 px + filt), 3 tuil ≤ 760 px, 2 lis kòt a kòt (5fr / 7fr) --- */
+  html[data-look="b"] .bhead { margin: 0 0 18px; }
+  html[data-look="b"] .tabs { margin: 0 0 16px; }
+  html[data-look="b"] .tab { flex: 0 1 auto; min-width: 176px; padding: 8px 24px; }
+  html[data-look="b"] .ktool { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; margin: 0 0 16px; }
+  html[data-look="b"] .ktool .search { flex: 1 1 320px; max-width: 520px; margin: 0; }
+  html[data-look="b"] .ktool .chips.filt { margin: 0; }
+  html[data-look="b"] .tiles3.stat { max-width: 760px; gap: 12px; margin: 0 0 8px; }
+  html[data-look="b"] .tiles3.stat .tile { padding: 14px 16px; }
+  html[data-look="b"] .kont2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0 24px; align-items: start; }
+  html[data-look="b"] .kcol { min-width: 0; }
+  html[data-look="b"] .kont2 .list.grid-t { grid-template-columns: 1fr; gap: 10px; }
+  html[data-look="b"] .note.info-note { max-width: 760px; }
+
+  /* --- Fich kliyan: kolòn gòch (avatar, aksyon, enfòmasyon kle 2×2) + kolòn dwat (lòt enfòmasyon, cycle yo) --- */
+  html[data-look="b"] .fich2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0 32px; align-items: start; }
+  html[data-look="b"] .fcol { min-width: 0; }
+  html[data-look="b"] .fcol.fl { position: sticky; top: calc(var(--bar-h, 61px) + 24px); }
+  html[data-look="b"] .fich2 .head.center, html[data-look="b"] .fich2 .acts3 { max-width: none; }
+  html[data-look="b"] .fich2 .head.center { margin: 8px 0 20px; }
+  html[data-look="b"] .fich2 .acts3 { gap: 10px; margin: 0 0 10px; }
+  html[data-look="b"] .fich2 .info2 { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 10px; }
+  html[data-look="b"] .fcol.fr > .page-head.sub:first-child { margin-top: 8px; }
+  html[data-look="b"] .fich2 .ncard { padding: 20px; }
+
+  /* --- Fich cycle: kat navy + tuil balans agòch (5fr), estatistik adwat (7fr); lis yo anba --- */
+  html[data-look="b"] .ctop { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto 1fr; gap: 12px 24px; align-items: start; margin-top: 12px; }
+  html[data-look="b"] .ctop .ncard, html[data-look="b"] .ctop .solde { grid-column: 1; margin: 0; }
+  html[data-look="b"] .ctop .ncard { padding: 20px; }
+  html[data-look="b"] .ctop .stats { grid-column: 2; grid-row: 1 / 3; margin: 0; padding: 20px; gap: 14px 16px; }
+
+  /* --- Rapò: kat safran (5fr) + 3 liy (7fr) menm wotè; 4 ti tuil sou yon liy --- */
+  html[data-look="b"] .rtop { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: stretch; margin-bottom: 16px; }
+  html[data-look="b"] .rtop .kach { display: flex; flex-direction: column; justify-content: center; padding: 22px 24px; }
+  html[data-look="b"] .rtop .rlist { height: 100%; gap: 8px; }
+  html[data-look="b"] .rtop .rl { flex: 1; padding: 12px 16px; }
+  html[data-look="b"] .tiles3.mini { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 0 0 8px; }
+  html[data-look="b"] .tiles3.mini .tile { padding: 16px 12px; }
+  html[data-look="b"] .tiles3.mini .tile.dek { grid-column: auto; align-items: center; text-align: center; }
+  html[data-look="b"] .tiles3.mini .tile.dek > b.amt { font-size: 1.75rem; }
+  html[data-look="b"] .swv { margin: 16px 2px 0; }
+
+  /* --- Tablo de bò: salitasyon, 3 tuil, 3 gwo lyen sou yon liy (≤ 1000 px) --- */
+  html[data-look="b"] #tablo { max-width: 1000px; }
+  html[data-look="b"] #tablo .tiles3 { gap: 12px; }
+  html[data-look="b"] #tablo .tile { padding: 16px; gap: 4px; }
+  html[data-look="b"] #tablo .tile > b { font-size: 1.75rem; }
+  html[data-look="b"] #tablo .tile > b.amt { font-size: 1.5rem; }
+  html[data-look="b"] .tile > b.amt { font-size: 1.375rem; }
+  html[data-look="b"] .bigl { gap: 12px; margin-top: 16px; }
+  html[data-look="b"] .bigl a { min-height: 100px; padding: 16px 18px; gap: 16px; }
+  html[data-look="b"] .bigl a b { font-size: 1.25rem; }
+  html[data-look="b"] .bigl a small { font-size: .875rem; }
+  html[data-look="b"] .bi { width: 56px; height: 56px; border-radius: 18px; }
+  html[data-look="b"] .bi svg { width: 28px; height: 28px; }
+
+  /* --- Kliyan: rechèch ≤ 760 px, lis 2 kolòn (3 a ≥ 1440) --- */
+  html[data-look="b"] .search-row { max-width: 760px; }
+  html[data-look="b"] .list.grid-t { grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  /* --- Paramèt: 3 kat look yo sou yon liy (seksyon ≤ 720 px, gade main:has(> .form)) --- */
+  html[data-look="b"] .looks { gap: 12px; }
+}
+@media (min-width: 1280px) {
+  /* Gride 2 kolòn yo: 5fr / 7fr (lis prensipal la pi laj) */
+  html[data-look="b"] .kont2, html[data-look="b"] .fich2, html[data-look="b"] .ctop, html[data-look="b"] .rtop { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); }
+  /* Lis tranzaksyon / validasyon (Epay), lis fich cycle ak lis rapò an 2 kolòn */
+  html[data-look="b"] #ong > .list, html[data-look="b"] #cycle > .list, html[data-look="b"] .rtx { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  html[data-look="b"] #ong > .list > .empty, html[data-look="b"] #cycle > .list > .empty, html[data-look="b"] .rtx > .empty { grid-column: 1 / -1; }
+}
+@media (min-width: 1440px) {
+  html[data-look="b"] main { max-width: 1240px; }
+  html[data-look="b"] .list.grid-t { grid-template-columns: repeat(3, 1fr); }
+}
+
+/* ---------- Hover (laptop ak sourit sèlman): kat yo leve, bouton prensipal yo vin pi fonse, liy yo pran yon ti koulè ---------- */
+@media (hover: hover) and (min-width: 1024px) {
+  html[data-look="b"] { --acc-hov: #dd9a00; }
+  html[data-look="b"] .btn, html[data-look="b"] .back, html[data-look="b"] .chip, html[data-look="b"] .tab, html[data-look="b"] a.row, html[data-look="b"] .row.acard, html[data-look="b"] .row.jcard,
+  html[data-look="b"] .ncard, html[data-look="b"] .bigl a, html[data-look="b"] .act, html[data-look="b"] .look-opt, html[data-look="b"] .tabbar a { transition: background-color .15s ease, box-shadow .15s ease, transform .15s ease, filter .15s ease; }
+  html[data-look="b"] .btn:not(:disabled):hover, html[data-look="b"] .back:hover { background: var(--line2); }
+  html[data-look="b"] .btn.pri:not(:disabled):hover { background: var(--acc-hov); }
+  html[data-look="b"] .btn.danger:not(:disabled):hover { filter: brightness(.95); }
+  html[data-look="b"] .btn.danger-full:not(:disabled):hover { background: #9c2a1b; }
+  html[data-look="b"] .chip:not(.on):hover, html[data-look="b"] .tab:not(.on):hover { background: var(--soft); }
+  html[data-look="b"] .chip.on:hover, html[data-look="b"] .tab.on:hover { filter: brightness(.9); }
+  html[data-look="b"] a.row:hover, html[data-look="b"] .row.acard:hover, html[data-look="b"] .row.jcard:not(.ok):hover { background: var(--soft2); box-shadow: var(--sh); }
+  html[data-look="b"] .ncard:hover, html[data-look="b"] .bigl a:hover, html[data-look="b"] .look-opt:hover { box-shadow: var(--sh); transform: translateY(-1px); }
+  html[data-look="b"] .look-opt.on:hover, html[data-look="b"] .look-opt:has(input:checked):hover { box-shadow: 0 0 0 3px var(--ring), var(--sh); }
+  html[data-look="b"] .bigl a:hover { background: var(--soft2); }
+  html[data-look="b"] .act:hover, html[data-look="b"] .lang-sw button:not(.on):hover { filter: brightness(.96); }
+  html[data-look="b"] .tabbar a:not(.on):hover { background: var(--soft); }
 }

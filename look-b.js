@@ -85,17 +85,25 @@ export function epay(ctx) {
   let body = "";
   if (ong === "kont") {
     body = `
+    <div class="ktool">
     <input id="q" type="search" class="search" placeholder="Chèche kliyan oswa nimewo kont…" aria-label="Chèche kont" value="${h(q)}" autocomplete="off">
     <div class="chips filt" role="group" aria-label="Filt">${FILT.map(([v, l, n]) => `<button type="button" class="chip ${filt === v ? "on" : ""}" data-filt="${v}" aria-pressed="${filt === v}">${l}<small>${n}</small></button>`).join("")}</div>
+    </div>
     <div class="tiles3 stat">
       <div class="tile y"><span>Peye</span><b>${stats.peye}<small>/${stats.pouJodi}</small></b></div>
       <div class="tile b"><span>Kolekte</span><b class="amt">${gd(stats.kolekte)}</b></div>
       <div class="tile ${stats.enAtant ? "r" : "n"}"><span>Demann</span><b>${stats.enAtant}</b></div>
     </div>
+    <div class="kont2">
+    <section class="kcol">
     <h2>Peman jodi a <span class="cnt-h">${stats.peye}/${stats.pouJodi}</span></h2>
     <div class="list grid-t" id="jodi-list">${ctx.jodiHtml || `<p class="empty">Pa gen peman ki tonbe jodi a.</p>`}</div>
+    </section>
+    <section class="kcol">
     <h2>Kont ak cycle aktif <span class="cnt-h">${ctx.nKont ?? stats.aktif}</span></h2>
-    <div class="list grid-t" id="kont">${ctx.kontHtml}</div>`;
+    <div class="list grid-t" id="kont">${ctx.kontHtml}</div>
+    </section>
+    </div>`;
   } else if (ong === "tx") {
     body = `${ctx.demannHtml ? `<h2>Demann retrè ak viman</h2><div class="list">${ctx.demannHtml}</div>` : ""}
     <h2>Tranzaksyon yo</h2><div class="list">${ctx.txHtml || `<p class="empty">Poko gen tranzaksyon.</p>`}</div>`;
@@ -135,6 +143,8 @@ export function fich(ctx) {
     <a href="#/kliyan" class="back sq" aria-label="Retounen">${ICO.retou}</a>
     <a class="btn" href="${ctx.hrefModifye}">${ICO.modifye}Modifye</a>
   </div>
+  <div class="fich2">
+  <div class="fcol fl">
   <div class="head center">
     ${photo ? `<img class="avatar" src="${h(photo)}" alt="" data-legend="${h(non(c))}" title="Peze foto a pou wè l pi gwo">` : `<div class="avatar ph" aria-hidden="true">${h(inisyal(c))}</div>`}
     <h1>${d(non(c))}</h1>
@@ -148,6 +158,8 @@ export function fich(ctx) {
     <a class="act y" href="${ctx.hrefNouvoCycle}">${ICO.plus}<span>Nouvo cycle</span></a>
   </div>
   <div class="info2">${TIL.map((key) => { const x = by(key); return x ? `<div class="it"><span>${x.label}</span><b>${x.html || `<span class="mut">—</span>`}</b></div>` : ""; }).join("")}</div>
+  </div>
+  <div class="fcol fr">
   <div class="page-head sub"><h2>Lòt enfòmasyon</h2></div>
   <div class="card info">${info.filter((x) => !TIL.includes(x.key) && x.key !== "gps").map(li).join("")}</div>
   <h2>Cycle aktif</h2>
@@ -156,7 +168,9 @@ export function fich(ctx) {
       <div class="grow"><b>${d(x.k.no_compte || t("Cycle poko voye"))}</b> ${badgePend(x.k)}
         <div class="mut sm">Plan ${gd(x.k.montant_plan)} · ${x.k.frequence_semaine ? `${x.k.frequence_semaine}×/sem (${lisJou(x.k.jours_paiement)})` : "—"}</div>
         <div class="mut sm">${datFr(x.k.date_debut)} → ${datFr(x.k.date_fin)}</div></div>
-      <div class="right"><b>${man && x.solde != null ? gd(x.solde) : `${x.nPeye}/${x.nPrevu ?? "?"}`}</b><br>${badgeKont(x.k)}</div></a>`).join("")}</div>` : ""}`;
+      <div class="right"><b>${man && x.solde != null ? gd(x.solde) : `${x.nPeye}/${x.nPrevu ?? "?"}`}</b><br>${badgeKont(x.k)}</div></a>`).join("")}</div>` : ""}
+  </div>
+  </div>`;
 }
 
 // ---------- Tèt fich cycle ----------
@@ -226,12 +240,12 @@ export function rapo(ctx) {
     <div class="tile n" data-kpi="cycles" data-val="${kpi.cycles}"><b>${kpi.cycles}</b><span>Cycle kreye</span></div>
     <div class="tile n" data-kpi="papeye" data-val="${kpi.swivi}"><b>${kpi.swivi}</b><span><span aria-hidden="true">Pa peye</span><span class="sr">Kliyan ki pa peye</span></span></div>
     <div class="tile n" data-kpi="demann" data-val="${kpi.dmAtant}"><b>${kpi.dmAtant}</b><span><span aria-hidden="true">Demann</span><span class="sr">Demann an atant</span></span></div>
+    <div class="tile n wide dek" data-kpi="deklare" data-val="${kpi.deklare}"><span>Balans deklare (total)</span><b class="amt">${gd(kpi.deklare)}</b><em>${kpi.nDeklare} ${t("kont deklare")}</em></div>
   </div>
-  <div class="tile n wide dek" data-kpi="deklare" data-val="${kpi.deklare}"><span>Balans deklare (total)</span><b class="amt">${gd(kpi.deklare)}</b><em>${kpi.nDeklare} ${t("kont deklare")}</em></div>
   ${sw && sw.total ? `<div class="swv"><b>Swivi kliyan yo</b><span class="ok-t">${sw.peye} ${t("Peye")}</span><span class="warn-t">${sw.fidbak} ${t("fidbak anrejistre")}</span>${i === 0 ? `<span class="mut">${sw.pokoWe} ${t("poko wè")}</span>` : ""}</div>` : ""}
   ${poko ? `<p class="note warn">${poko} tranzaksyon poko voye: yo konte nan rapò a, men sèvè a poko resevwa yo.</p>` : ""}
   <h2>Tranzaksyon mwen yo <span class="cnt-h">${ctx.nTx}</span></h2>
-  <div class="list">${ctx.txHtml || `<p class="empty">Pa gen tranzaksyon ${t(nonJou(i)).toLowerCase()}.</p>`}</div>`;
+  <div class="list rtx">${ctx.txHtml || `<p class="empty">Pa gen tranzaksyon ${t(nonJou(i)).toLowerCase()}.</p>`}</div>`;
 }
 
 export default {
