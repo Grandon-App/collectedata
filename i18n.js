@@ -111,6 +111,9 @@ const FR = {
   "Dezaktive kont sa a?": "Désactiver ce compte ?", "Ajan an p ap ka konekte ankò.": "L'agent ne pourra plus se connecter.",
   "omwen 8 karaktè": "au moins 8 caractères", "Kliyan sa a deja egziste?": "Ce client existe déjà ?",
   "gen menm telefòn lan.": "a le même téléphone.", "Kreye yon lòt kanmenm": "Créer quand même",
+  // Chan obligatwa
+  "8 chif": "8 chiffres", "ri, mache, zòn": "rue, marché, zone", "Chan sa yo obligatwa": "Champs obligatoires",
+  "Foto kliyan an": "Photo du client",
   // Idantite
   "Pseudo": "Pseudo", "non yo konnen l": "surnom", "Dat nesans": "Date de naissance", "Pyès idantifikasyon": "Pièce d'identification",
   "Nimewo idantifikasyon": "Numéro d'identification", "Mete nimewo pyès la.": "Indiquez le numéro de la pièce.",

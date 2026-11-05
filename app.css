@@ -247,3 +247,6 @@ img.thumb, img.avatar, img.prev { cursor: zoom-in; }
 .lang-sw { display: inline-flex; border: 1px solid var(--line); border-radius: 99px; padding: 3px; margin-top: 6px; background: var(--card); }
 .lang-sw button { border: 0; background: none; font: inherit; font-weight: 600; padding: 6px 14px; border-radius: 99px; color: var(--mut); cursor: pointer; min-height: 36px; }
 .lang-sw button.on { background: var(--pri); color: var(--pri-ink); }
+
+/* Chan obligatwa ki manke */
+[aria-invalid="true"] { border-color: var(--err) !important; box-shadow: 0 0 0 3px color-mix(in srgb, var(--err) 18%, transparent); }

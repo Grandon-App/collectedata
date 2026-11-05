@@ -10,7 +10,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "2.2";
+const APP_VERSION = "2.3";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin" };
 // Preferans aparans: pou aparèy sa a sèlman.
 function prefs() {
@@ -371,23 +371,22 @@ const opt = (v, cur, label = v) => `<option value="${h(v)}" ${v === cur ? "selec
 function champsOccupation(c = {}) {
   const sec = c.secteur || (c.activite && TX.secteurDe(c.activite)) || "";
   return `
-    <label>Kote biznis la <small class="mut">(ri, mache, zòn)</small><input name="lieu_de_travail" value="${h(c.lieu_de_travail || "")}" autocomplete="off"></label>
+    <label>Kote biznis la * <small class="mut">(ri, mache, zòn)</small><input name="lieu_de_travail" value="${h(c.lieu_de_travail || "")}" autocomplete="off" required></label>
     <label>Adrès<input name="adresse" value="${h(c.adresse || "")}" autocomplete="off"></label>
-    <label>Okipasyon<input name="occupation" value="${h(c.occupation || "")}" placeholder="Commerçante, Entrepreneur…" autocomplete="off"></label>
     <div class="grid2">
-      <label>Sektè<select name="secteur"><option value="">Chwazi…</option>${Object.keys(TX.SECTEURS).map((x) => opt(x, sec)).join("")}</select></label>
-      <label>Aktivite<select name="activite" ${sec ? "" : "disabled"}>${sec ? `<option value="">Chwazi…</option>${TX.SECTEURS[sec].map((x) => opt(x, c.activite)).join("")}` : `<option value="">Chwazi sektè a anvan</option>`}</select></label>
+      <label>Sektè *<select name="secteur" required><option value="">Chwazi…</option>${Object.keys(TX.SECTEURS).map((x) => opt(x, sec)).join("")}</select></label>
+      <label>Aktivite *<select name="activite" required ${sec ? "" : "disabled"}>${sec ? `<option value="">Chwazi…</option>${TX.SECTEURS[sec].map((x) => opt(x, c.activite)).join("")}` : `<option value="">Chwazi sektè a anvan</option>`}</select></label>
     </div>
     <div class="grid2">
-      <label>Pwen de vant<select name="point_de_vente"><option value="">Chwazi…</option>${TX.POINTS_DE_VENTE.map((x) => opt(x, c.point_de_vente)).join("")}</select></label>
-      <label>Kapasite distribisyon<select name="capacite_distribution"><option value="">Chwazi…</option>${TX.CAPACITES.map((x) => opt(x, c.capacite_distribution)).join("")}</select></label>
+      <label>Pwen de vant *<select name="point_de_vente" required><option value="">Chwazi…</option>${TX.POINTS_DE_VENTE.map((x) => opt(x, c.point_de_vente)).join("")}</select></label>
+      <label>Kapasite distribisyon *<select name="capacite_distribution" required><option value="">Chwazi…</option>${TX.CAPACITES.map((x) => opt(x, c.capacite_distribution)).join("")}</select></label>
     </div>`;
 }
 const PIECES = ["NIF", "CIN", "Passeport"];
 const ageMax = () => S.ajouteJou(S.jodi(), -16 * 365 - 4);
+const champPseudo = (c = {}) => `<label>Pseudo <small class="mut">(non yo konnen l)</small><input name="pseudo" value="${h(c.pseudo || "")}" autocomplete="off"></label>`;
 function champsIdentite(c = {}) {
   return `
-    <label>Pseudo <small class="mut">(non yo konnen l)</small><input name="pseudo" value="${h(c.pseudo || "")}" autocomplete="off"></label>
     <label>Dat nesans<input name="date_naissance" type="date" value="${h(c.date_naissance || "")}" max="${ageMax()}" min="1915-01-01"></label>
     <div class="grid2">
       <label>Pyès idantifikasyon<select name="piece"><option value="">Chwazi…</option>${PIECES.map((x) => opt(x, c.piece)).join("")}</select></label>
@@ -438,6 +437,19 @@ function brancherOccupation(f) {
     f.activite.innerHTML = l ? `<option value="">${t("Chwazi…")}</option>${l.map((x) => opt(x, "")).join("")}` : `<option value="">${t("Chwazi sektè a anvan")}</option>`;
   };
 }
+// Chan obligatwa yo: make sa ki manke an wouj epi mete fokis sou premye a.
+const OBLIGATWA = [["lieu_de_travail", "Kote biznis la"], ["secteur", "Sektè"], ["activite", "Aktivite"],
+  ["point_de_vente", "Pwen de vant"], ["capacite_distribution", "Kapasite distribisyon"]];
+function okObligatwa(f, err, { photo } = {}) {
+  f.querySelectorAll("[aria-invalid]").forEach((x) => x.removeAttribute("aria-invalid"));
+  const manke = OBLIGATWA.filter(([k]) => !String(f[k]?.value || "").trim());
+  if (photo === null) manke.push(["photo", "Foto kliyan an"]);
+  if (!manke.length) return true;
+  manke.forEach(([k]) => f[k]?.setAttribute("aria-invalid", "true"));
+  err.textContent = `${t("Chan sa yo obligatwa")}: ${manke.map(([, l]) => t(l)).join(", ")}.`;
+  f[manke[0][0]]?.focus();
+  return false;
+}
 const valeursOccupation = (v) => Object.fromEntries(S.CHAN_FICH.map((k) => [k, (v[k] || "").trim()]));
 function brancherGps(el, cb) {
   const txt = el.querySelector(".gps-t");
@@ -457,12 +469,13 @@ async function viewClientNew() {
       <label>Prenon *<input name="prenom" required autocomplete="off"></label>
       <label>Non *<input name="nom" required autocomplete="off"></label>
     </div>
+    ${champPseudo()}
     <label>Telefòn * <small class="mut">(8 chif)</small><input name="telephone" inputmode="tel" required placeholder="3700 1234"></label>
     <div id="dbl" aria-live="polite"></div>
     <label>Sèks<select name="sexe"><option value="">—</option><option value="F">Fi</option><option value="M">Gason</option></select></label>
     ${champsIdentite()}
     ${champsOccupation()}
-    <label>Foto kliyan an<input name="photo" type="file" accept="image/*" capture="environment"></label>
+    <label>Foto kliyan an *<input name="photo" type="file" accept="image/*" capture="environment" required></label>
     <img id="prev" class="prev" alt="" hidden>
     <div class="gps" id="gps"><span class="gps-t mut sm" aria-live="polite">GPS: ap chèche…</span><button type="button" class="btn sm">Rekòmanse</button></div>
     <label class="chk"><input type="checkbox" name="cycle" checked> Kreye yon cycle Grandon touswit apre</label>
@@ -514,6 +527,7 @@ async function viewClientNew() {
     const tel = api.telefon8(v.telephone);
     if (!v.prenom.trim() || !v.nom.trim()) return (err.textContent = t("Mete prenon ak non kliyan an."));
     if (!tel) return (err.textContent = t("Nimewo telefòn nan dwe gen 8 chif."));
+    if (!okObligatwa(f, err, { photo })) return;
     if (!(await okIdentite(f, err))) return;
     const dbl = [...M.clients.values()].find((c) => String(c.telephone || "").replace(/\D/g, "").endsWith(tel));
     if (dbl && !(await ui.ask({ titre: "Kliyan sa a deja egziste?", tekst: `${non(dbl)} · ${t("gen menm telefòn lan.")}`, foto: dbl.photo_url,
@@ -539,6 +553,7 @@ async function viewClientEdit(id) {
   <a href="#/kliyan/${id}" class="back">‹ ${d(non(c))}</a>
   <h1>Modifye enfòmasyon yo</h1>
   <form id="f" class="card form" novalidate>
+    ${champPseudo(c)}
     ${champsIdentite(c)}
     ${champsOccupation(c)}
     <div class="gps" id="gps"><span class="gps-t mut sm" aria-live="polite">${c.gps_lat != null ? "GPS aktive" : "Pa gen GPS"}</span><button type="button" class="btn sm">Pran pozisyon kounye a</button></div>
@@ -552,6 +567,7 @@ async function viewClientEdit(id) {
   brancherGps(document.getElementById("gps"), (g) => (gps = g));
   f.onsubmit = async (e) => {
     e.preventDefault();
+    if (!okObligatwa(f, document.getElementById("err"))) return;
     if (!(await okIdentite(f, document.getElementById("err")))) return;
     const v = valeursOccupation(Object.fromEntries(new FormData(f)));
     await S.enqueue("maj", { id, ...v, gps, capture_le: new Date().toISOString() }, c._pending ? [id] : []);
@@ -588,7 +604,6 @@ async function viewClient(id) {
     ${li("Adrès", c.adresse)}
     ${li("Kote biznis la", c.lieu_de_travail)}
     ${li("GPS", gpsOk ? `<span class="badge ok">GPS aktive</span> <a href="https://maps.google.com/?q=${c.gps_lat},${c.gps_lng}" target="_blank" rel="noopener">Wè sou kat la</a>` : `<span class="badge warn">Pa gen GPS</span>`, false)}
-    ${li("Okipasyon", c.occupation)}
     ${li("Sektè", c.secteur || (c.activite && TX.secteurDe(c.activite)))}
     ${li("Aktivite", c.activite)}
     ${li("Pwen de vant", c.point_de_vente)}
