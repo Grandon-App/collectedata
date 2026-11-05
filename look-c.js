@@ -58,7 +58,7 @@ export function tablo(ctx) {
   <p class="hello">Bonjou ${d(prenon(moi))} <span class="mono">· ${t(JOU[ctx.isoJou])} ${datKout(today)}</span></p>
   <h1>Tablo de bò</h1>
   <div class="stat2">
-    ${stile("Kolekte jodi a", mG(stats.kolekte, "ok"), `<span class="mono">${stats.peye} / ${stats.pouJodi}</span> kliyan${rete ? ` · ${rete} ${t("rete")}` : ""}`)}
+    ${stile("Kolekte jodi a", mG(stats.kolekte, "ok"), `<span class="mono">${stats.peye} / ${stats.pouJodi}</span> kliyan${rete ? ` · <span class="mono">${rete}</span> poko wè` : ""}`)}
     ${stile("Demann", `<b class="mono ${stats.enAtant ? "gold" : ""}">${stats.enAtant}</b>`, "retrè · viman")}
   </div>
   ${lbl("Ale nan")}
@@ -216,11 +216,11 @@ export function rapo(ctx) {
       <small>Depo − retrè peye · ${t("frè ak viman pa ladan l")}</small>
     </div>
     <div class="card ledger">
-      ${L("depo", "Depo ankese", kpi.depo, `<b class="mono in">+${gn(kpi.depo)}</b>`, `<span class="mono">${kpi.nDepo}</span>`)}
-      ${L("retre", "Retrè peye", kpi.retre, `<b class="mono out">−${gn(kpi.retre)}</b>`, `<span class="mono">${kpi.nRetre}</span>`)}
+      ${L("depo", "Depo ankese", kpi.depo, kpi.depo ? `<b class="mono in">+${gn(kpi.depo)}</b>` : `<b class="mono mut">0</b>`, `<span class="mono">${kpi.nDepo}</span>`)}
+      ${L("retre", "Retrè peye", kpi.retre, kpi.retre ? `<b class="mono out">−${gn(kpi.retre)}</b>` : `<b class="mono mut">0</b>`, `<span class="mono">${kpi.nRetre}</span>`)}
       ${L("fre", "Frè", kpi.fre, `<b class="mono mut">${gn(kpi.fre)}</b>`, t("pa nan kach"))}
       ${L("viman", "Viman", kpi.vim, `<b class="mono mut">${gn(kpi.vim)}</b>`, t("pa nan kach"))}
-      ${L("deklare", "Balans deklare", kpi.deklare, `<b class="mono">${gn(kpi.deklare)}</b>`, kpi.nDeklare ? `<span class="mono">${kpi.nDeklare}</span> ${t("kont deklare")}` : "")}
+      ${L("deklare", "Balans deklare", kpi.deklare, `<b class="mono${kpi.deklare ? "" : " mut"}">${gn(kpi.deklare)}</b>`, kpi.nDeklare ? `<span class="mono">${kpi.nDeklare}</span> ${t("kont deklare")}` : "")}
     </div>
   </div>
   <div>
@@ -248,7 +248,7 @@ export default {
   themeColor: { light: "#0f1830", dark: "#0f1830" },
   // Tradiksyon franse pou nouvo fraz look la (sa ki deja nan i18n.js pa bezwen repete).
   fr: {
-    "kliyan": "clients", "rete": "restants", "Ale nan": "Aller à", "Modifye": "Modifier",
+    "kliyan": "clients", "Ale nan": "Aller à", "Modifye": "Modifier",
     "Pa gen cycle aktif.": "Aucun cycle actif.", "Lòt cycle": "Autres cycles", "semèn sa a": "cette semaine", "rate": "manquée",
     "okenn vèsman": "aucun versement", "peye": "payé", "jodi a, poko peye": "aujourd'hui, pas encore payé", "k ap vini": "à venir",
     "jou ferye": "jour férié", "pa jou peman": "pas un jour de paiement", "jou an reta": "jours de retard",
