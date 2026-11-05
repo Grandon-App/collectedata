@@ -99,7 +99,7 @@ ctx = { M, moi, man, today, t, lang, i (0..2), D (dat), isoJou (1..7 pou D), non
   kpi: { depo, nDepo, retre, nRetre, fre, nFre, vim, nVim, deklare, nDeklare, cycles, swivi, dmAtant, kach },
   swiviStats: { total, peye, fidbak, pokoWe }, parLe: [{ h, montant, n }] (6è→19è), poko, txHtml, nTx }
 ```
-Hook obligatwa: `[data-j="0|1|2"]` (`role="tab"`, `aria-selected`, `.on`); 9 KPI, chak ak `data-kpi="depo|retre|fre|viman|deklare|cycles|papeye|demann|kach"` ak `data-val="${nimewo}"` ak etikèt yo (Depo ankese, Retrè peye, Frè, Viman, Balans deklare (total), Cycle kreye, Kliyan ki pa peye, Demann an atant, Kach nan men pou remèt nan kès); nòt si `poko > 0`; lis `txHtml` anba tit "Tranzaksyon mwen yo" (oswa "Pa gen tranzaksyon …").
+Hook obligatwa: `[data-j="0|1|2"]` (`role="tab"`, `aria-selected`, `.on`); 9 KPI, chak ak `data-kpi="depo|retre|fre|viman|deklare|cycles|papeye|demann|kach"` ak `data-val="${nimewo}"` ak etikèt yo (Depo ankese, Retrè peye, Frè, Viman, Balans deklare (total), Cycle kreye, Kliyan ki pa peye, Demann an atant, Kach nan men pou remèt nan kès — oswa fòm kout «Kach pou remèt nan kès»; tès la chèche «remèt nan kès»); nòt si `poko > 0`; lis `txHtml` anba tit "Tranzaksyon mwen yo" (oswa "Pa gen tranzaksyon …").
 
 ## Tès
 

@@ -12,10 +12,11 @@ const ton = (c) => { let s = 7; for (const ch of `${c?.prenom || ""}${c?.nom || 
 const av = (c, cls = "thumb", plat = false) => c?.photo_url
   ? `<img class="${cls}" src="${h(c.photo_url)}" alt="" loading="lazy" data-legend="${h(non(c))}">`
   : `<span class="${cls} ph${plat ? "" : ` av-${ton(c)}`}" aria-hidden="true" data-brut>${h(inisyal(c))}</span>`;
-// Wonn pwogrè (conic-gradient lò sou fon klè) ak yon tèks nan mitan.
-const ring = (p, label) => `<div class="ring" style="--p:${Math.max(0, Math.min(100, Number(p) || 0))}%"><b>${label}</b></div>`;
+// Wonn pwogrè (conic-gradient lò sou fon klè) ak yon tèks nan mitan. Se yon imaj pou lektè ekran (non + valè).
+const ring = (p, label) => `<div class="ring" role="img" aria-label="Pwogrè: ${label}" style="--p:${Math.max(0, Math.min(100, Number(p) || 0))}%"><b>${label}</b></div>`;
 const hello = (ctx) => `<p class="hello">Bonjou ${d(prenon(ctx.moi))} · <span>${t(JOU[isoJouDe(ctx.today)])} ${datKout(ctx.today)}</span></p>`;
-const bar = (p, cls = "") => `<div class="bar ${cls}" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${p}"><i style="width:${p}%"></i></div>`;
+// Ba pwogrè ak yon non pou lektè ekran (`non`: tèks kreyòl, tradiktè a okipe l).
+const bar = (p, cls = "", non = "Pwogrè cycle") => `<div class="bar ${cls}" role="progressbar" aria-label="${non}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${p}"><i style="width:${p}%"></i></div>`;
 const soutit = (stats) => {
   const rete = Math.max(0, stats.pouJodi - stats.peye);
   if (!stats.pouJodi) return "Pa gen peman ki tonbe jodi a.";
@@ -58,9 +59,12 @@ export function kontRow(r) {
       ${ok ? `<span class="pill ok">✓ ${gd(r.jodiMontan)}</span>`
         : `<div class="btns-v"><a class="btn sm pri" href="#/tx/nouvo/${id}">Depo</a><button type="button" class="btn sm" data-papeye="${id}">Pa peye</button></div>`}</div>`;
   }
+  // Liy detay: sèlman moso ki egziste yo (pa gen "—" k ap pandye lè pa gen frekans).
+  const liy = [k.frequence_semaine ? `${k.frequence_semaine}×/sem · ${lisJou(k.jours_paiement)}` : "", `${r.nPeye}/${r.nPrevu ?? "?"} ${t("vèsman")}`,
+    r.anReta ? `<span class="reta">${r.anReta} jou an reta</span>` : ""].filter(Boolean).join(" · ");
   return `<div class="row kr">
     ${av(c)}<a class="grow lnk" href="#/cycle/${id}"><b>${d(r.nonKliyan)}</b> ${badgePend(k)}${sub}
-      <div class="mut sm">${k.frequence_semaine ? `${k.frequence_semaine}×/sem · ${lisJou(k.jours_paiement)}` : "—"} · ${r.nPeye}/${r.nPrevu ?? "?"} ${t("vèsman")}${r.anReta ? ` · <span class="reta">${r.anReta} jou an reta</span>` : ""}</div>
+      <div class="mut sm">${liy}</div>
       ${man && r.solde != null ? `<div class="sm bal">${t("Balans")}: <b>${gd(r.solde)}</b></div>` : ""}${prog}</a>
     <a class="btn sm pri" href="#/tx/nouvo/${id}">Depo</a></div>`;
 }
@@ -102,8 +106,8 @@ export function fich(ctx) {
   const nAktif = ks.filter((x) => x.on).length, nFini = ks.length - nAktif;
   const I = Object.fromEntries(info.map((x) => [x.key, x]));
   const kv = (x, sub = "") => x ? `<div class="kv"><span>${x.label}</span><b>${x.html || `<span class="mut">—</span>`}${sub ? `<span class="kv-sub">${sub}</span>` : ""}</b></div>` : "";
-  // Aktivite: sektè ak kapasite anba l (si pa gen aktivite, sektè a pran plas li).
-  const akt = I.aktivite?.html ? I.aktivite : { label: "Aktivite", html: I.sekte?.html || "" };
+  // Aktivite: sektè ak kapasite anba l. Si pa gen aktivite, sektè a pran plas li (ak pwòp etikèt li).
+  const akt = I.aktivite?.html ? I.aktivite : I.sekte?.html ? I.sekte : I.aktivite || { label: "Aktivite", html: "" };
   const aktSub = (I.aktivite?.html ? [I.sekte?.html, I.kapasite?.html] : [I.kapasite?.html]).filter(Boolean).join(" · ");
   return `
   <div class="band fich-h">
@@ -119,8 +123,8 @@ export function fich(ctx) {
   </div>
   ${ctx.errHtml || ""}
   <div class="tiles">
-    ${ctx.telHref ? `<a class="tile" href="${h(ctx.telHref)}">${ICO.rele}<span>Rele</span></a>` : `<span class="tile off" aria-disabled="true">${ICO.rele}<span>Rele</span></span>`}
-    ${ctx.mapsHref ? `<a class="tile" href="${h(ctx.mapsHref)}" target="_blank" rel="noopener">${ICO.kat}<span>Kat</span></a>` : `<span class="tile off" aria-disabled="true">${ICO.kat}<span>Kat</span></span>`}
+    ${ctx.telHref ? `<a class="tile" href="${h(ctx.telHref)}">${ICO.rele}<span>Rele</span></a>` : `<span class="tile off" role="button" aria-disabled="true" tabindex="-1" title="Pa gen telefòn">${ICO.rele}<span>Rele</span></span>`}
+    ${ctx.mapsHref ? `<a class="tile" href="${h(ctx.mapsHref)}" target="_blank" rel="noopener">${ICO.kat}<span>Kat</span></a>` : `<span class="tile off" role="button" aria-disabled="true" tabindex="-1" title="Pa gen GPS">${ICO.kat}<span>Kat</span></span>`}
     <a class="tile pri" href="${ctx.hrefNouvoCycle}">${ICO.plus}<span>Nouvo cycle</span></a>
   </div>
   <div class="fich-2">
@@ -149,11 +153,11 @@ export function cycleTop(ctx) {
     <h1>${d(k.no_compte || t("Cycle poko voye"))} ${ctx.badges.kont} ${ctx.badges.pend}</h1>
     <div class="band-sub">${t("Plan")} ${gd(k.montant_plan)}${k.frequence_semaine ? ` · ${k.frequence_semaine}×/sem (${lisJou(k.jours_paiement)})` : ""} · ${datKout(k.date_debut)} → ${datKout(k.date_fin)}</div>
   </div>
-  ${ctx.errHtml || ""}
   ${man && ctx.solde != null
     ? `<div class="card float solde">${ring(ctx.pwosan, `${ctx.pwosan}%`)}<div class="grow"><span>Balans kont lan</span><b>${gd(ctx.solde)}</b>
         <small>Balans valide: ${gd(ctx.soldeValide)}${Number(ctx.depoAnAtant) ? ` · an atant validasyon: ${gd(ctx.depoAnAtant)}` : ""}${ctx.local ? ` · poko voye: ${gd(ctx.local)}` : ""}</small></div></div>`
     : `<div class="card float solde">${ring(ctx.pwosan, `${ctx.pwosan}%`)}<div class="grow"><span>Vèsman fèt</span><b>${ctx.nDepots}</b><small>${gd(ctx.depots)} · ${t("depo ou wè sou telefòn nan")}</small></div></div>`}
+  ${ctx.errHtml || ""}
   <div class="card stats">
     <div><span>Plan (minimòm)</span><b>${gd(k.montant_plan)}</b></div>
     <div><span>Frekans</span><b>${k.frequence_semaine ? `${k.frequence_semaine}× ${t("pa semèn")}` : "—"}</b></div>
@@ -163,7 +167,7 @@ export function cycleTop(ctx) {
     ${ctx.prevuTotal != null ? `<div><span>Vèsman prevwa</span><b>${ctx.prevuTotal}</b><small>san dimanch ni jou ferye</small></div>
     <div><span>Total pou l sanble</span><b>${gd(ctx.totalPrevu)}</b></div>` : ""}
     ${k.jours_paiement?.length ? `<div class="wide"><span>Peman jiska jodi a</span><b>${fè} ${t("jou peye")} · ${prevu} ${t("jou prevwa")}${ctx.anReta ? ` · <span class="reta">${ctx.anReta} jou an reta</span>` : ""}</b>
-      ${bar(pct(fè, prevu))}</div>` : ""}
+      ${bar(pct(fè, prevu), "", "Peman jiska jodi a")}</div>` : ""}
   </div>
   ${k._actif ? `<div class="btn-row"><a class="btn pri" href="${ctx.hrefTx}" data-act="tx">＋ Tranzaksyon</a><button type="button" class="btn" id="papeye">Pa peye · Fidbak</button></div>` : ""}`;
 }
@@ -196,7 +200,7 @@ export function rapo(ctx) {
       ${R("demann", "Demann an atant", kpi.dmAtant, kpi.dmAtant, t("retrè / viman"))}
     </div>
     <div class="card swivi">
-      <h2>Swivi kliyan yo <small>${tot} ${t("Kliyan").toLowerCase()} · ${jouTxt}</small></h2>
+      <h2>Swivi kliyan yo <small>${tot === 1 ? "1 kliyan" : `${tot} ${t("Kliyan").toLowerCase()}`} · ${jouTxt}</small></h2>
       <div class="stack" aria-hidden="true"><i class="s1" style="width:${w(sw?.peye)}%"></i><i class="s2" style="width:${w(sw?.fidbak)}%"></i></div>
       <div class="legend"><span class="l1"><b>${sw?.peye || 0}</b> Peye</span><span class="l2"><b>${sw?.fidbak || 0}</b> Fidbak</span><span class="l3"><b>${sw?.pokoWe || 0}</b> Poko wè</span></div>
     </div>
@@ -215,19 +219,20 @@ export default {
   themeColor: { light: "#14284b", dark: "#0b1222" },
   // Tradiksyon franse pou nouvo fraz look la (sa ki deja nan i18n.js pa bezwen repete).
   fr: {
+    "Ble marin ak lò. Elegan, pou kliyan ak manadjè.": "Bleu marine et or. Élégant, pour clients et managers.",
     "Kont aktif": "Comptes actifs",
     "Tout kliyan jodi a peye ✓": "Tous les clients du jour ont payé ✓",
     "1 kliyan rete pou w wè": "1 client reste à voir",
+    "1 kliyan": "1 client",
+    "Pwogrè cycle": "Progression du cycle", "Pwogrè": "Progression",
+    "Pa gen telefòn": "Pas de téléphone",
     "0 cycle aktif": "Aucun cycle actif", "1 cycle aktif": "1 cycle actif", "2 cycle aktif": "2 cycles actifs", "3 cycle aktif": "3 cycles actifs",
     "4 cycle aktif": "4 cycles actifs", "5 cycle aktif": "5 cycles actifs", "6 cycle aktif": "6 cycles actifs",
     "1 jou an reta": "1 jour de retard", "jou an reta": "jours de retard",
     "Poko wè": "Pas encore vus",
-    "Depo − retrè peye": "Dépôts − retraits payés",
-    "Modifye": "Modifier",
     "aktif": "en cours",
     "fini": "terminés",
     "Jou": "Jour",
-    "Cycle": "Cycle",
   },
   parts: { tablo, epay, kontRow, fich, cycleTop, rapo },
 };

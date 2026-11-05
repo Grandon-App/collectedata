@@ -2,7 +2,6 @@
 import { h, d, gd, gn, datFr, datKout, lè, non, inisyal, telFmt, JOU, JOU_KOUT, lisJou, badgePend, badgeKont, ICO, MOTIF_KOUT, pct, t } from "./fmt.js";
 
 // ---------- Ti zouti pwòp look la ----------
-const isoJouDe = (iso) => ((new Date(String(iso).slice(0, 10) + "T12:00:00Z").getUTCDay() + 6) % 7) + 1;
 const prenon = (moi) => h(String(moi?.nom || "").trim().split(" ")[0] || "");
 // Avatar kare awondi (48 px): foto oswa inisyal. Koulè a varye selon inisyal yo (navy / safran / vèt).
 function tile(c, cls = "thumb") {
@@ -11,18 +10,19 @@ function tile(c, cls = "thumb") {
   const n = (ini.charCodeAt(0) + (ini.charCodeAt(1) || 0)) % 3;
   return `<span class="${cls} ph t${n}" aria-hidden="true">${h(ini)}</span>`;
 }
-// Pwen semèn nan (sèlman jou peman yo): vèt plen = peye · safran = jodi a / k ap vini · wouj = rate · gri = ferye
+// Pwen semèn nan (Len → Sam): vèt plen = peye · safran = jodi a / k ap vini · kare wouj = rate · ti pwen gri = pa jou peman · pwentiye = ferye
 function dotsRow(dots) {
-  const l = (dots || []).filter((x) => x.state !== "pa");
-  if (!l.length) return "";
+  const l = dots || [];
+  if (!l.some((x) => x.state !== "pa")) return "";
   const nPeye = l.filter((x) => x.state === "peye").length;
-  const nPlan = l.filter((x) => x.state !== "ferye").length;
-  return `<span class="dots" role="img" aria-label="Semèn sa a: ${nPeye}/${nPlan} jou peye">${l.map((x) => `<i class="dt ${x.state}"></i>`).join("")}</span>`;
+  const nPlan = l.filter((x) => x.state !== "pa" && x.state !== "ferye").length;
+  const nRate = l.filter((x) => x.state === "rate").length;
+  return `<span class="dots" role="img" aria-label="Semèn sa a: ${nPeye}/${nPlan} jou peye${nRate ? ` · ${nRate} an reta` : ""}">${l.map((x) => `<i class="dt ${x.state}"></i>`).join("")}</span>`;
 }
 // Liy semèn nan (Len → Sam) ak wonn 26 px, pou kat navy a.
 const ETA_JOU = { peye: "Jou peye", jodi: "Jodi a", avni: "K ap vini", rate: "An reta", ferye: "Jou ferye", pa: "" };
 function semèn(dots) {
-  return `<div class="wk" role="list" aria-label="Semèn sa a">${(dots || []).map((x) => `<div class="wd ${x.state}${x.jodi ? " now" : ""}" role="listitem" aria-label="${JOU_KOUT[x.j]}${ETA_JOU[x.state] ? ` · ${ETA_JOU[x.state]}` : ""}"><span aria-hidden="true">${JOU_KOUT[x.j]}</span><i aria-hidden="true">${x.state === "peye" ? ICO.ok : ""}</i></div>`).join("")}</div>`;
+  return `<div class="wk" role="list" aria-label="Semèn sa a">${(dots || []).map((x) => `<div class="wd ${x.state}${x.jodi ? " now" : ""}" role="listitem" aria-label="${JOU_KOUT[x.j]}${ETA_JOU[x.state] ? ` · ${ETA_JOU[x.state]}` : ""}"><span aria-hidden="true">${JOU_KOUT[x.j]}</span><i aria-hidden="true">${x.state === "peye" ? ICO.ok : x.state === "rate" ? ICO.x : ""}</i></div>`).join("")}</div>`;
 }
 const jouKout = (k) => (k.jours_paiement?.length ? k.jours_paiement.map((j) => JOU_KOUT[j]).join(", ") : "—");
 
@@ -62,19 +62,19 @@ export function kontRow(r) {
         ${dotsRow(r.dots)}
       </div>
       ${fidbakJodi && !ok ? `<div class="fb"><span class="chip-fb">${ICO.modifye}<span>Fidbak anrejistre</span>${MOTIF_KOUT[fidbakJodi] ? ` · ${t(MOTIF_KOUT[fidbakJodi])}` : ""}</span></div>` : ""}
-      ${ok ? `<div class="jact one"><span class="paid"><i>✓</i> ${gd(r.jodiMontan ?? k._jodi)}<small>${t("Peye jodi a")}</small></span></div>`
+      ${ok ? `<div class="jact one"><span class="paid"><i>✓</i> <b class="amt">${gd(r.jodiMontan ?? k._jodi)}</b><small>${t("Peye jodi a")}</small></span></div>`
         : `<div class="jact"><a class="btn pri" href="#/tx/nouvo/${id}">＋ Depo ${gd(plan)}</a><button type="button" class="btn" data-papeye="${id}">Pa peye</button></div>`}
     </div>`;
   }
   const np = r.nPeye ?? k._joursPeye?.size ?? 0, nv = r.nPrevu ?? k._prevuTotal;
   return `<div class="row acard${r.anReta > 0 ? " reta" : ""}">
     ${tile(c)}
-    <a class="grow lnk" href="#/cycle/${id}"><b class="nm">${d(r.nonKliyan || non(c))}</b> ${badgePend(k)}
+    <a class="grow lnk" href="#/cycle/${id}"><b class="nm" id="nm-${id}">${d(r.nonKliyan || non(c))}</b> ${badgePend(k)}
       <div class="mut sm">${kont} · Plan ${gd(plan)}</div>
-      <div class="mut xs">${k.frequence_semaine ? `${k.frequence_semaine}×/sem · ${lisJou(k.jours_paiement)}` : "—"} · <b class="ink">${np}/${nv ?? "?"}</b> ${t("vèsman")}${r.anReta > 0 ? ` · <b class="err-t">${r.anReta} ${t("an reta")}</b>` : ""}</div>
+      <div class="mut xs">${[k.frequence_semaine ? `${k.frequence_semaine}×/sem · ${lisJou(k.jours_paiement)}` : "", `<b class="ink">${np}/${nv ?? "?"}</b> ${t("vèsman")}`, r.anReta > 0 ? `<b class="err-t">${r.anReta} ${t("an reta")}</b>` : ""].filter(Boolean).join(" · ")}</div>
       ${man && r.solde != null ? `<div class="sm bal">${t("Balans")}: <b>${gd(r.solde)}</b></div>` : ""}
       <div class="bar mini" aria-hidden="true"><i style="width:${pct(np, nv || 0)}%"></i></div></a>
-    <a class="btn pri sm sq" href="#/tx/nouvo/${id}" aria-label="Depo · ${h(r.nonKliyan || non(c))}">${ICO.plus}<span>Depo</span></a>
+    <a class="btn pri sm sq" href="#/tx/nouvo/${id}" aria-labelledby="dep-${id} nm-${id}">${ICO.plus}<span id="dep-${id}">Depo</span></a>
   </div>`;
 }
 
@@ -86,7 +86,7 @@ export function epay(ctx) {
   if (ong === "kont") {
     body = `
     <input id="q" type="search" class="search" placeholder="Chèche kliyan oswa nimewo kont…" aria-label="Chèche kont" value="${h(q)}" autocomplete="off">
-    <div class="chips filt" role="group" aria-label="Filt">${FILT.map(([v, l, n]) => `<button type="button" class="chip ${filt === v ? "on" : ""}" data-filt="${v}">${l}<small>${n}</small></button>`).join("")}</div>
+    <div class="chips filt" role="group" aria-label="Filt">${FILT.map(([v, l, n]) => `<button type="button" class="chip ${filt === v ? "on" : ""}" data-filt="${v}" aria-pressed="${filt === v}">${l}<small>${n}</small></button>`).join("")}</div>
     <div class="tiles3 stat">
       <div class="tile y"><span>Peye</span><b>${stats.peye}<small>/${stats.pouJodi}</small></b></div>
       <div class="tile b"><span>Kolekte</span><b class="amt">${gd(stats.kolekte)}</b></div>
@@ -105,7 +105,7 @@ export function epay(ctx) {
   }
   return `
   <div class="bhead">
-    <div><div class="eyebrow">${t(JOU[isoJouDe(today)])} ${datKout(today)} · <span data-brut>${prenon(moi)}</span></div><h1>Epay</h1></div>
+    <div><div class="eyebrow">${t(JOU[ctx.isoJou])} ${datKout(today)} · <span data-brut>${prenon(moi)}</span></div><h1>Epay</h1></div>
     <a class="btn pri sq" href="#/chwazi/cycle" aria-label="Nouvo cycle">${ICO.plus}<span>Nouvo cycle</span></a>
   </div>
   <div class="tabs" role="tablist">${ongs.map(([k, l, n]) => `<button role="tab" class="tab ${k === ong ? "on" : ""}" aria-selected="${k === ong}" data-ong="${k}">${l}${n ? ` <span class="cnt-b">${n}</span>` : ""}</button>`).join("")}</div>
@@ -123,7 +123,7 @@ export function fich(ctx) {
   const kat = (x) => {
     const k = x.k;
     const np = x.nPeye ?? 0, nv = x.nPrevu;
-    return `<a class="ncard" href="${x.href}">
+    return `<a class="ncard" href="${x.href}" aria-label="Cycle ${h(k.no_compte || t("Cycle poko voye"))} · ${np}/${nv ?? "?"} ${t("vèsman")}">
       <div class="nt"><b>${d(k.no_compte || t("Cycle poko voye"))}</b> ${badgePend(k)}<span class="nd">${datKout(k.date_debut)} → ${datKout(k.date_fin)}</span></div>
       ${semèn(x.dots)}
       <div class="nr"><span><b>${np}</b> / ${nv ?? "?"} ${t("vèsman")}</span><b>${man && x.solde != null ? `${t("Balans")} ${gd(x.solde)}` : `${gd(k._depots || 0)}${k._totalPrevu != null ? ` / ${gd(k._totalPrevu)}` : ""}`}</b></div>
@@ -149,7 +149,7 @@ export function fich(ctx) {
   </div>
   <div class="info2">${TIL.map((key) => { const x = by(key); return x ? `<div class="it"><span>${x.label}</span><b>${x.html || `<span class="mut">—</span>`}</b></div>` : ""; }).join("")}</div>
   <div class="page-head sub"><h2>Lòt enfòmasyon</h2></div>
-  <div class="card info">${info.filter((x) => !TIL.includes(x.key)).map(li).join("")}</div>
+  <div class="card info">${info.filter((x) => !TIL.includes(x.key) && x.key !== "gps").map(li).join("")}</div>
   <h2>Cycle aktif</h2>
   ${aktif.length ? aktif.map(kat).join("") : `<p class="empty">Pa gen cycle.</p>`}
   ${lot.length ? `<h2>Cycle yo</h2><div class="list">${lot.map((x) => `<a class="row" href="${x.href}">
@@ -208,7 +208,7 @@ export function rapo(ctx) {
   return `
   <div class="bhead"><div><h1>Rapò</h1></div></div>
   <div class="chips" role="tablist">${jou.map((x) => `<button role="tab" aria-selected="${x.on}" class="chip ${x.on ? "on" : ""}" data-j="${x.i}" title="${datFr(x.date)}">${x.label}</button>`).join("")}</div>
-  <p class="eyebrow rdate">${t(JOU[isoJouDe(D)])} ${datFr(D)}</p>
+  <p class="eyebrow rdate">${t(JOU[ctx.isoJou])} ${datFr(D)}</p>
   <div class="rtop">
   <div class="kach" data-kpi="kach" data-val="${kpi.kach}">
     <span>Kach pou remèt nan kès</span>
@@ -219,13 +219,13 @@ export function rapo(ctx) {
   <div class="rlist">
     <div class="rl" data-kpi="depo" data-val="${kpi.depo}"><div class="ri g">${ICO.monte}</div><div class="grow"><b>Depo ankese</b><div class="mut sm">${kpi.nDepo} depo${kpi.nDeklare ? ` · ${gd(kpi.deklare)} ${t("balans deklare")}` : ""}</div></div><b class="rv in">${gd(kpi.depo)}</b></div>
     <div class="rl" data-kpi="retre" data-val="${kpi.retre}"><div class="ri r">${ICO.desann}</div><div class="grow"><b>Retrè peye</b><div class="mut sm">${kpi.nRetre} retrè</div></div><b class="rv out">${gd(kpi.retre)}</b></div>
-    <div class="rl" data-kpi="fre" data-val="${kpi.fre}"><div class="ri y">${ICO.liy}</div><div class="grow"><b>Frè</b> <span class="mut">·</span> <span class="vim" data-kpi="viman" data-val="${kpi.vim}">Viman <b>${gd(kpi.vim)}</b></span><div class="mut sm">${kpi.nFre} frè · ${kpi.nVim} viman · ${t("Pa afekte kach la")}</div></div><b class="rv fee">${gd(kpi.fre)}</b></div>
+    <div class="rl" data-kpi="fre" data-val="${kpi.fre}"><div class="ri y">${ICO.liy}</div><div class="grow"><b>Frè ak viman</b><div class="mut sm">${kpi.nFre} frè · <span class="vim" data-kpi="viman" data-val="${kpi.vim}">${kpi.nVim} viman <b>${gd(kpi.vim)}</b></span> · ${t("Pa afekte kach la")}</div></div><b class="rv fee">${gd(kpi.fre)}<small>frè</small></b></div>
   </div>
   </div>
   <div class="tiles3 mini">
     <div class="tile n" data-kpi="cycles" data-val="${kpi.cycles}"><b>${kpi.cycles}</b><span>Cycle kreye</span></div>
-    <div class="tile n" data-kpi="papeye" data-val="${kpi.swivi}"><b>${kpi.swivi}</b><span>Kliyan ki pa peye</span></div>
-    <div class="tile n" data-kpi="demann" data-val="${kpi.dmAtant}"><b>${kpi.dmAtant}</b><span>Demann an atant</span></div>
+    <div class="tile n" data-kpi="papeye" data-val="${kpi.swivi}"><b>${kpi.swivi}</b><span><span aria-hidden="true">Pa peye</span><span class="sr">Kliyan ki pa peye</span></span></div>
+    <div class="tile n" data-kpi="demann" data-val="${kpi.dmAtant}"><b>${kpi.dmAtant}</b><span><span aria-hidden="true">Demann</span><span class="sr">Demann an atant</span></span></div>
   </div>
   <div class="tile n wide dek" data-kpi="deklare" data-val="${kpi.deklare}"><span>Balans deklare (total)</span><b class="amt">${gd(kpi.deklare)}</b><em>${kpi.nDeklare} ${t("kont deklare")}</em></div>
   ${sw && sw.total ? `<div class="swv"><b>Swivi kliyan yo</b><span class="ok-t">${sw.peye} ${t("Peye")}</span><span class="warn-t">${sw.fidbak} ${t("fidbak anrejistre")}</span>${i === 0 ? `<span class="mut">${sw.pokoWe} ${t("poko wè")}</span>` : ""}</div>` : ""}
@@ -241,9 +241,6 @@ export default {
   fonts: ["https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"],
   tem: "both",
   themeColor: { light: "#ffffff", dark: "#0f172a" },
-  fr: {
-    "Modifye": "Modifier", "Lòt enfòmasyon": "Autres informations", "Tranzaksyon yo": "Transactions",
-    "Pa afekte kach la": "Sans effet sur la caisse", "Poko wè": "Pas encore vus", "frè": "frais", "viman": "virement(s)", "Kont": "Compte", "K ap vini": "À venir",
-  },
+  fr: { "Lòt enfòmasyon": "Autres informations", "K ap vini": "À venir", "Frè ak viman": "Frais et virements", "frè": "frais", "viman": "virement(s)" },
   parts: { tablo, epay, kontRow, fich, cycleTop, rapo },
 };

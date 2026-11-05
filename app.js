@@ -8,6 +8,22 @@ import * as F from "./fmt.js";
 import * as looks from "./looks.js";
 
 const $app = document.getElementById("app");
+// Klavye sou onglè yo (role=tab nan yon role=tablist): flèch, Home, End deplase fokis la epi chwazi onglè a.
+$app.addEventListener("keydown", (e) => {
+  const tab = e.target?.closest?.('[role="tab"]'); const list = tab?.closest('[role="tablist"]'); if (!list) return;
+  const tabs = [...list.querySelectorAll('[role="tab"]')]; const i = tabs.indexOf(tab); if (i < 0 || tabs.length < 2) return;
+  let j = null;
+  if (e.key === "ArrowRight" || e.key === "ArrowDown") j = (i + 1) % tabs.length;
+  else if (e.key === "ArrowLeft" || e.key === "ArrowUp") j = (i - 1 + tabs.length) % tabs.length;
+  else if (e.key === "Home") j = 0; else if (e.key === "End") j = tabs.length - 1;
+  if (j == null) return;
+  e.preventDefault();
+  const li = [...$app.querySelectorAll('[role="tablist"]')].indexOf(list);
+  tabs[j].focus(); tabs[j].click();
+  // Paj la ka re-rann apre klik la: remete fokis la sou menm onglè a.
+  const refokis = () => { const nl = $app.querySelectorAll('[role="tablist"]')[li]; const nt = nl?.querySelectorAll('[role="tab"]')[j]; if (nt && document.activeElement !== nt) nt.focus(); };
+  setTimeout(refokis, 150); setTimeout(refokis, 500);
+});
 const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
