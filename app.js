@@ -174,7 +174,8 @@ function viewLogin(expired) {
       navigator.storage?.persist?.();
       b.textContent = "Ap telechaje done yo…";
       await S.run();
-      go("#/");
+      // Si ajan an te deja peze yon onglè pandan telechajman an, kite l kote l ye.
+      if (!location.hash || location.hash === "#/login" || location.hash === "#/") go("#/"); else render();
     } catch (err) {
       out.textContent = err.message;
       b.disabled = false; b.textContent = "Konekte";
