@@ -498,19 +498,19 @@ html[data-look="c"] .look-desk { color: var(--mut); display: block; }
   html[data-look="c"] .ledger { padding: 4px 20px; }
   html[data-look="c"] .row { padding: 13px 0; }
   /* Popup: pi konpak (tèt ikòn + tit sou yon liy, chwa 42 px, nòt 56 px) pou popup fidbak la (7 chwa) antre nèt nan yon ekran 600 px wotè */
-  html[data-look="c"] .modal { max-width: 480px; padding: 20px 24px; }
+  html[data-look="c"] .modal { max-width: 480px; padding: 16px 24px; }
   html[data-look="c"] .modal-h { flex-direction: row; justify-content: flex-start; text-align: left; gap: 12px; }
   html[data-look="c"] .modal-h h2 { text-align: left; justify-content: flex-start; font-size: 1.05rem; }
-  html[data-look="c"] .modal-ico { width: 36px; height: 36px; font-size: 1rem; box-shadow: 0 0 0 3px var(--gold-bg); }
+  html[data-look="c"] .modal-ico { width: 28px; height: 28px; font-size: .9rem; box-shadow: 0 0 0 3px var(--gold-bg); }
   html[data-look="c"] .modal-ico.danger { box-shadow: 0 0 0 3px var(--err-bg); }
   html[data-look="c"] .modal-foto { width: 56px; height: 56px; }
-  html[data-look="c"] .modal-p { text-align: left; margin: 8px 0 0; font-size: .92rem; }
+  html[data-look="c"] .modal-p { text-align: left; margin: 4px 0 0; font-size: .9rem; }
   html[data-look="c"] .modal-dl { margin-top: 10px; }
-  html[data-look="c"] .modal-choix fieldset { margin-top: 10px; gap: 4px; }
-  html[data-look="c"] .modal-choix label:not(.modal-l) { min-height: 42px; padding: 6px 12px; font-size: .9rem; }
-  html[data-look="c"] .modal-l { margin-top: 8px; }
-  html[data-look="c"] .modal-choix textarea { min-height: 56px; height: 56px; padding: 8px 12px; margin-top: 4px; }
-  html[data-look="c"] .modal-b { margin-top: 12px; }
+  html[data-look="c"] .modal-choix fieldset { margin-top: 8px; gap: 3px; }
+  html[data-look="c"] .modal-choix label:not(.modal-l) { min-height: 44px; padding: 6px 12px; font-size: .9rem; } /* ≥ 44 px (kontra) */
+  html[data-look="c"] .modal-l { margin-top: 6px; }
+  html[data-look="c"] .modal-choix textarea { min-height: 48px; height: 48px; padding: 8px 12px; margin-top: 4px; }
+  html[data-look="c"] .modal-b { margin-top: 8px; }
   html[data-look="c"] .modal-b .btn { min-height: 44px; }
   html[data-look="c"] .empty { padding: 28px 16px; }
   /* Paj etwat (fòm, paj ak lyen retou, koneksyon, Paramèt): 720 px santre */
@@ -527,11 +527,11 @@ html[data-look="c"] .look-desk { color: var(--mut); display: block; }
   html[data-look="c"] .stile > b { font-size: 1.6rem; }
   html[data-look="c"] .tabs { margin: 20px 0 4px; }
   html[data-look="c"] .tab { flex: 0 0 auto; min-width: 160px; padding: 0 20px; }
-  html[data-look="c"] .ep-2 { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 0 32px; align-items: start; } /* 5/7 depi 1024: kont aktif yo (meta, balans) bezwen plis plas pase «Peman jodi a» */
+  html[data-look="c"] .ep-2 { display: grid; grid-template-columns: minmax(0, 11fr) minmax(0, 13fr); gap: 0 24px; align-items: start; } /* 1024–1279: kont aktif yo (meta, balans) bezwen yon ti plis plas; 5/7 + 32 px a ≥ 1280 */
   html[data-look="c"] .ep-col { min-width: 0; }
   html[data-look="c"] .ep-2 .list.grid-t { grid-template-columns: minmax(0, 1fr); gap: 0; }
   html[data-look="c"] .ep-2 .chips.filt { width: fit-content; max-width: 100%; grid-template-columns: repeat(3, auto); margin: 2px 0 8px; } /* chak chip pran lajè tèks li (fr + gwo tèks pa kase sou 2 liy) */
-  html[data-look="c"] .ep-2 .chips.filt .chip { padding: 4px 14px; font-size: .8rem; }
+  html[data-look="c"] .ep-2 .chips.filt .chip { padding: 4px 12px; font-size: .8rem; }
   html[data-look="c"] .ep-2 #q { max-width: 480px; margin-bottom: 4px; }
   html[data-look="c"] #ong > .note.info-note { max-width: 760px; }
   /* Liy demann / validasyon (.row.col): tèks agòch, bouton Apwouve · Refize adwat (pa etire sou tout lajè a) */
@@ -595,15 +595,16 @@ html[data-look="c"] .look-desk { color: var(--mut); display: block; }
   html[data-look="c"] .look-opt { padding: 10px; }
 }
 /* Laptop laj (≥ 1280 px): kolòn 5fr/7fr; lis yo (tranzaksyon, demann, fidbak, rapò) an 2 kolòn depi 2 liy — pa liy ak bouton
-   (.row.col Apwouve/Refize: yo rete sou 1 kolòn ≤ 760 px). Yon sèl liy = lajè yon kolòn (anyen pa etire sou tout lajè a). */
+   Apwouve/Refize (.row.col > .btns: yo rete sou 1 kolòn ≤ 760 px). Yon sèl liy = lajè yon kolòn (anyen pa etire sou tout lajè a). */
 @media (min-width: 1280px) {
   html[data-look="c"][data-look="c"] { --g2: minmax(0, 5fr) minmax(0, 7fr); }
+  html[data-look="c"] .ep-2 { grid-template-columns: var(--g2); gap: 0 32px; }
   html[data-look="c"] .fich-2 { grid-template-columns: var(--g2); }
   html[data-look="c"] .heat i { height: 22px; }
-  html[data-look="c"] :is(#ong, #cycle, #rapo) > .list:has(> .row:nth-child(2)):not(:has(> .row.col)) { display: block; columns: 2; column-gap: 32px; }
-  html[data-look="c"] :is(#ong, #cycle, #rapo) > .list:has(> .row:nth-child(2)):not(:has(> .row.col)) > .row { break-inside: avoid; border-bottom: 1px solid var(--div); }
+  html[data-look="c"] :is(#ong, #cycle, #rapo) > .list:has(> .row:nth-child(2)):not(:has(> .row.col > .btns)) { display: block; columns: 2; column-gap: 32px; }
+  html[data-look="c"] :is(#ong, #cycle, #rapo) > .list:has(> .row:nth-child(2)):not(:has(> .row.col > .btns)) > .row { break-inside: avoid; border-bottom: 1px solid var(--div); }
   html[data-look="c"] :is(#ong, #cycle, #rapo) > .list:has(> .row:only-child) { max-width: calc(50% - 16px); }
-  html[data-look="c"] :is(#ong, #cycle, #rapo) > .list:has(> .row.col) { max-width: 760px; }
+  html[data-look="c"] :is(#ong, #cycle, #rapo) > .list:has(> .row.col > .btns) { max-width: 760px; }
 }
 @media (min-width: 1440px) {
   html[data-look="c"] main { max-width: 1240px; }
