@@ -235,6 +235,9 @@ html[data-look="a"] .solde { display: grid; grid-template-columns: auto minmax(0
 html[data-look="a"] .solde span { display: block; color: var(--mut); font-size: .8rem; font-weight: 600; }
 html[data-look="a"] .solde b { display: block; font-size: 1.5rem; font-weight: 800; color: var(--ink); margin: 0; line-height: 1.2; overflow-wrap: anywhere; }
 html[data-look="a"] .solde small { display: block; color: var(--mut); font-size: .75rem; }
+/* Wonn pwogrè anndan kat solde a: `.solde b` (menm espesifisite, pi ba nan fichye a) t ap ba li 1.5rem + display:block → «26 / %» sou 2 liy nan ti disk 50 px la. (0,3,1) pase devan l. */
+html[data-look="a"] .solde .ring { font-size: 1rem; }
+html[data-look="a"] .solde .ring b { display: flex; font-size: .88rem; line-height: 1; margin: 0; white-space: nowrap; overflow-wrap: normal; }
 
 /* ===================== Rechèch, fòmilè ===================== */
 html[data-look="a"] .search, html[data-look="a"] input, html[data-look="a"] select, html[data-look="a"] textarea { min-height: 48px; padding: 11px 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--field); color: var(--ink); font-size: 1rem; }
@@ -473,9 +476,11 @@ html[data-look="a"] .center { text-align: center; }
   html[data-look="a"] .nav-foot .nav-moi { color: #fff; font-weight: 700; font-size: .9rem; overflow-wrap: anywhere; }
   html[data-look="a"] .nav-foot .nav-ver { color: var(--nav-dim); font-size: .75rem; }
 
-  /* --- Kontni: kolòn santre 1160 px (1240 a ≥ 1440), pa gen ba anba ankò --- */
+  /* --- Kontni: kolòn 1160 px (1240 a ≥ 1440) kole ak kolòn navigasyon an (pa santre: konsa band ble marin an toujou soti nan kolòn nan, menm sou 1920 px), pa gen ba anba ankò --- */
   html[data-look="a"] main { max-width: 1160px; padding: 0 var(--gx) 40px; }
-  html[data-look="a"] body.has-nav main { padding-bottom: 40px; }
+  html[data-look="a"] body.has-nav main { margin-left: 0; padding-bottom: 40px; }
+  /* Band lan kole ak kolòn navigasyon an: kwen anba-gòch la kare (sinon yon ti twou klè parèt ant 2 ble marin yo); kwen dwat la rete won. */
+  html[data-look="a"] body.has-nav :is(.band, main > .page-head, main > .back + h1, main > .back + h1 + p.mut) { border-bottom-left-radius: 0; }
   html[data-look="a"] body.has-nav .toast { left: auto; right: 24px; bottom: 24px; max-width: 420px; margin: 0; }
   html[data-look="a"] h2 { font-size: 1.1rem; margin: 24px 0 12px; }
   html[data-look="a"] .card { padding: 18px 20px; }
@@ -529,14 +534,15 @@ html[data-look="a"] .center { text-align: center; }
   html[data-look="a"] .fich-id .avatar { width: 96px; height: 96px; font-size: 2.1rem; }
   html[data-look="a"] .fich-id h1 { font-size: 1.75rem; }
 
-  /* --- Fich cycle: solde (gòch) + estatistik (dwat) flote ansanm sou band lan; bouton yo anba solde a; lis yo anba --- */
-  html[data-look="a"] .cyc-g { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto auto 1fr auto; column-gap: 24px; row-gap: 0; align-items: start; }
+  /* --- Fich cycle (1024–1279): solde (gòch, flote sou band lan) + bouton yo (dwat, aliyen anba kat la) sou yon liy; estatistik sou tout lajè anba (4 pa liy); lis yo anba.
+         (Ak 2 kolòn sèlman, yon kat estatistik 2 kolòn bò kote solde a te kite yon gwo twou anba bouton yo.) --- */
+  html[data-look="a"] .cyc-g { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto auto auto auto; column-gap: 24px; row-gap: 0; align-items: start; }
   html[data-look="a"] .cyc-g > .band { grid-area: 1 / 1 / 2 / 3; }
   html[data-look="a"] .cyc-g > .solde { grid-area: 2 / 1 / 3 / 2; }
-  html[data-look="a"] .cyc-g > .btn-row { grid-area: 3 / 1 / 4 / 2; }
-  html[data-look="a"] .cyc-g > .stats { grid-area: 2 / 2 / 4 / 3; grid-template-columns: repeat(2, 1fr); margin-top: -44px; position: relative; border-radius: 20px; box-shadow: var(--sh); padding: 18px 20px; }
+  html[data-look="a"] .cyc-g > .btn-row { grid-area: 2 / 2 / 3 / 3; align-self: end; margin: 0; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  html[data-look="a"] .cyc-g > .note { grid-area: 3 / 1 / 4 / 3; }
+  html[data-look="a"] .cyc-g > .stats { grid-area: 4 / 1 / 5 / 3; grid-template-columns: repeat(4, 1fr); padding: 18px 20px; }
   html[data-look="a"] .cyc-g > .stats > .wide:last-child { grid-column: 1 / -1; } /* «Peman jiska jodi a» + ba pwogrè sou tout lajè kat la */
-  html[data-look="a"] .cyc-g > .note { grid-area: 4 / 1 / 5 / 3; }
 
   /* --- Rapò: band = tit + 3 chip jou yo sou menm liy, gwo KPI anba; KPI 4 pa liy; swivi (gòch) | tranzaksyon (dwat) --- */
   html[data-look="a"] .band.rapo-h { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 24px; align-items: center; }
@@ -547,7 +553,10 @@ html[data-look="a"] .center { text-align: center; }
   html[data-look="a"] .rapo-g { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 28px; align-items: start; }
   html[data-look="a"] .rapo-g > .kpis { grid-column: 1 / -1; margin-top: 16px; }
   html[data-look="a"] .rapo-g > .rapo-2 { display: block; }
-  html[data-look="a"] .rapo-tx > h2 { margin-top: 10px; }
+  html[data-look="a"] .rapo-tx > h2 { margin-top: 6px; line-height: 1.3; } /* tèt tèks la aliyen ak kwen anwo kat «Viman…» agòch la (kat la gen 10 px maj) */
+  /* Lyen kliyan nan band cycle la: sou laptop gen plas, non long lan ka pase sou 2 liy olye l koupe ak «…» */
+  html[data-look="a"] .band-k { max-width: min(70%, 640px); }
+  html[data-look="a"] .band-k span:not(.thumb) { white-space: normal; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-height: 1.3; }
 
   /* --- Koneksyon: band sou tout lajè ekran an, kat 440 px santre --- */
   html[data-look="a"] main:has(> .login) { max-width: none; padding: 0; }
@@ -556,10 +565,13 @@ html[data-look="a"] .center { text-align: center; }
   html[data-look="a"] .login form.card, html[data-look="a"] .login .note { max-width: 440px; margin-left: auto; margin-right: auto; }
   html[data-look="a"] .login form.card { padding: 24px; }
 }
-/* Laptop laj (≥ 1280 px): kolòn 5fr/7fr, estatistik cycle 4 pa liy, lis cycle yo an 2 kolòn */
+/* Laptop laj (≥ 1280 px): kolòn 5fr/7fr; fich cycle = solde (gòch) + estatistik (dwat, 4 pa liy) flote ansanm sou band lan, bouton yo anba solde a; lis cycle yo an 2 kolòn */
 @media (min-width: 1280px) {
   html[data-look="a"] .ep-2, html[data-look="a"] .fich-g, html[data-look="a"] .rapo-g, html[data-look="a"] .cyc-g { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); }
-  html[data-look="a"] .cyc-g > .stats { grid-template-columns: repeat(4, 1fr); }
+  html[data-look="a"] .cyc-g { grid-template-rows: auto auto 1fr auto; }
+  html[data-look="a"] .cyc-g > .btn-row { grid-area: 3 / 1 / 4 / 2; align-self: start; margin: 12px 0; }
+  html[data-look="a"] .cyc-g > .stats { grid-area: 2 / 2 / 4 / 3; margin-top: -44px; position: relative; border-radius: 20px; box-shadow: var(--sh); }
+  html[data-look="a"] .cyc-g > .note { grid-area: 4 / 1 / 5 / 3; }
   html[data-look="a"] #cycle > .list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 }
 @media (min-width: 1440px) {
@@ -580,6 +592,7 @@ html[data-look="a"] .center { text-align: center; }
   html[data-look="a"] .btn.danger-full:hover { background: color-mix(in srgb, var(--err-fill) 92%, #000); }
   html[data-look="a"] .btn:disabled:hover { background: var(--card); }
   html[data-look="a"] .chip:hover:not(.on) { background: var(--track); }
+  html[data-look="a"] .chips.filt .chip:hover:not(.on) small { background: var(--card); } /* bul kantite a pa fonn nan chip la lè l gen menm koulè (--track) */
   html[data-look="a"] .tab:hover:not(.on) { color: var(--ink); background: color-mix(in srgb, var(--seg-on) 55%, transparent); }
   html[data-look="a"] .jchip:hover:not(.on) { background: var(--band-chip); }
   html[data-look="a"] .look-opt:hover:not(.on) { border-color: var(--gold-l); }
