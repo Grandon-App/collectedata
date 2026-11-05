@@ -102,13 +102,20 @@ export function epay(ctx) {
   const FILT = [["jodi", "Jodi a", stats.pouJodi], ["tout", "Tout", stats.aktif], ["reta", "An reta", stats.anReta]];
   let body = "";
   if (ong === "kont") {
+    // .ep-2 / .ep-col: blòk senp sou telefòn; sou laptop (≥ 1024 px) 2 kolòn kòt a kòt («Peman jodi a» | «Kont ak cycle aktif»).
     body = `
+    <div class="ep-2">
+    <div class="ep-col">
     ${lbl("Peman jodi a", `${stats.peye}/${stats.pouJodi}`)}
     <div class="list grid-t" id="jodi-list">${ctx.jodiHtml || `<p class="empty">Pa gen peman ki tonbe jodi a.</p>`}</div>
+    </div>
+    <div class="ep-col">
     ${lbl("Kont ak cycle aktif", String(stats.aktif))}
     <div class="chips filt" role="group" aria-label="Filt">${FILT.map(([v, l, n]) => `<button type="button" class="chip ${filt === v ? "on" : ""}" data-filt="${v}" aria-pressed="${filt === v}">${l}<small>${n}</small></button>`).join("")}</div>
     <input id="q" type="search" class="search" placeholder="Chèche kliyan oswa nimewo kont…" aria-label="Chèche kont" value="${h(q)}" autocomplete="off">
-    <div class="list grid-t" id="kont">${ctx.kontHtml}</div>`;
+    <div class="list grid-t" id="kont">${ctx.kontHtml}</div>
+    </div>
+    </div>`;
   } else if (ong === "tx") {
     body = `${ctx.demannHtml ? `<h2>Demann retrè ak viman</h2><div class="list">${ctx.demannHtml}</div>` : ""}
     <h2>Tranzaksyon yo</h2><div class="list">${ctx.txHtml || `<p class="empty">Poko gen tranzaksyon.</p>`}</div>`;
@@ -136,6 +143,8 @@ export function fich(ctx) {
   const aktif = ks.filter((x) => x.on), lot = ks.filter((x) => !x.on);
   return `
   <div class="topr"><a href="#/kliyan" class="back">‹ Kliyan</a><a class="btn sm" href="${ctx.hrefModifye}">Modifye</a></div>
+  <div class="fich-2">
+  <div class="fich-l">
   <div class="fich-h">
     ${photo ? `<img class="avatar" src="${h(photo)}" alt="" data-legend="${h(non(c))}" title="Peze foto a pou wè l pi gwo">` : `<div class="avatar ph" aria-hidden="true">${h(inisyal(c))}</div>`}
     <div class="grow">
@@ -154,13 +163,17 @@ export function fich(ctx) {
     ${kv(val(I.sekte) || !val(I.aktivite) ? (I.sekte?.label || "Sektè") : (I.aktivite?.label || "Aktivite"), join(val(I.sekte), val(I.aktivite)))}
     ${kv(val(I.vant) || !val(I.kapasite) ? (I.vant?.label || "Pwen de vant") : (I.kapasite?.label || "Kapasite distribisyon"), join(val(I.vant), val(I.kapasite)))}
   </div>
+  </div>
+  <div class="fich-r">
   <div class="lrow">${lbl("Cycle aktif", aktif.length > 1 ? String(aktif.length) : "")}<a class="lnk-a" href="${ctx.hrefNouvoCycle}">＋ Nouvo cycle</a></div>
   ${aktif.length ? aktif.map((x) => cycCard(x, { man, href: x.href })).join("") : `<p class="empty">${ks.length ? "Pa gen cycle aktif." : "Pa gen cycle."}</p>`}
   ${lot.length ? `${lbl("Lòt cycle", String(lot.length))}<div class="list">${lot.map((x) => `<a class="row" href="${x.href}">
       <div class="grow"><b class="mono">${d(x.k.no_compte || t("Cycle poko voye"))}</b> ${badgePend(x.k)}
         <div class="mut xs">Plan <span class="mono">${gd(x.k.montant_plan)}</span> · ${x.k.frequence_semaine ? `${x.k.frequence_semaine}×/sem (${lisJou(x.k.jours_paiement)})` : "—"}</div>
         <div class="mut xs mono">${datKout(x.k.date_debut)} → ${datFr(x.k.date_fin)}</div></div>
-      <div class="right"><b class="mono">${man && x.solde != null ? gd(x.solde) : `${x.nPeye}/${x.nPrevu ?? "?"}`}</b><br>${badgeKont(x.k)}</div></a>`).join("")}</div>` : ""}`;
+      <div class="right"><b class="mono">${man && x.solde != null ? gd(x.solde) : `${x.nPeye}/${x.nPrevu ?? "?"}`}</b><br>${badgeKont(x.k)}</div></a>`).join("")}</div>` : ""}
+  </div>
+  </div>`;
 }
 
 // ---------- Tèt fich cycle ----------
@@ -173,6 +186,7 @@ export function cycleTop(ctx) {
   <h1 class="mono">${d(k.no_compte || t("Cycle poko voye"))} ${ctx.badges.kont} ${ctx.badges.pend}</h1>
   <div class="sub">${d(non(c))} · ${t("Plan")} <span class="mono">${gd(k.montant_plan)}</span>${k.frequence_semaine ? ` · ${k.frequence_semaine}×/sem` : ""} · <span class="mono">${datKout(k.date_debut)} → ${datKout(k.date_fin)}</span></div>
   ${ctx.errHtml || ""}
+  <div class="cyc-2">
   ${man && ctx.solde != null
     ? `<div class="card solde"><span>Balans kont lan</span>${mG(ctx.solde, "gold")}<small>Balans valide: <span class="mono">${gd(ctx.soldeValide)}</span>${Number(ctx.depoAnAtant) ? ` · an atant validasyon: <span class="mono">${gd(ctx.depoAnAtant)}</span>` : ""}${ctx.local ? ` · poko voye: <span class="mono">${gd(ctx.local)}</span>` : ""}</small></div>`
     : `<div class="card solde"><span>Vèsman fèt</span><b class="mono gold">${ctx.nDepots}</b><small><span class="mono">${gd(ctx.depots)}</span> · ${t("depo ou wè sou telefòn nan")}</small></div>`}
@@ -186,6 +200,7 @@ export function cycleTop(ctx) {
     <div class="kv"><span>Fini</span><b class="mono">${datFr(k.date_fin)}</b></div>
     ${ctx.prevuTotal != null ? `<div class="kv"><span>Vèsman prevwa</span><b><span class="mono">${ctx.prevuTotal}</span> <small>san dimanch ni jou ferye</small></b></div>
     <div class="kv"><span>Total pou l sanble</span><b class="mono">${gd(ctx.totalPrevu)}</b></div>` : ""}
+  </div>
   </div>`;
 }
 
