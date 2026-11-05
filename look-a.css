@@ -112,9 +112,9 @@ html[data-look="a"] .band-k .thumb { width: 32px; height: 32px; font-size: .75re
 html[data-look="a"] .band-k .thumb.ph { background: rgba(255, 255, 255, .14); color: var(--band-ink); }
 
 /* Paj app.js yo: .page-head → band; .back + h1 (+ p.mut) → band; sa ki vin apre a flote sou kwen an. */
-html[data-look="a"] main > .page-head { background: var(--band); color: var(--band-ink); margin: 0 calc(-1 * var(--gx)) 14px; padding: 14px 20px 40px; border-radius: 0 0 28px 28px; box-shadow: 0 1px 0 var(--band-edge); }
+html[data-look="a"] main > .page-head { background: var(--band); color: var(--band-ink); margin: 0 calc(-1 * var(--gx)) 14px; padding: 14px 20px 40px; border-radius: 0 0 28px 28px; box-shadow: 0 1px 0 var(--band-edge); flex-wrap: wrap; }
 html[data-look="a"] main > .page-head h1 { color: var(--band-ink); font-size: 1.65rem; margin: 0; }
-html[data-look="a"] main > .page-head .btn { background: var(--gold); color: var(--gold-ink); border-color: var(--gold); border-radius: 99px; min-height: 44px; font-size: .85rem; padding: 8px 16px; box-shadow: none; white-space: nowrap; }
+html[data-look="a"] main > .page-head .btn { background: var(--gold); color: var(--gold-ink); border-color: var(--gold); border-radius: 99px; min-height: 44px; font-size: .85rem; padding: 8px 16px; box-shadow: none; }
 html[data-look="a"] main > .page-head + .search-row { margin: -26px 0 10px; background: var(--card); padding: 10px; border-radius: 20px; box-shadow: var(--sh); border: 1px solid var(--card-b); }
 html[data-look="a"] main > .page-head + h2 { margin-top: 6px; }
 html[data-look="a"] main > .back { display: block; background: var(--band); color: var(--band-ink); margin: 0 calc(-1 * var(--gx)); padding: 12px 20px 40px; border-radius: 0 0 28px 28px; font-weight: 700; font-size: .9rem; text-decoration: none; }
@@ -142,6 +142,7 @@ html[data-look="a"] .sm { font-size: .85rem; }
 html[data-look="a"] .kr .grow > b { font-size: 1rem; }
 html[data-look="a"] .btns { gap: 8px; margin-top: 10px; }
 html[data-look="a"] .btns-v { gap: 6px; }
+html[data-look="a"] .row.demande .btns { margin-top: 12px; }
 html[data-look="a"] .thumb { width: 46px; height: 46px; background: var(--track); font-size: .9rem; font-weight: 800; }
 html[data-look="a"] .thumb.ph { background: var(--pri); color: var(--pri-ink); }
 html[data-look="a"] .thumb.ph.av-2 { background: var(--gold); color: var(--gold-ink); }
@@ -240,7 +241,8 @@ html[data-look="a"] fieldset.field legend { font-weight: 700; font-size: .9rem; 
 html[data-look="a"] label.chk { font-weight: 600; margin: 14px 0; }
 html[data-look="a"] label.chk input { width: 22px; height: 22px; min-height: 0; accent-color: var(--pri); }
 html[data-look="a"] .seg { gap: 8px; }
-html[data-look="a"] .seg span { min-height: 48px; border-radius: 12px; border: 1px solid var(--line); background: var(--field); font-weight: 600; font-size: .88rem; }
+html[data-look="a"] .seg label { min-width: 0; }
+html[data-look="a"] .seg span { min-height: 48px; padding: 6px 4px; border-radius: 12px; border: 1px solid var(--line); background: var(--field); font-weight: 600; font-size: .88rem; overflow-wrap: anywhere; }
 html[data-look="a"] .seg input:checked + span { background: var(--pri); color: var(--pri-ink); border-color: var(--pri); font-weight: 700; }
 html[data-look="a"] .seg input:focus-visible + span, html[data-look="a"] .jours input:focus-visible + span { outline: 3px solid var(--gold); outline-offset: 2px; }
 html[data-look="a"] .jours { gap: 6px; }
@@ -261,6 +263,7 @@ html[data-look="a"] .kpis { gap: 10px; margin-top: 14px; }
 html[data-look="a"] .kpi { background: var(--card); border: 1px solid var(--card-b); border-radius: var(--r); padding: 14px; box-shadow: var(--sh-s); }
 html[data-look="a"] .kpi > span { color: var(--mut); font-size: .78rem; font-weight: 600; }
 html[data-look="a"] .kpi b { font-size: 1.35rem; font-weight: 800; margin: 2px 0; color: var(--ink); line-height: 1.2; }
+html[data-look="a"] .kpi b span { font-size: inherit; font-weight: inherit; }
 html[data-look="a"] .kpi small { color: var(--mut); font-size: .75rem; }
 html[data-look="a"] .kpi.main { background: var(--band); border-color: var(--band); color: var(--band-ink); }
 html[data-look="a"] .band .kpi.main { background: none; border: 0; padding: 18px 0 0; box-shadow: none; }
@@ -300,6 +303,7 @@ html[data-look="a"] .card.info { padding: 4px 16px; }
 html[data-look="a"] .card.info .kv { padding: 10px 0; }
 html[data-look="a"] .card.info .kv b { font-weight: 700; }
 html[data-look="a"] .card.info .kv b .badge { vertical-align: 1px; }
+html[data-look="a"] .card.info .kv b a { display: inline-block; padding: 10px 0; margin: -10px 0; font-weight: 700; }
 
 /* ===================== Fich kliyan ===================== */
 html[data-look="a"] .fich-id { display: flex; gap: 16px; align-items: center; margin-top: 10px; }
@@ -334,6 +338,7 @@ html[data-look="a"] .toast { background: var(--toast); color: #fff; border-left:
 html[data-look="a"] .toast.err { background: var(--err-fill); border-left-color: #ffd8d4; }
 html[data-look="a"] .toast.info { background: var(--pri); }
 html[data-look="a"] .toast.update { border-left: 4px solid var(--gold); }
+html[data-look="a"] .modal-wrap { background: rgba(8, 14, 28, .6); }
 html[data-look="a"] .modal { border-radius: 24px; padding: 22px 20px; }
 html[data-look="a"] .modal-h h2 { margin: 0; font-size: 1.15rem; justify-content: center; text-align: center; }
 html[data-look="a"] .modal-ico { background: var(--pri); color: #fff; box-shadow: 0 0 0 5px rgba(201, 162, 39, .35); }
@@ -362,7 +367,7 @@ html[data-look="a"] .login form.card { margin-top: 18px; padding: 20px; box-shad
 html[data-look="a"] .login .btn { margin-top: 10px; }
 html[data-look="a"] .login .note { margin-top: 14px; }
 html[data-look="a"] .lang-sw { padding: 4px; border-radius: 99px; background: var(--card); border: 1px solid var(--line); margin-top: 12px; box-shadow: var(--sh-s); }
-html[data-look="a"] .lang-sw button { min-height: 40px; padding: 6px 18px; border-radius: 99px; font-weight: 700; }
+html[data-look="a"] .lang-sw button { min-height: 44px; padding: 6px 18px; border-radius: 99px; font-weight: 700; }
 html[data-look="a"] .lang-sw button.on { background: var(--pri); color: var(--pri-ink); }
 
 /* ===================== Paramèt: chwa look ===================== */
@@ -399,6 +404,7 @@ html[data-look="a"] .center { text-align: center; }
   html[data-look="a"] .tab { font-size: .8rem; }
   html[data-look="a"] .chips.filt .chip { padding: 6px 4px; font-size: .8rem; gap: 4px; }
   html[data-look="a"] .kr .btn.sm { padding: 8px 10px; }
+  html[data-look="a"] .seg.s4 { grid-template-columns: repeat(2, 1fr); }
 }
 /* Mouvman redui */
 @media (prefers-reduced-motion: reduce) {

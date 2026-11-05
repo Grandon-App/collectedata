@@ -369,7 +369,7 @@ async function viewEpay() {
     return l.map((k) => P.kontRow(ctxKontRow(M, k, "aktif", swiviJodi))).join("") || `<p class="empty">${v || filtKont !== "tout" ? t("Anyen pa koresponn.") : t("Pa gen kont ak cycle aktif.")}</p>`;
   };
   const ctx = {
-    ...ctxBase(M), ong: ongEpay, ongs, stats: st, filt: filtKont, q: filtEpay, nJodi: pouJodi.length, nKont: aktif.length, nEnAtant: enAtant.length,
+    ...ctxBase(M), isoJou: S.isoJou(M.today), ong: ongEpay, ongs, stats: st, filt: filtKont, q: filtEpay, nJodi: pouJodi.length, nKont: aktif.length, nEnAtant: enAtant.length,
     jodiHtml: pouJodi.map((k) => P.kontRow(ctxKontRow(M, k, "jodi", swiviJodi))).join(""), kontHtml: rowsKont(),
     txHtml: "", demannHtml: "", validHtml: "",
   };
@@ -418,7 +418,7 @@ async function viewRapo() {
   const fidbakJou = new Set([...M.suivis.values()].filter((x) => S.jouLokal(new Date(x.capture_le)) === D).map((x) => x.id_compte_epargne));
   const fidbakN = jodiKont.filter((k) => !k._joursPeye.has(D) && fidbakJou.has(k.id_compte_epargne)).length;
   const ctx = {
-    ...ctxBase(M), i: jouRapo, D, nonJou,
+    ...ctxBase(M), isoJou: S.isoJou(D), i: jouRapo, D, nonJou,
     jou: jou.map((date, i) => ({ i, date, label: nonJou(i), on: i === jouRapo })),
     kpi: { depo, nDepo: dep.length, retre, nRetre: ret.length, fre: sum(fre), nFre: fre.length, vim: sum(vim), nVim: vim.length,
       deklare, nDeklare, cycles, swivi, dmAtant, kach: depo - retre },

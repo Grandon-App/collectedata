@@ -11,7 +11,7 @@ const ton = (c) => { let s = 7; for (const ch of `${c?.prenom || ""}${c?.nom || 
 // Foto kliyan (wonn) oswa inisyal li, ak yon ton koulè. `plat`: san ton (sou fon ble marin).
 const av = (c, cls = "thumb", plat = false) => c?.photo_url
   ? `<img class="${cls}" src="${h(c.photo_url)}" alt="" loading="lazy" data-legend="${h(non(c))}">`
-  : `<span class="${cls} ph${plat ? "" : ` av-${ton(c)}`}" aria-hidden="true">${h(inisyal(c))}</span>`;
+  : `<span class="${cls} ph${plat ? "" : ` av-${ton(c)}`}" aria-hidden="true" data-brut>${h(inisyal(c))}</span>`;
 // Wonn pwogrè (conic-gradient lò sou fon klè) ak yon tèks nan mitan.
 const ring = (p, label) => `<div class="ring" style="--p:${Math.max(0, Math.min(100, Number(p) || 0))}%"><b>${label}</b></div>`;
 const hello = (ctx) => `<p class="hello">Bonjou ${d(prenon(ctx.moi))} · <span>${t(JOU[isoJouDe(ctx.today)])} ${datKout(ctx.today)}</span></p>`;
@@ -109,7 +109,7 @@ export function fich(ctx) {
   <div class="band fich-h">
     <div class="band-top"><a href="#/kliyan" class="back">‹ Kliyan</a><a class="btn gold" href="${ctx.hrefModifye}">${ICO.modifye}Modifye</a></div>
     <div class="fich-id">
-      ${photo ? `<img class="avatar" src="${h(photo)}" alt="" data-legend="${h(non(c))}" title="Peze foto a pou wè l pi gwo">` : `<div class="avatar ph" aria-hidden="true">${h(inisyal(c))}</div>`}
+      ${photo ? `<img class="avatar" src="${h(photo)}" alt="" data-legend="${h(non(c))}" title="Peze foto a pou wè l pi gwo">` : `<div class="avatar ph" aria-hidden="true" data-brut>${h(inisyal(c))}</div>`}
       <div class="grow">
         <h1>${d(non(c))}</h1>
         <div class="fich-sub">${c.pseudo ? `« ${d(c.pseudo)} » · ` : ""}${d(c.code_client || t("ID poko vini"))}</div>

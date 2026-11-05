@@ -80,7 +80,8 @@ const FR = {
   "jodi a": "aujourd'hui", "Jodi a": "Aujourd'hui", "Yè": "Hier", "Avan-yè": "Avant-hier",
   // Rapò
   "Depo ankese": "Dépôts encaissés", "Balans deklare (total)": "Solde déclaré (total)", "kont deklare": "comptes déclarés",
-  "Cycle kreye": "Cycles créés", "Kach nan men pou remèt nan kès": "Espèces à remettre à la caisse", "Depo − retrè": "Dépôts − retraits",
+  "Cycle kreye": "Cycles créés", "Kach nan men pou remèt nan kès": "Espèces à remettre à la caisse", "Depo − retrè": "Dépôts − retraits", "Depo − retrè peye": "Dépôts − retraits payés",
+  "Kont": "Compte", "Modifye": "Modifier", "Tranzaksyon yo": "Transactions", "Pa afekte kach la": "Sans effet sur la caisse",
   "Tranzaksyon mwen yo": "Mes transactions", "balans deklare": "solde déclaré", "depo": "dépôts",
   "tranzaksyon poko voye: yo konte nan rapò a, men sèvè a poko resevwa yo.": "transaction(s) non envoyée(s) : comptées dans le rapport, mais pas encore reçues par le serveur.",
   "Pa gen tranzaksyon": "Aucune transaction",

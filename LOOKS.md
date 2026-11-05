@@ -47,7 +47,7 @@ Paj "Tablo de bò" (poko devlope): yon akèy ak kèk chif + lyen `#/kliyan`, `#/
 
 ### `epay(ctx)` — paj Epay konplè
 ```
-ctx = { M, moi, man, today, t, lang,
+ctx = { M, moi, man, today, t, lang, isoJou (1..7 pou today),
   ong: "kont"|"tx"|"valid", ongs: [[id, label, countOrNull]],
   stats: { pouJodi, peye, kolekte, enAtant, aktif, anReta },
   filt: "jodi"|"tout"|"reta", q: "tèks rechèch",
@@ -95,7 +95,7 @@ Hook obligatwa: `h1` ak `d(k.no_compte || t("Cycle poko voye"))` + `badges.kont`
 
 ### `rapo(ctx)` — rapò ajan an
 ```
-ctx = { M, moi, man, today, t, lang, i (0..2), D (dat), nonJou (fn), jou: [{ i, date, label, on }],
+ctx = { M, moi, man, today, t, lang, i (0..2), D (dat), isoJou (1..7 pou D), nonJou (fn), jou: [{ i, date, label, on }],
   kpi: { depo, nDepo, retre, nRetre, fre, nFre, vim, nVim, deklare, nDeklare, cycles, swivi, dmAtant, kach },
   swiviStats: { total, peye, fidbak, pokoWe }, parLe: [{ h, montant, n }] (6è→19è), poko, txHtml, nTx }
 ```
