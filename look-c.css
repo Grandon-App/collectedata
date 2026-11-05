@@ -107,6 +107,13 @@ html[data-look="c"] .row .right b { font-family: var(--mono); font-weight: 600; 
 html[data-look="c"] .row .right .badge { margin-top: 4px; }
 /* Dezyèm liy liy app.js yo (kòd kont, dat, telefòn) an mono */
 html[data-look="c"] :is(a.row[href^="#/cycle/"], a.row[href^="#/kliyan/"], a.row[href^="#/tx/"], #baz .row, #dbl .row) .grow > .mut.sm:first-of-type { font-family: var(--mono); font-size: .76rem; font-variant-numeric: tabular-nums; }
+/* Liy fidbak (liSwivi: a.row.swivi nan onglè Fidbak, div.row.swivi sou paj cycle): fraz rezon an vin anvan liy «kont · dat, lè · ajan» an,
+   kidonk règ :first-of-type anwo a pa pran l — liy sa a dwe an mono tankou tout lòt liy liv kont lan. Nòt ajan an: italik ak yon ti liy agòch (pa yon dezyèm fraz rezon). */
+html[data-look="c"] .row.swivi { align-items: flex-start; }
+html[data-look="c"] .row.swivi .grow > .mut.sm { font-family: var(--mono); font-size: .76rem; font-variant-numeric: tabular-nums; margin-top: 1px; }
+html[data-look="c"] .row.swivi .rezon { margin-top: 1px; }
+html[data-look="c"] .row.swivi .nòt { margin-top: 5px; padding: 1px 0 1px 9px; border-left: 2px solid var(--line); font-style: italic; color: var(--ink); }
+html[data-look="c"] .row.swivi .err-msg { margin-top: 4px; }
 html[data-look="c"] .btns { gap: 8px; margin-top: 10px; }
 html[data-look="c"] .btns .btn { flex: 1; }
 html[data-look="c"] .btns-v { gap: 6px; align-items: flex-end; }
@@ -171,10 +178,17 @@ html[data-look="c"] .chip.on small { color: var(--gold-ink); opacity: .8; }
 html[data-look="c"] .chips.filt { grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 4px 0 8px; }
 html[data-look="c"] .chips.filt .chip { min-height: 44px; min-width: 0; padding: 4px 5px; font-size: .78rem; line-height: 1.15; white-space: normal; flex-wrap: wrap; justify-content: center; row-gap: 0; column-gap: 5px; overflow-wrap: anywhere; text-align: center; }
 html[data-look="c"] .chips.filt .chip small::before { content: "· "; }
+/* Fokis klavye sou yon chip: ank lan anndan (.chips gen overflow: hidden ki koupe ank deyò a); sou chip lò aktif la, ank fonse */
+html[data-look="c"] .chip:focus-visible { outline: 2px solid var(--gold); outline-offset: -3px; position: relative; z-index: 1; }
+html[data-look="c"] .chip.on:focus-visible { outline-color: var(--gold-ink); }
 
 /* ===================== Onglè (liy anba, lò) ===================== */
-html[data-look="c"] .tabs { background: transparent; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; padding: 0; gap: 0; margin: 14px 0 4px; }
-html[data-look="c"] .tab { min-height: 44px; border-radius: 0; color: var(--mut); font-weight: 600; font-size: .9rem; padding: 0 4px; gap: 6px; min-width: 0; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+/* Liy onglè yo: liy 1 px la se yon lonbraj anndan (pa yon bòdi) pou souliyen lò onglè aktif la pase sou li, menm lè liy lan woule.
+   Chak onglè kenbe omwen lajè tèks li (min-width: max-content, pa kase): si 4 onglè (manadjè) pa antre sou yon ti ekran, liy lan woule
+   sou kote olye etikèt yo pile youn sou lòt. Lè yo antre, yo gen menm lajè (flex-basis 0) tankou anvan. */
+html[data-look="c"] .tabs { background: transparent; border: 0; border-radius: 0; padding: 0; gap: 0; margin: 14px 0 4px; box-shadow: inset 0 -1px 0 var(--line); overflow-x: auto; overflow-y: hidden; scrollbar-width: none; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; }
+html[data-look="c"] .tabs::-webkit-scrollbar { display: none; }
+html[data-look="c"] .tab { flex: 1 1 0; min-height: 44px; border-radius: 0; color: var(--mut); font-weight: 600; font-size: .9rem; padding: 0 4px; gap: 6px; min-width: max-content; white-space: nowrap; border-bottom: 2px solid transparent; margin-bottom: 0; }
 html[data-look="c"] .tab.on { background: none; color: var(--ink); font-weight: 700; border-bottom-color: var(--gold); }
 html[data-look="c"] .tab:focus-visible { outline: 2px solid var(--gold); outline-offset: -2px; }
 html[data-look="c"] .cnt-b { background: var(--gold); color: var(--gold-ink); font: 600 .7rem/1.5 var(--mono); padding: 0 6px; border-radius: 6px; }
@@ -595,7 +609,7 @@ html[data-look="c"] .look-desk { color: var(--mut); display: block; }
   html[data-look="c"] .looks { gap: 12px; }
   html[data-look="c"] .look-opt { padding: 10px; }
 }
-/* Laptop laj (≥ 1280 px): kolòn 5fr/7fr; lis yo (tranzaksyon, demann, fidbak, rapò) an 2 kolòn depi 2 liy — pa liy ak bouton
+/* Laptop laj (≥ 1280 px): kolòn 5fr/7fr; lis yo (tranzaksyon, demann, fidbak (#ong > .fb-tab > .list), rapò) an 2 kolòn depi 2 liy — pa liy ak bouton
    Apwouve/Refize (.row.col > .btns: yo rete sou 1 kolòn ≤ 760 px). Yon sèl liy = lajè yon kolòn (anyen pa etire sou tout lajè a). */
 @media (min-width: 1280px) {
   html[data-look="c"][data-look="c"] { --g2: minmax(0, 5fr) minmax(0, 7fr); }
@@ -603,9 +617,9 @@ html[data-look="c"] .look-desk { color: var(--mut); display: block; }
   html[data-look="c"] .ep-2 .chips.filt .chip, html[data-look="c"] .fb-tab .chips.filt .chip { padding: 4px 14px; font-size: .8rem; }
   html[data-look="c"] .fich-2 { grid-template-columns: var(--g2); }
   html[data-look="c"] .heat i { height: 22px; }
-  html[data-look="c"] :is(#ong, #cycle, #rapo) > .list:has(> .row:nth-child(2)):not(:has(> .row.col > .btns)) { display: block; columns: 2; column-gap: 32px; }
-  html[data-look="c"] :is(#ong, #cycle, #rapo) > .list:has(> .row:nth-child(2)):not(:has(> .row.col > .btns)) > .row { break-inside: avoid; border-bottom: 1px solid var(--div); }
-  html[data-look="c"] :is(#ong, #cycle, #rapo) > .list:has(> .row:only-child) { max-width: calc(50% - 16px); }
+  html[data-look="c"] :is(#ong, #cycle, #rapo, .fb-tab) > .list:has(> .row:nth-child(2)):not(:has(> .row.col > .btns)) { display: block; columns: 2; column-gap: 32px; }
+  html[data-look="c"] :is(#ong, #cycle, #rapo, .fb-tab) > .list:has(> .row:nth-child(2)):not(:has(> .row.col > .btns)) > .row { break-inside: avoid; border-bottom: 1px solid var(--div); }
+  html[data-look="c"] :is(#ong, #cycle, #rapo, .fb-tab) > .list:has(> .row:only-child) { max-width: calc(50% - 16px); }
   html[data-look="c"] :is(#ong, #cycle, #rapo) > .list:has(> .row.col > .btns) { max-width: 760px; }
 }
 @media (min-width: 1440px) {
