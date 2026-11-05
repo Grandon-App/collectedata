@@ -81,6 +81,9 @@ const FR = {
   // Rapò
   "Depo ankese": "Dépôts encaissés", "Balans deklare (total)": "Solde déclaré (total)", "kont deklare": "comptes déclarés",
   "Cycle kreye": "Cycles créés", "Kach nan men pou remèt nan kès": "Espèces à remettre à la caisse", "Depo − retrè": "Dépôts − retraits", "Depo − retrè peye": "Dépôts − retraits payés",
+  "Klè, gwo bouton jòn safran. Fèt pou teren an, anba solèy.": "Clair, gros boutons jaune safran. Conçu pour le terrain, en plein soleil.",
+  "Fonse, kontras fò, chif an premye. Ekonomi batri.": "Sombre, contraste fort, les chiffres d'abord. Économise la batterie.",
+  "Ble marin ak lò. Elegan, pou kliyan ak manadjè.": "Bleu marine et or. Élégant, pour clients et managers.",
   "Kont": "Compte", "Modifye": "Modifier", "Tranzaksyon yo": "Transactions", "Pa afekte kach la": "Sans effet sur la caisse",
   "Tranzaksyon mwen yo": "Mes transactions", "balans deklare": "solde déclaré", "depo": "dépôts",
   "tranzaksyon poko voye: yo konte nan rapò a, men sèvè a poko resevwa yo.": "transaction(s) non envoyée(s) : comptées dans le rapport, mais pas encore reçues par le serveur.",

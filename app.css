@@ -110,7 +110,7 @@ b.in { color: var(--ok); } b.out { color: var(--err); }
 .recap, .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .recap { background: var(--bg); border-radius: 10px; padding: 10px; margin: 8px 0; }
 .recap div, .stats div { display: flex; flex-direction: column; }
-.recap span, .stats span, .kv span { color: var(--mut); font-size: .8rem; }
+.recap span, .stats span, .kv > span { color: var(--mut); font-size: .8rem; }
 .stats .wide { grid-column: 1 / -1; } .stats .warn b { color: var(--warn); }
 .kv { display: flex; justify-content: space-between; padding: 4px 0; }
 

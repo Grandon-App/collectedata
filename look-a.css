@@ -208,8 +208,9 @@ html[data-look="a"] .tabs { background: var(--seg); border: 0; border-radius: 14
 html[data-look="a"] .tab { min-height: 44px; border-radius: 11px; font-weight: 700; font-size: .85rem; color: var(--mut); padding: 4px 2px; gap: 2px 6px; min-width: 0; flex-wrap: wrap; overflow-wrap: anywhere; line-height: 1.15; }
 html[data-look="a"] .tab.on { background: var(--seg-on); color: var(--hd); font-weight: 800; box-shadow: 0 1px 3px rgba(0, 0, 0, .08); }
 html[data-look="a"] .cnt-b { background: var(--gold); color: var(--gold-ink); font-weight: 800; font-size: .72rem; padding: 0 7px; line-height: 1.5; }
-html[data-look="a"][data-teks="l"] .tab { font-size: .8rem; }
-html[data-look="a"][data-teks="xl"] .tab { font-size: .74rem; }
+/* Gwo tèks: "Tranzaksyon" dwe rete sou yon sèl liy nan 87 px (320 px, 3 onglè) — mezire: 14 px/-.01em = 87 px. */
+html[data-look="a"][data-teks="l"] .tab { font-size: .78rem; letter-spacing: -.01em; }
+html[data-look="a"][data-teks="xl"] .tab { font-size: .7rem; letter-spacing: -.01em; }
 
 /* ===================== Kat rezime ki flote (Epay / Tablo / Cycle) ===================== */
 html[data-look="a"] .sum { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 14px; align-items: center; padding: 16px; }
@@ -435,7 +436,7 @@ html[data-look="a"] .center { text-align: center; }
   html[data-look="a"] .sum .sum-b { grid-column: 1 / -1; width: 100%; }
   html[data-look="a"] .mini4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   html[data-look="a"] .band .kpi.main b { font-size: 2.1rem; }
-  html[data-look="a"] .tab { font-size: .78rem; }
+  html[data-look="a"] .tab { font-size: .78rem; padding: 4px 1px; }
   html[data-look="a"] .cnt-b { font-size: .66rem; }
   html[data-look="a"] .chips.filt .chip { padding: 6px 4px; font-size: .8rem; gap: 4px; }
   html[data-look="a"] .kr .btn.sm { padding: 8px 10px; }
