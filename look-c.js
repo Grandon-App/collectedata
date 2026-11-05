@@ -14,7 +14,8 @@ function lèDènyeDepo(k, today) {
   return tx ? lèKout(tx.date_transaction) : "";
 }
 // Montan an mono ak yon ti "G" (pou gwo chif yo).
-const mG = (n, cls = "") => `<b class="mono ${cls}">${gn(n)}<i>G</i></b>`;
+const gnM = (n) => gn(n).replace(/^-/, "−"); // siy mwens vre (U+2212), menm jan ak liy liv kont lan
+const mG = (n, cls = "") => `<b class="mono ${cls}">${gnM(n)}<i>G</i></b>`;
 // Etikèt seksyon (majiskil, 11 px) ak yon ti kontè mono adwat.
 const lbl = (txt, right = "") => `<h2>${txt}${right ? `<small>${right}</small>` : ""}</h2>`;
 const ETA_H = { konple: "semèn konplè", pasyel: "pasyèl", rate: "rate", ankou: "semèn sa a", okenn: "", avni: "" };
@@ -55,7 +56,7 @@ export function tablo(ctx) {
   const { moi, today, stats } = ctx;
   const rete = Math.max(0, stats.pouJodi - stats.peye);
   return `
-  <p class="hello">Bonjou ${d(prenon(moi))} <span class="mono">· ${t(JOU[ctx.isoJou])} ${datKout(today)}</span></p>
+  <p class="hello">Bonjou ${d(prenon(moi))} · ${t(JOU[ctx.isoJou])} <span class="mono">${datKout(today)}</span></p>
   <h1>Tablo de bò</h1>
   <div class="stat2">
     ${stile("Kolekte jodi a", mG(stats.kolekte, "ok"), `<span class="mono">${stats.peye} / ${stats.pouJodi}</span> kliyan${rete ? ` · <span class="mono">${rete}</span> poko wè` : ""}`)}
@@ -77,17 +78,18 @@ export function kontRow(r) {
   const sub = `<div class="mono sub">${d(r.noKont || k.no_compte || t("Cycle poko voye"))} · ${gd(r.plan ?? k.montant_plan)}</div>`;
   if (sekyon === "jodi") {
     const fb = fidbakJodi && !ok;
+    const lè = ok ? lèDènyeDepo(k, today) : ""; // vid si depo jodi a pa nan k._txs: pa ekri "peye" san lè
     return `<div class="row kr${ok ? " peye" : ""}">
       ${avatar(c)}
-      <a class="grow lnk" href="#/cycle/${id}">${nom} ${badgePend(k)}${sub}
+      <a class="grow lnk" href="#/cycle/${id}"><div class="nml">${nom} ${badgePend(k)}</div>${sub}
         ${fb ? `<div class="fbk">Fidbak anrejistre · ${t(MOTIF_KOUT[fidbakJodi] || "Fidbak")}</div>` : ""}</a>
-      ${ok ? `<div class="right"><b class="mono ok-t">✓ ${gn(r.jodiMontan ?? k._jodi)}</b><small>peye <span class="mono">${h(lèDènyeDepo(k, today) || "")}</span></small></div>`
+      ${ok ? `<div class="right"><b class="mono ok-t">✓ ${gn(r.jodiMontan ?? k._jodi)}</b>${lè ? `<small>peye <span class="mono">${h(lè)}</span></small>` : ""}</div>`
         : `<div class="btns-v"><a class="btn sm ${fb ? "" : "pri"}" href="#/tx/nouvo/${id}">Depo</a><button type="button" class="btn sm ghost" data-papeye="${id}">Pa peye</button></div>`}
     </div>`;
   }
   return `<div class="row kr">
     ${avatar(c)}
-    <a class="grow lnk" href="#/cycle/${id}">${nom} ${badgePend(k)}${sub}
+    <a class="grow lnk" href="#/cycle/${id}"><div class="nml">${nom} ${badgePend(k)}</div>${sub}
       ${k.frequence_semaine || r.anReta > 0 ? `<div class="mut xs">${[k.frequence_semaine ? `${k.frequence_semaine}×/sem · ${lisJou(k.jours_paiement)}` : "", r.anReta > 0 ? `<span class="err-t"><span class="mono">${r.anReta}</span> jou an reta</span>` : ""].filter(Boolean).join(" · ")}</div>` : ""}
       ${man && r.solde != null ? `<div class="bal">${t("Balans")}: <b class="mono">${gd(r.solde)}</b></div>` : ""}</a>
     <div class="btns-v"><b class="mono cnt-v">${r.nPeye}/${r.nPrevu ?? "?"}</b><a class="btn sm pri" href="#/tx/nouvo/${id}">Depo</a></div>
@@ -104,7 +106,7 @@ export function epay(ctx) {
     ${lbl("Peman jodi a", `${stats.peye}/${stats.pouJodi}`)}
     <div class="list grid-t" id="jodi-list">${ctx.jodiHtml || `<p class="empty">Pa gen peman ki tonbe jodi a.</p>`}</div>
     ${lbl("Kont ak cycle aktif", String(stats.aktif))}
-    <div class="chips filt" role="group" aria-label="Filt">${FILT.map(([v, l, n]) => `<button type="button" class="chip ${filt === v ? "on" : ""}" data-filt="${v}">${l}<small>${n}</small></button>`).join("")}</div>
+    <div class="chips filt" role="group" aria-label="Filt">${FILT.map(([v, l, n]) => `<button type="button" class="chip ${filt === v ? "on" : ""}" data-filt="${v}" aria-pressed="${filt === v}">${l}<small>${n}</small></button>`).join("")}</div>
     <input id="q" type="search" class="search" placeholder="Chèche kliyan oswa nimewo kont…" aria-label="Chèche kont" value="${h(q)}" autocomplete="off">
     <div class="list grid-t" id="kont">${ctx.kontHtml}</div>`;
   } else if (ong === "tx") {
@@ -145,12 +147,12 @@ export function fich(ctx) {
   ${ctx.errHtml || ""}
   <div class="card info">
     ${kv(I.telefon?.label || "Telefòn", val(I.telefon), true)}
-    ${kv(c.piece ? h(c.piece) : (I.pyes?.label || "Pyès idantifikasyon"), c.piece ? d(c.numero_piece || "—") : val(I.pyes), true)}
+    ${kv(c.piece ? d(c.piece) : (I.pyes?.label || "Pyès idantifikasyon"), c.piece ? d(c.numero_piece || "—") : val(I.pyes), true)}
     ${kv(I.nesans?.label || "Dat nesans", val(I.nesans))}
     ${kv(I.adres?.label || "Adrès", val(I.adres))}
     ${kv(I.biznis?.label || "Kote biznis la", val(I.biznis))}
-    ${kv(I.sekte?.label || "Sektè", join(val(I.sekte), val(I.aktivite)))}
-    ${kv(I.vant?.label || "Pwen de vant", join(val(I.vant), val(I.kapasite)))}
+    ${kv(val(I.sekte) || !val(I.aktivite) ? (I.sekte?.label || "Sektè") : (I.aktivite?.label || "Aktivite"), join(val(I.sekte), val(I.aktivite)))}
+    ${kv(val(I.vant) || !val(I.kapasite) ? (I.vant?.label || "Pwen de vant") : (I.kapasite?.label || "Kapasite distribisyon"), join(val(I.vant), val(I.kapasite)))}
   </div>
   <div class="lrow">${lbl("Cycle aktif", aktif.length > 1 ? String(aktif.length) : "")}<a class="lnk-a" href="${ctx.hrefNouvoCycle}">＋ Nouvo cycle</a></div>
   ${aktif.length ? aktif.map((x) => cycCard(x, { man, href: x.href })).join("") : `<p class="empty">${ks.length ? "Pa gen cycle aktif." : "Pa gen cycle."}</p>`}
@@ -165,7 +167,7 @@ export function fich(ctx) {
 export function cycleTop(ctx) {
   const { k, c, man, fè, prevu } = ctx;
   const prog = k.jours_paiement?.length ? `<div class="prog"><span>Peman jiska jodi a</span><b><span class="mono">${fè}</span> jou peye · <span class="mono">${prevu}</span> jou prevwa${ctx.anReta ? ` · <span class="err-t"><span class="mono">${ctx.anReta}</span> jou an reta</span>` : ""}</b>
-      <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="${prevu}" aria-valuenow="${fè}"><i style="width:${pct(fè, prevu)}%"></i></div></div>` : "";
+      <div class="bar" role="progressbar" aria-label="${h(t("Peman jiska jodi a"))}" aria-valuemin="0" aria-valuemax="${prevu}" aria-valuenow="${fè}"><i style="width:${pct(fè, prevu)}%"></i></div></div>` : "";
   return `
   <div class="topr"><a href="#/epay" class="back">‹ Epay</a><a class="kli" href="${ctx.hrefKliyan}">${avatar(c, "thumb xs")}<span>${d(non(c))}</span>${ICO.retou}</a></div>
   <h1 class="mono">${d(k.no_compte || t("Cycle poko voye"))} ${ctx.badges.kont} ${ctx.badges.pend}</h1>
@@ -191,23 +193,24 @@ export function cycleTop(ctx) {
 export function rapo(ctx) {
   const { jou, kpi, poko, nonJou, i, D, parLe, swiviStats: sw } = ctx;
   const jouTxt = t(nonJou(i)).toLowerCase();
+  const H = ctx.lang === "fr" ? "h" : "è"; // sifiks lè: 9è / 9h
   const L = (key, label, val, valHtml, small = "") => `<div class="lr" data-kpi="${key}" data-val="${val}"><span>${label}${small ? `<small>· ${small}</small>` : ""}</span>${valHtml}</div>`;
   const M = (key, label, val, cls = "") => `<div class="mini" data-kpi="${key}" data-val="${val}"><b class="mono ${cls}">${val}</b><span>${label}</span></div>`;
   // Kolèk pa lè: 6è → 19è
   const bars = parLe || [];
-  const max = Math.max(0, ...bars.map((x) => Number(x.montant) || 0));
+  const max = Math.max(1, ...bars.map((x) => Number(x.montant) || 0)); // ≥ 1: pa gen NaN si tout montan yo 0
   const tot = bars.reduce((a, x) => a + (x.n || 0), 0);
   const pik = tot ? bars.reduce((a, x) => (x.montant > a.montant ? x : a), bars[0]) : null;
   const chart = bars.length ? `
-  <div class="hbar" role="img" aria-label="${h(t("Kolèk pa lè"))}: ${tot ? `${tot} ${h(t("depo"))} · ${h(t("pi fò"))} ${pik.h}è` : h(t("pa gen depo"))}">
-    ${bars.map((x) => `<i class="${x.montant > 0 ? "on" : ""}" style="height:${x.montant > 0 ? Math.max(12, Math.round((x.montant / max) * 100)) : 6}%" title="${x.h}è · ${gd(x.montant)}"></i>`).join("")}
+  <div class="hbar" role="img" aria-label="${h(t("Kolèk pa lè"))}: ${tot ? `${tot} ${h(t("depo"))} · ${h(t("pi fò"))} ${pik.h}${H}` : h(t("pa gen depo"))}">
+    ${bars.map((x) => `<i class="${x.montant > 0 ? "on" : ""}" style="height:${x.montant > 0 ? Math.max(12, Math.round((x.montant / max) * 100)) : 6}%" title="${x.h}${H} · ${gd(x.montant)}"></i>`).join("")}
   </div>
-  <div class="hlab mono" aria-hidden="true">${bars.map((x) => `<span>${x.h % 2 === 0 ? `${x.h}è` : ""}</span>`).join("")}</div>` : "";
+  <div class="hlab mono" aria-hidden="true">${bars.map((x) => `<span>${x.h % 2 === 0 ? `${x.h}${H}` : ""}</span>`).join("")}</div>` : "";
   return `
   <div class="page-head"><h1>Rapò</h1>
     <div class="segj" role="tablist" aria-label="Jou">${jou.map((x) => `<button type="button" role="tab" aria-selected="${x.on}" class="${x.on ? "on" : ""}" data-j="${x.i}" title="${datFr(x.date)}">${x.label}</button>`).join("")}</div>
   </div>
-  <p class="mono sub">${t(JOU[isoJouDe(D)])} ${datFr(D)}</p>
+  <p class="sub dat">${t(JOU[isoJouDe(D)])} <span class="mono">${datFr(D)}</span></p>
   <div class="rapo-g">
   <div>
     <div class="kach" data-kpi="kach" data-val="${kpi.kach}">
@@ -248,12 +251,11 @@ export default {
   themeColor: { light: "#0f1830", dark: "#0f1830" },
   // Tradiksyon franse pou nouvo fraz look la (sa ki deja nan i18n.js pa bezwen repete).
   fr: {
-    "kliyan": "clients", "Ale nan": "Aller à", "Modifye": "Modifier",
+    "kliyan": "clients", "Ale nan": "Aller à",
     "Pa gen cycle aktif.": "Aucun cycle actif.", "Lòt cycle": "Autres cycles", "semèn sa a": "cette semaine", "rate": "manquée",
     "okenn vèsman": "aucun versement", "peye": "payé", "jodi a, poko peye": "aujourd'hui, pas encore payé", "k ap vini": "à venir",
     "jou ferye": "jour férié", "pa jou peman": "pas un jour de paiement", "jou an reta": "jours de retard",
     "Balans deklare": "Solde déclaré", "pa nan kach": "hors caisse", "pi fò": "pic", "pa gen depo": "aucun dépôt", "fidbak": "retours",
-    "Tranzaksyon yo": "Transactions",
   },
   parts: { tablo, epay, kontRow, fich, cycleTop, rapo },
 };
