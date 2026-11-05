@@ -176,8 +176,11 @@ html[data-look="c"] .chip small { font: inherit; color: var(--mut); }
 html[data-look="c"] .chip.on { background: var(--gold); color: var(--gold-ink); font-weight: 600; }
 html[data-look="c"] .chip.on small { color: var(--gold-ink); opacity: .8; }
 html[data-look="c"] .chips.filt { grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 4px 0 8px; }
-html[data-look="c"] .chips.filt .chip { min-height: 44px; min-width: 0; padding: 4px 5px; font-size: .78rem; line-height: 1.15; white-space: normal; flex-wrap: wrap; justify-content: center; row-gap: 0; column-gap: 5px; overflow-wrap: anywhere; text-align: center; }
+html[data-look="c"] .chips.filt .chip { min-height: 44px; min-width: 0; padding: 4px 5px; font-size: .78rem; line-height: 1.15; white-space: normal; flex-wrap: wrap; justify-content: center; row-gap: 0; column-gap: 5px; overflow-wrap: break-word; text-align: center; }
 html[data-look="c"] .chips.filt .chip small::before { content: "· "; }
+/* An franse («Aujourd'hui · 2», «En retard · 1») 3 kolòn egal twò etwat sou telefòn: kolòn yo pran lajè tèks yo (yo toujou ranpli liy lan);
+   break-word (pa anywhere) pou kolòn nan pa janm pi etwat pase mo a — si l pa antre (gwo tèks), se kantite a ki desann sou 2yèm liy lan, pa yon mòso mo. */
+html[data-look="c"]:lang(fr) .chips.filt { grid-template-columns: repeat(3, auto); }
 /* Fokis klavye sou yon chip: ank lan anndan (.chips gen overflow: hidden ki koupe ank deyò a); sou chip lò aktif la, ank fonse */
 html[data-look="c"] .chip:focus-visible { outline: 2px solid var(--gold); outline-offset: -3px; position: relative; z-index: 1; }
 html[data-look="c"] .chip.on:focus-visible { outline-color: var(--gold-ink); }
@@ -437,12 +440,16 @@ html[data-look="c"] .look-desk { color: var(--mut); display: block; }
 /* An franse pilil la pi long ("EN LIGNE · 0 en attente"): anba 420 px kenbe sèlman "EN LIGNE · n" pou mak la pa koupe */
 @media (max-width: 419px) {
   html[data-look="c"]:lang(fr) .net .cnt::after, html[data-look="c"]:lang(fr) #bar .net.on:not(:has(.cnt))::after { content: none; }
+  /* 4 onglè (manadjè: Kont · Tranzaksyon · Fidbak · Validasyon) sou yon ti ekran: tèks pi piti pou yo antre san woule nan tay tèks nòmal (tèks «Gwo»/«Pi gwo»: liy lan woule) */
+  html[data-look="c"] .tabs:has(> .tab:nth-child(4)) .tab { font-size: .78rem; padding: 0 6px; gap: 4px; letter-spacing: -.01em; }
+  html[data-look="c"] .tabs:has(> .tab:nth-child(4)) .cnt-b { padding: 0 4px; font-size: .64rem; }
 }
 /* Ti ekran (≤ 359 px) */
 @media (max-width: 359px) {
   html[data-look="c"] .card.info .kv { grid-template-columns: 6.2rem minmax(0, 1fr); }
   html[data-look="c"] .segj button { padding: 6px 8px; font-size: .74rem; }
   html[data-look="c"] .tab { font-size: .82rem; }
+  html[data-look="c"] .tabs:has(> .tab:nth-child(4)) .tab { font-size: .74rem; padding: 0 4px; }
   html[data-look="c"] .kr .btns-v .btn.sm { min-width: 64px; padding: 6px 10px; }
   html[data-look="c"] .btn-row .btn { font-size: .84rem; padding: 8px 6px; }
   html[data-look="c"] .cyc-3 b { font-size: .88rem; }
