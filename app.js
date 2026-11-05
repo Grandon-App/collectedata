@@ -4,6 +4,8 @@ import * as S from "./sync.js";
 import * as ui from "./ui.js";
 import * as TX from "./taxonomy.js";
 import { t, setLang, getLang, demarrerTraduction } from "./i18n.js";
+import * as F from "./fmt.js";
+import * as looks from "./looks.js";
 
 const $app = document.getElementById("app");
 const $bar = document.getElementById("bar");
@@ -13,40 +15,26 @@ const C = window.GRANDON_CONFIG;
 const APP_VERSION = "3.0";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin" };
 // Preferans aparans: pou aparèy sa a sèlman.
+const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO };
 function prefs() {
-  try { return { tem: "auto", teks: "n", ...JSON.parse(localStorage.getItem("grandon-prefs") || "{}") }; }
-  catch { return { tem: "auto", teks: "n" }; }
+  try { return { ...PREFS_DEFO, ...JSON.parse(localStorage.getItem("grandon-prefs") || "{}") }; }
+  catch { return { ...PREFS_DEFO }; }
 }
 function applyPrefs(p = prefs()) {
   const r = document.documentElement;
-  if (p.tem === "auto") delete r.dataset.theme; else r.dataset.theme = p.tem;
   r.dataset.teks = p.teks;
-  const meta = document.querySelector('meta[name="theme-color"]');
-  if (meta) meta.content = "#14284b";
+  looks.applyLook(looks.LOOKS[p.look] ? p.look : looks.LOOK_DEFO, p.tem);
 }
+const L = () => looks.current();
 function savePrefs(p) {
-  try { localStorage.setItem("grandon-prefs", JSON.stringify(p)); } catch { /* navigatè prive */ }
-  applyPrefs(p);
+  const n = { ...prefs(), ...p };
+  try { localStorage.setItem("grandon-prefs", JSON.stringify(n)); } catch { /* navigatè prive */ }
+  applyPrefs(n);
 }
-const ICO = {
-  tablo: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 13h6V4H4zm0 7h6v-5H4zm10 0h6v-9h-6zm0-16v5h6V4z"/></svg>',
-  kliyan: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm0 2c-3.3 0-7 1.7-7 4v2h14v-2c0-2.3-3.7-4-7-4zm8-2a3 3 0 1 0 0-6v6zm1 2.2c1.8.6 4 1.7 4 3.8v2h-4v-2c0-1.5-.7-2.8-1.8-3.8z"/></svg>',
-  epay: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 7V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2zm-2-2v2H5V5zm2 14H5V9h14zm-4-6h3v3h-3z"/></svg>',
-  rapo: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h10l4 4v14H5zm2 2v14h10V8h-3V5zm2 7h6v2H9zm0 4h6v2H9zm0-8h3v2H9z"/></svg>',
-  param: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.4 13a7.5 7.5 0 0 0 0-2l2.1-1.6-2-3.5-2.5 1a7.4 7.4 0 0 0-1.7-1L15 3h-4l-.3 2.9a7.4 7.4 0 0 0-1.7 1l-2.5-1-2 3.5L6.6 11a7.5 7.5 0 0 0 0 2l-2.1 1.6 2 3.5 2.5-1c.5.4 1.1.7 1.7 1L11 21h4l.3-2.9c.6-.3 1.2-.6 1.7-1l2.5 1 2-3.5zM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z"/></svg>',
-};
-const h = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
-const nf = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 2 });
-const gd = (n) => `${nf.format(Number(n) || 0)} G`;
-const datFr = (iso) => (iso ? new Date(String(iso).slice(0, 10) + "T12:00:00Z").toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric", timeZone: "UTC" }) : "—");
-const lè = (iso) => (iso ? new Date(iso).toLocaleString("fr-FR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", timeZone: C.FUSEAU }) : "jamè");
-const d = (v) => `<span data-brut>${h(v)}</span>`;
+const { h, d, gd, datFr, lè, non, JOU, JOU_KOUT, lisJou, tel4, avatar, badgePend, badgeTx, badgeKont, badgeDm, ICO,
+  LABEL_TX, SIY, KLAS, MOTIFS, motifLabel, TYPES_FRE } = F;
 const adopteInfo = (r) => ({ id: r.id_personne, prenom: r.prenom, nom: r.nom, code_client: r.code_client, photo_url: r.photo_url, tel4: r.tel4 });
-const non = (c) => `${c?.prenom || ""} ${c?.nom || ""}`.trim() || "—";
 const go = (hash) => { if (location.hash === hash) render(); else location.hash = hash; };
-const JOU = ["", "Lendi", "Madi", "Mèkredi", "Jedi", "Vandredi", "Samdi", "Dimanch"];
-const JOU_KOUT = ["", "Len", "Mad", "Mèk", "Jed", "Van", "Sam", "Dim"];
-const lisJou = (j) => (j?.length ? j.map((x) => JOU_KOUT[x]).join(" · ") : "—");
 
 function toast(msg, kind = "ok", ms = 3500) {
   document.querySelectorAll(".toast:not(.update)").forEach((x) => x.remove());
@@ -78,13 +66,6 @@ async function compress(file) {
   return new Promise((r) => c.toBlob(r, "image/jpeg", 0.75));
 }
 
-const badgePend = (o) => (o?._error ? `<span class="badge err">Erè sync</span>` : o?._pending ? `<span class="badge pend">Poko voye</span>` : "");
-const badgeTx = (t) => t._error ? `<span class="badge err">Erè</span>` : t._pending ? `<span class="badge pend">Poko voye</span>`
-  : t.validation_status === "pending" ? `<span class="badge warn">An atant validasyon</span>`
-  : t.validation_status === "rejected" ? `<span class="badge err">Refize</span>` : "";
-const badgeKont = (k) => !k._actif ? `<span class="badge mut">Fini</span>`
-  : k._jodiPeman ? (k._jodi >= Number(k.montant_plan || 0) ? `<span class="badge ok">Peye jodi a</span>` : `<span class="badge info">Peman jodi a</span>`) : `<span class="badge ok">Aktif</span>`;
-
 // ---------- Ba estati ----------
 let moi = null;
 async function updateBar() {
@@ -96,7 +77,7 @@ async function updateBar() {
   const on = navigator.onLine;
   $bar.hidden = false;
   $bar.innerHTML = `
-    <a href="#/" class="brand"><img src="icons/icon-192.png" alt="" width="26" height="26">Grandon ${C.ANVIWONMAN ? `<small>${h(C.ANVIWONMAN)}</small>` : ""}</a>
+    <a href="#/" class="brand"><span class="mark" aria-hidden="true">G</span><span class="brand-t">Grandon</span> ${C.ANVIWONMAN ? `<small>${h(C.ANVIWONMAN)}</small>` : ""}</a>
     <a href="#/param" class="net ${on ? "on" : "off"}" aria-label="Senkronizasyon: ${on ? "anliy" : "offline"}, ${pend} poko voye, ${err} erè">
       <span class="dot"></span>${on ? "Anliy" : "Offline"}
       ${S.isRunning() ? `<span class="spin" aria-hidden="true"></span>` : ""}
@@ -184,10 +165,6 @@ function viewLogin(expired) {
 }
 
 // ---------- Lis kliyan (pati komen) ----------
-const tel4 = (c) => (c.telephone ? String(c.telephone).replace(/\D/g, "").slice(-4) : c.tel4 || "");
-const avatar = (c, cls = "thumb") => c.photo_url
-  ? `<img class="${cls}" src="${h(c.photo_url)}" alt="" loading="lazy" data-legend="${h(non(c))}">`
-  : `<span class="${cls} ph" aria-hidden="true">${h((c.prenom || "?")[0])}</span>`;
 function lisKliyan(M, filtre) {
   const q = filtre.trim().toLowerCase();
   const qd = q.replace(/\D/g, "");
@@ -207,18 +184,23 @@ function liKliyan(M, c, href) {
 
 // ---------- 1. Tablo de bò ----------
 async function viewTablo() {
-  const today = S.jodi();
-  $app.innerHTML = `
-  <p class="hello">Bonjou ${h(moi.nom.split(" ")[0])} · <span class="mut">${JOU[S.isoJou(today)]} ${datFr(today)}</span></p>
-  <div class="card soon">
-    <div class="soon-ico" aria-hidden="true">${ICO.tablo}</div>
-    <h1>Tablo de bò</h1>
-    <p class="mut">Paj sa a ap vini byento.</p>
-    <div class="soon-links">
-      <a class="btn" href="#/kliyan">Kliyan</a><a class="btn" href="#/epay">Epay</a><a class="btn" href="#/rapo">Rapò</a>
-    </div>
-  </div>`;
+  const M = await S.model();
+  const st = statsEpay(M);
+  $app.innerHTML = `<div id="tablo">${L().parts.tablo({ ...ctxBase(M), stats: st, isoJou: S.isoJou(M.today) })}</div>`;
 }
+
+// Chif komen pou Epay/Tablo
+function statsEpay(M) {
+  const pouJodi = [...M.comptes.values()].filter((k) => k._jodiPeman);
+  const aktif = [...M.comptes.values()].filter((k) => k._actif);
+  return {
+    pouJodi: pouJodi.length, peye: pouJodi.filter((k) => k._jodi >= Number(k.montant_plan || 0)).length,
+    kolekte: [...M.comptes.values()].reduce((a, k) => a + k._jodi, 0),
+    enAtant: [...M.demandes.values()].filter((x) => x.statut === "en_attente").length,
+    aktif: aktif.length, anReta: aktif.filter((k) => k._anReta > 0).length, kliyan: M.clients.size,
+  };
+}
+const ctxBase = (M) => ({ M, moi, man: estManager(), today: M.today, t, lang: getLang() });
 
 // ---------- 2. Kliyan: chèche nan tout baz la (anti-doublon) + kreye ----------
 let rechèch = "";
@@ -292,13 +274,6 @@ async function viewKliyan() {
 
 // ---------- Pati komen pou Epay ----------
 const estManager = () => !!(moi && (moi.manager ?? (moi.admin || moi.role === "manager" || [1, 2, 5].includes(Number(moi.role)))));
-const MOTIFS = [["repase", "Kliyan an di pou m repase"], ["pa_la", "Kliyan an pa la jodi a"], ["pa_gen_kob", "Kliyan an di li pa gen kòb jodi a"],
-  ["refize", "Kliyan an refize peye"], ["fenmen", "Biznis la fèmen"], ["malad", "Kliyan an malad"], ["lot", "Lòt rezon"]];
-const motifLabel = (m) => (MOTIFS.find(([v]) => v === m) || [m, m])[1];
-const TYPES_FRE = ["Frais carnet", "Frais d'ouverture", "Frais de gestion", "Pénalité", "Autre"];
-const LABEL_TX = { depo: "Depo", retre: "Retrè", fre: "Frè", viman_out: "Viman voye", viman_in: "Viman resevwa", lot: "Tranzaksyon" };
-const SIY = (kind) => (kind === "depo" || kind === "viman_in" ? "+" : "−");
-const KLAS = (kind) => (kind === "depo" || kind === "viman_in" ? "in" : kind === "fre" ? "fee" : "out");
 const jourTx = (tx) => (S.jouTx(tx) === S.jodi() ? t("jodi a") : datFr(S.jouTx(tx)));
 const nomAjan = (id) => (id === moi?.id || id === "moi" ? t("Mwen") : (ajans[id] || ""));
 let ajans = {};
@@ -320,9 +295,6 @@ function liTx(M, tx, { kliyan = true } = {}) {
     <div class="right"><b class="${KLAS(kind)}">${SIY(kind)}${gd(tx.montant)}</b></div></a>`;
 }
 
-const badgeDm = (dm) => dm._error ? `<span class="badge err">Erè sync</span>` : dm._pending ? `<span class="badge pend">Poko voye</span>`
-  : dm.statut === "approuvee" ? `<span class="badge ok">Apwouve</span>` : dm.statut === "refusee" ? `<span class="badge err">Refize</span>`
-  : `<span class="badge warn">An atant otorizasyon</span>`;
 function liDemande(M, dm, { decide = false } = {}) {
   const k = M.comptes.get(dm.id_compte_epargne); const c = k && M.clients.get(k.id_personne);
   const kd = dm.id_compte_dest && M.comptes.get(dm.id_compte_dest); const cd = kd && M.clients.get(kd.id_personne);
@@ -367,79 +339,64 @@ async function paPeye(k, c) {
 }
 
 // ---------- 3. Epay: onglè Kont / Tranzaksyon / Validasyon ----------
-let filtEpay = "", ongEpay = "kont";
+let filtEpay = "", ongEpay = "kont", filtKont = "tout";
+function ctxKontRow(M, k, sekyon, swiviJodi) {
+  const c = M.clients.get(k.id_personne) || {};
+  return {
+    k, c, man: estManager(), sekyon, ok: k._jodi >= Number(k.montant_plan || 0), jodiPeman: k._jodiPeman,
+    fidbakJodi: swiviJodi.get(k.id_compte_epargne) || null, dots: k._dots, heat: k._heat, anReta: k._anReta,
+    plan: Number(k.montant_plan || 0), jodiMontan: k._jodi, solde: estManager() ? k._solde : null, pwosan: k._pwosan,
+    nPeye: k._joursPeye.size, nPrevu: k._prevuTotal, noKont: k.no_compte || null, nonKliyan: non(c), today: M.today,
+  };
+}
 async function viewEpay() {
   const M = await S.model();
   ajans = (await db.meta("ajans")) || {};
   const man = estManager();
   const enAtant = [...M.demandes.values()].filter((x) => x.statut === "en_attente").sort((a, b) => String(a.capture_le).localeCompare(String(b.capture_le)));
   if (ongEpay === "valid" && !man) ongEpay = "kont";
-  const ong = [["kont", "Kont"], ["tx", "Tranzaksyon"], ...(man ? [["valid", "Validasyon"]] : [])];
-  $app.innerHTML = `
-  <div class="page-head"><h1>Epay</h1><a class="btn pri" href="#/chwazi/cycle">＋ Nouvo cycle</a></div>
-  <div class="tabs" role="tablist">${ong.map(([k, l]) => `<button role="tab" class="tab ${k === ongEpay ? "on" : ""}" aria-selected="${k === ongEpay}" data-ong="${k}">${l}${k === "valid" && enAtant.length ? ` <span class="cnt-b">${enAtant.length}</span>` : ""}</button>`).join("")}</div>
-  <div id="ong"></div>`;
-  $app.querySelectorAll("[data-ong]").forEach((b) => (b.onclick = () => { ongEpay = b.dataset.ong; viewEpay(); }));
-  const box = document.getElementById("ong");
-
-  if (ongEpay === "kont") {
-    const pouJodi = [...M.comptes.values()].filter((k) => k._jodiPeman)
-      .sort((a, b) => (a._jodi >= a.montant_plan) - (b._jodi >= b.montant_plan));
-    const peye = pouJodi.filter((k) => k._jodi >= Number(k.montant_plan || 0)).length;
-    const aktif = [...M.comptes.values()].filter((k) => k._actif)
-      .sort((a, b) => non(M.clients.get(a.id_personne)).localeCompare(non(M.clients.get(b.id_personne))));
-    const swiviJodi = new Set([...M.suivis.values()].filter((x) => S.jouLokal(new Date(x.capture_le)) === S.jodi()).map((x) => x.id_compte_epargne));
-    box.innerHTML = `
-    <h2>Peman jodi a <small class="mut">(${peye}/${pouJodi.length})</small></h2>
-    <div class="list grid-t">${pouJodi.map((k) => { const c = M.clients.get(k.id_personne) || {}; const ok = k._jodi >= Number(k.montant_plan || 0); return `<div class="row">
-        ${avatar(c)}<a class="grow lnk" href="#/cycle/${k.id_compte_epargne}"><b>${d(non(c))}</b><div class="mut sm">${d(k.no_compte || t("Cycle poko voye"))} · plan ${gd(k.montant_plan)}</div>
-          ${swiviJodi.has(k.id_compte_epargne) && !ok ? `<div class="sm"><span class="badge warn">Fidbak anrejistre</span></div>` : ""}</a>
-        ${ok ? `<span class="badge ok">✓ ${gd(k._jodi)}</span>` : `<div class="btns-v"><a class="btn sm pri" href="#/tx/nouvo/${k.id_compte_epargne}">Depo</a><button class="btn sm" data-papeye="${k.id_compte_epargne}">Pa peye</button></div>`}</div>`; }).join("")
-      || `<p class="empty">Pa gen peman ki tonbe jodi a.</p>`}</div>
-    <h2>Kont ak cycle aktif <small class="mut">(${aktif.length})</small></h2>
-    <input id="q" type="search" class="search" placeholder="Chèche kliyan oswa nimewo kont…" aria-label="Chèche kont" value="${h(filtEpay)}">
-    <div class="list grid-t" id="kont"></div>`;
-    const liKont = (k) => { const c = M.clients.get(k.id_personne) || {}; return `<div class="row">
-        <a class="grow lnk" href="#/cycle/${k.id_compte_epargne}"><b>${d(non(c))}</b> ${badgePend(k)}
-          <div class="mut sm">${d(k.no_compte || t("Cycle poko voye"))} · plan ${gd(k.montant_plan)}</div>
-          <div class="mut sm">${k.frequence_semaine ? `${k.frequence_semaine}×/sem · ${lisJou(k.jours_paiement)}` : "—"} · ${k._joursPeye.size}/${k._prevuTotal ?? "?"} ${t("vèsman")}</div>
-          ${man && k._solde != null ? `<div class="sm"><b>${t("Balans")}: ${gd(k._solde)}</b></div>` : ""}</a>
-        <a class="btn sm pri" href="#/tx/nouvo/${k.id_compte_epargne}">Depo</a></div>`; };
-    const q = document.getElementById("q");
-    const draw = () => {
-      const v = filtEpay.trim().toLowerCase();
-      const l = aktif.filter((k) => !v || non(M.clients.get(k.id_personne)).toLowerCase().includes(v) || String(k.no_compte || "").toLowerCase().includes(v));
-      document.getElementById("kont").innerHTML = l.map(liKont).join("") || `<p class="empty">${v ? "Anyen pa koresponn." : "Pa gen kont ak cycle aktif."}</p>`;
-    };
-    q.oninput = () => { filtEpay = q.value; draw(); };
-    draw();
-    box.querySelectorAll("[data-papeye]").forEach((b) => (b.onclick = () => { const k = M.comptes.get(b.dataset.papeye); paPeye(k, M.clients.get(k.id_personne) || {}); }));
-  }
-
+  const ongs = [["kont", "Kont", null], ["tx", "Tranzaksyon", null], ...(man ? [["valid", "Validasyon", enAtant.length || null]] : [])];
+  const st = statsEpay(M);
+  const swiviJodi = new Map([...M.suivis.values()].filter((x) => S.jouLokal(new Date(x.capture_le)) === M.today).map((x) => [x.id_compte_epargne, x.motif]));
+  const pouJodi = [...M.comptes.values()].filter((k) => k._jodiPeman).sort((a, b) => (a._jodi >= a.montant_plan) - (b._jodi >= b.montant_plan));
+  const aktif = [...M.comptes.values()].filter((k) => k._actif)
+    .sort((a, b) => non(M.clients.get(a.id_personne)).localeCompare(non(M.clients.get(b.id_personne))));
+  const P = L().parts;
+  const rowsKont = () => {
+    const v = filtEpay.trim().toLowerCase();
+    const l = aktif.filter((k) => (filtKont === "jodi" ? k._jodiPeman : filtKont === "reta" ? k._anReta > 0 : true))
+      .filter((k) => !v || non(M.clients.get(k.id_personne)).toLowerCase().includes(v) || String(k.no_compte || "").toLowerCase().includes(v));
+    return l.map((k) => P.kontRow(ctxKontRow(M, k, "aktif", swiviJodi))).join("") || `<p class="empty">${v || filtKont !== "tout" ? t("Anyen pa koresponn.") : t("Pa gen kont ak cycle aktif.")}</p>`;
+  };
+  const ctx = {
+    ...ctxBase(M), ong: ongEpay, ongs, stats: st, filt: filtKont, q: filtEpay, nJodi: pouJodi.length, nKont: aktif.length, nEnAtant: enAtant.length,
+    jodiHtml: pouJodi.map((k) => P.kontRow(ctxKontRow(M, k, "jodi", swiviJodi))).join(""), kontHtml: rowsKont(),
+    txHtml: "", demannHtml: "", validHtml: "",
+  };
   if (ongEpay === "tx") {
     const mesDm = [...M.demandes.values()].filter((x) => man || x.agent_id === moi.id || x.agent_id === "moi")
       .sort((a, b) => String(b.capture_le).localeCompare(String(a.capture_le))).slice(0, 20);
     const txs = [...M.txs.values()].sort((a, b) => String(b.date_transaction).localeCompare(String(a.date_transaction))).slice(0, 60);
-    box.innerHTML = `
-    ${mesDm.length ? `<h2>Demann retrè ak viman</h2><div class="list">${mesDm.map((x) => liDemande(M, x)).join("")}</div>` : ""}
-    <h2>Tranzaksyon yo</h2>
-    <div class="list">${txs.map((x) => liTx(M, x)).join("") || `<p class="empty">Poko gen tranzaksyon.</p>`}</div>`;
+    ctx.demannHtml = mesDm.map((x) => liDemande(M, x)).join("");
+    ctx.txHtml = txs.map((x) => liTx(M, x)).join("");
   }
-
-  if (ongEpay === "valid") {
-    box.innerHTML = `
-    <p class="mut sm">Retrè ak viman yo bezwen otorizasyon yon manadjè. Lè ou apwouve, ekriti yo pase touswit sou kont yo.</p>
-    <div class="list">${enAtant.map((x) => liDemande(M, x, { decide: true })).join("") || `<p class="empty">Pa gen demann an atant.</p>`}</div>`;
-    box.querySelectorAll("[data-ok]").forEach((b) => (b.onclick = () => decider(M, b.dataset.ok, true)));
-    box.querySelectorAll("[data-non]").forEach((b) => (b.onclick = () => decider(M, b.dataset.non, false)));
-  }
+  if (ongEpay === "valid") ctx.validHtml = enAtant.map((x) => liDemande(M, x, { decide: true })).join("");
+  $app.innerHTML = `<div id="epay">${P.epay(ctx)}</div>`;
+  $app.querySelectorAll("[data-ong]").forEach((b) => (b.onclick = () => { ongEpay = b.dataset.ong; viewEpay(); }));
+  $app.querySelectorAll("[data-filt]").forEach((b) => (b.onclick = () => { filtKont = b.dataset.filt; viewEpay(); }));
+  const q = document.getElementById("q");
+  if (q) q.oninput = () => { filtEpay = q.value; const box = document.getElementById("kont"); if (box) { box.innerHTML = rowsKont(); brancherKont(); } };
+  const brancherKont = () => $app.querySelectorAll("[data-papeye]").forEach((b) => (b.onclick = () => { const k = M.comptes.get(b.dataset.papeye); paPeye(k, M.clients.get(k.id_personne) || {}); }));
+  brancherKont();
+  $app.querySelectorAll("[data-ok]").forEach((b) => (b.onclick = () => decider(M, b.dataset.ok, true)));
+  $app.querySelectorAll("[data-non]").forEach((b) => (b.onclick = () => decider(M, b.dataset.non, false)));
 }
 
 // ---------- 4. Rapò ajan an (3 dènye jou) ----------
 let jouRapo = 0;
 async function viewRapo() {
   const M = await S.model();
-  const jou = [0, 1, 2].map((n) => S.ajouteJou(S.jodi(), -n));
+  const jou = [0, 1, 2].map((n) => S.ajouteJou(M.today, -n));
   const D = jou[jouRapo];
   const mwen = (x) => x.created_by === moi.id || x.created_by === "moi" || x.agent_id === moi.id || x.agent_id === "moi";
   const txs = [...M.txs.values()].filter((x) => mwen(x) && S.jouTx(x) === D && x.validation_status !== "rejected")
@@ -455,23 +412,20 @@ async function viewRapo() {
   const dmAtant = [...M.demandes.values()].filter((x) => mwen(x) && x.statut === "en_attente").length;
   const poko = txs.filter((x) => x._pending).length;
   const nonJou = (n) => (n === 0 ? "Jodi a" : n === 1 ? "Yè" : "Avan-yè");
-  $app.innerHTML = `
-  <div class="page-head"><h1>Rapò</h1></div>
-  <div class="chips" role="tablist">${jou.map((dd, i) => `<button role="tab" aria-selected="${i === jouRapo}" class="chip ${i === jouRapo ? "on" : ""}" data-j="${i}">${nonJou(i)}<small>${datFr(dd)}</small></button>`).join("")}</div>
-  <div class="kpis">
-    <div class="kpi"><span>Depo ankese</span><b class="in">${gd(depo)}</b><small>${dep.length} depo</small></div>
-    <div class="kpi"><span>Retrè peye</span><b class="out">${gd(retre)}</b><small>${ret.length} retrè</small></div>
-    <div class="kpi"><span>Frè</span><b class="fee">${gd(sum(fre))}</b><small>${fre.length} · ${t("pa afekte kach la")}</small></div>
-    <div class="kpi"><span>Viman</span><b>${gd(sum(vim))}</b><small>${vim.length} · ${t("pa afekte kach la")}</small></div>
-    <div class="kpi"><span>Balans deklare (total)</span><b>${gd(deklare)}</b><small>${nDeklare} kont deklare</small></div>
-    <div class="kpi"><span>Cycle kreye</span><b>${cycles}</b><small>${t(nonJou(jouRapo)).toLowerCase()}</small></div>
-    <div class="kpi"><span>Kliyan ki pa peye</span><b>${swivi}</b><small>${t("fidbak anrejistre")}</small></div>
-    <div class="kpi"><span>Demann an atant</span><b>${dmAtant}</b><small>${t("retrè / viman")}</small></div>
-    <div class="kpi main"><span>Kach nan men pou remèt nan kès</span><b>${gd(depo - retre)}</b><small>Depo − retrè peye · ${t("frè ak viman pa ladan l")}</small></div>
-  </div>
-  ${poko ? `<p class="note warn">${poko} tranzaksyon poko voye: yo konte nan rapò a, men sèvè a poko resevwa yo.</p>` : ""}
-  <h2>Tranzaksyon mwen yo <small class="mut">(${txs.length})</small></h2>
-  <div class="list">${txs.map((x) => liTx(M, x)).join("") || `<p class="empty">Pa gen tranzaksyon ${t(nonJou(jouRapo)).toLowerCase()}.</p>`}</div>`;
+  // Swivi kliyan jou sa a: peye / fidbak / poko wè (sèlman jodi a gen sans pou "poko wè")
+  const jodiKont = [...M.comptes.values()].filter((k) => k._actif && k.jours_paiement?.includes(S.isoJou(D)) && k.date_debut <= D && !M.feries.has(D));
+  const peyeJou = jodiKont.filter((k) => k._joursPeye.has(D)).length;
+  const fidbakJou = new Set([...M.suivis.values()].filter((x) => S.jouLokal(new Date(x.capture_le)) === D).map((x) => x.id_compte_epargne));
+  const fidbakN = jodiKont.filter((k) => !k._joursPeye.has(D) && fidbakJou.has(k.id_compte_epargne)).length;
+  const ctx = {
+    ...ctxBase(M), i: jouRapo, D, nonJou,
+    jou: jou.map((date, i) => ({ i, date, label: nonJou(i), on: i === jouRapo })),
+    kpi: { depo, nDepo: dep.length, retre, nRetre: ret.length, fre: sum(fre), nFre: fre.length, vim: sum(vim), nVim: vim.length,
+      deklare, nDeklare, cycles, swivi, dmAtant, kach: depo - retre },
+    swiviStats: { total: jodiKont.length, peye: peyeJou, fidbak: fidbakN, pokoWe: Math.max(0, jodiKont.length - peyeJou - fidbakN) },
+    parLe: S.kolekParLe(txs), poko, txHtml: txs.map((x) => liTx(M, x)).join(""), nTx: txs.length,
+  };
+  $app.innerHTML = `<div id="rapo">${L().parts.rapo(ctx)}</div>`;
   $app.querySelectorAll("[data-j]").forEach((b) => (b.onclick = () => { jouRapo = Number(b.dataset.j); viewRapo(); }));
 }
 
@@ -690,41 +644,30 @@ async function viewClient(id) {
   const M = await S.model();
   const c = M.clients.get(id);
   if (!c) { $app.innerHTML = `<a href="#/kliyan" class="back">‹ Kliyan</a><p class="empty">Kliyan sa a pa sou telefòn nan.</p>`; return; }
-  const ks = S.comptesDuClient(M, id);
+  const man = estManager();
+  const ks = S.comptesDuClient(M, id).map((k) => ({ k, href: `#/cycle/${k.id_compte_epargne}`, on: k._actif, nPeye: k._joursPeye.size, nPrevu: k._prevuTotal,
+    solde: man ? k._solde : null, pwosan: k._pwosan, dots: k._dots, heat: k._heat }));
   let photo = c.photo_url || null;
   if (c.photo_id) { const ph = await db.get("photos", c.photo_id); if (ph) photo = URL.createObjectURL(ph.blob); }
   const gpsOk = c.gps_lat != null && c.gps_lng != null;
-  const li = (k, v, brut = true) => `<div class="kv"><span>${k}</span><b>${v ? (brut ? d(v) : v) : `<span class="mut">—</span>`}</b></div>`;
-  $app.innerHTML = `
-  <a href="#/kliyan" class="back">‹ Kliyan</a>
-  <div class="card head">
-    ${photo ? `<img class="avatar" src="${h(photo)}" alt="" data-legend="${d(non(c))}" title="Peze foto a pou wè l pi gwo">` : `<div class="avatar ph" aria-hidden="true">${h((c.prenom || "?")[0])}</div>`}
-    <div class="grow"><h1>${d(non(c))}</h1>
-      <div class="mut">${d(c.code_client || t("ID poko vini"))}</div>
-      ${badgePend(c)}</div>
-  </div>
-  ${c._error ? `<p class="note err">${d(t(c._error))} <a href="#/param">Wè</a></p>` : ""}
-  <div class="page-head sub"><h2>Enfòmasyon kliyan an</h2><a class="btn sm" href="#/kliyan/${id}/modifye">Modifye</a></div>
-  <div class="card info">
-    ${li("Telefòn", c.telephone ? `<a href="tel:${h(String(c.telephone).replace(/\D/g, ""))}" data-brut>${h(c.telephone)}</a>` : c.tel4 ? `•••• ${c.tel4}` : "", false)}
-    ${li("Pseudo", c.pseudo)}
-    ${li("Dat nesans", c.date_naissance ? `${datFr(c.date_naissance)} · ${age(c.date_naissance)} ${getLang() === "fr" ? "ans" : "an"}` : "", false)}
-    ${li("Pyès idantifikasyon", c.piece ? `${h(c.piece)} · ${d(c.numero_piece || "—")}` : c.numero_piece ? d(c.numero_piece) : "", false)}
-    ${li("Adrès", c.adresse)}
-    ${li("Kote biznis la", c.lieu_de_travail)}
-    ${li("GPS", gpsOk ? `<span class="badge ok">GPS aktive</span> <a href="https://maps.google.com/?q=${c.gps_lat},${c.gps_lng}" target="_blank" rel="noopener">Wè sou kat la</a>` : `<span class="badge warn">Pa gen GPS</span>`, false)}
-    ${li("Sektè", c.secteur || (c.activite && TX.secteurDe(c.activite)))}
-    ${li("Aktivite", c.activite)}
-    ${li("Pwen de vant", c.point_de_vente)}
-    ${li("Kapasite distribisyon", c.capacite_distribution)}
-  </div>
-  <a class="btn pri block" href="#/cycle/nouvo/${c.id_personne}">＋ Nouvo cycle Grandon</a>
-  <h2>Cycle yo</h2>
-  <div class="list">${ks.map((k) => `<a class="row" href="#/cycle/${k.id_compte_epargne}">
-      <div class="grow"><b>${d(k.no_compte || t("Cycle poko voye"))}</b> ${badgePend(k)}
-        <div class="mut sm">Plan ${gd(k.montant_plan)} · ${k.frequence_semaine ? `${k.frequence_semaine}×/sem (${lisJou(k.jours_paiement)})` : "—"}</div>
-        <div class="mut sm">${datFr(k.date_debut)} → ${datFr(k.date_fin)}</div></div>
-      <div class="right"><b>${estManager() && k._solde != null ? gd(k._solde) : `${k._joursPeye.size}/${k._prevuTotal ?? "?"}`}</b><br>${badgeKont(k)}</div></a>`).join("") || `<p class="empty">Pa gen cycle.</p>`}</div>`;
+  const aj = age(c.date_naissance);
+  const info = [
+    { key: "telefon", label: "Telefòn", html: c.telephone ? `<a href="tel:${h(String(c.telephone).replace(/\D/g, ""))}" data-brut>${h(F.telFmt(c.telephone))}</a>` : c.tel4 ? `•••• ${h(c.tel4)}` : "" },
+    { key: "pseudo", label: "Pseudo", html: c.pseudo ? d(c.pseudo) : "" },
+    { key: "nesans", label: "Dat nesans", html: c.date_naissance ? `${datFr(c.date_naissance)} · ${aj} ${getLang() === "fr" ? "ans" : "an"}` : "" },
+    { key: "pyes", label: "Pyès idantifikasyon", html: c.piece ? `${h(c.piece)} · ${d(c.numero_piece || "—")}` : c.numero_piece ? d(c.numero_piece) : "" },
+    { key: "adres", label: "Adrès", html: c.adresse ? d(c.adresse) : "" },
+    { key: "biznis", label: "Kote biznis la", html: c.lieu_de_travail ? d(c.lieu_de_travail) : "" },
+    { key: "gps", label: "GPS", html: gpsOk ? `<span class="badge ok">GPS aktive</span> <a href="https://maps.google.com/?q=${c.gps_lat},${c.gps_lng}" target="_blank" rel="noopener">Wè sou kat la</a>` : `<span class="badge warn">Pa gen GPS</span>` },
+    { key: "sekte", label: "Sektè", html: (c.secteur || (c.activite && TX.secteurDe(c.activite))) ? d(c.secteur || TX.secteurDe(c.activite)) : "" },
+    { key: "aktivite", label: "Aktivite", html: c.activite ? d(c.activite) : "" },
+    { key: "vant", label: "Pwen de vant", html: c.point_de_vente ? d(c.point_de_vente) : "" },
+    { key: "kapasite", label: "Kapasite distribisyon", html: c.capacite_distribution ? d(c.capacite_distribution) : "" },
+  ];
+  const ctx = { ...ctxBase(M), c, photo, gpsOk, ks, age: aj, info, hrefModifye: `#/kliyan/${id}/modifye`, hrefNouvoCycle: `#/cycle/nouvo/${c.id_personne}`,
+    mapsHref: gpsOk ? `https://maps.google.com/?q=${c.gps_lat},${c.gps_lng}` : null, telHref: c.telephone ? `tel:${String(c.telephone).replace(/\D/g, "")}` : null,
+    errHtml: c._error ? `<p class="note err">${d(t(c._error))} <a href="#/param">Wè</a></p>` : "" };
+  $app.innerHTML = `<div id="fich">${L().parts.fich(ctx)}</div>`;
 }
 
 // ---------- Chwazi ----------
@@ -850,37 +793,21 @@ async function viewCycle(id) {
   if (!k) { $app.innerHTML = `<a href="#/epay" class="back">‹ Epay</a><p class="empty">Cycle sa a pa sou telefòn nan.</p>`; return; }
   const c = M.clients.get(k.id_personne) || {};
   const man = estManager();
-  const fè = k._joursPeye.size, prevu = k._prevu;
-  $app.innerHTML = `
-  <a href="#/epay" class="back">‹ Epay</a>
-  <div class="card head">
-    ${avatar(c, "avatar")}
-    <div class="grow"><h1>${d(k.no_compte || t("Cycle poko voye"))} ${badgeKont(k)} ${badgePend(k)}</h1>
-      <a class="mut" href="#/kliyan/${c.id_personne}">${d(non(c))}</a></div>
-  </div>
-  ${k._error ? `<p class="note err">${d(t(k._error))} <a href="#/param">Wè</a></p>` : ""}
-  ${man && k._solde != null ? `<div class="card solde"><span>Balans kont lan</span><b>${gd(k._solde)}</b>
-      <small class="mut">Balans valide: ${gd(k.solde_actuel)}${Number(k.depo_an_atant) ? ` · an atant validasyon: ${gd(k.depo_an_atant)}` : ""}${k._local ? ` · poko voye: ${gd(k._local)}` : ""}</small></div>`
-    : `<div class="card solde"><span>Vèsman fèt</span><b>${k._nDepots}</b><small class="mut">${gd(k._depots)} · ${t("depo ou wè sou telefòn nan")}</small></div>`}
-  <div class="card stats">
-    <div><span>Plan (minimòm)</span><b>${gd(k.montant_plan)}</b></div>
-    <div><span>Frekans</span><b>${k.frequence_semaine ? `${k.frequence_semaine}× pa semèn` : "—"}</b></div>
-    <div class="wide"><span>Jou peman</span><b>${k.jours_paiement?.length ? k.jours_paiement.map((j) => JOU[j]).join(", ") : "—"}</b></div>
-    <div><span>Kòmanse</span><b>${datFr(k.date_debut)}</b></div>
-    <div><span>Fini</span><b>${datFr(k.date_fin)}</b></div>
-    ${k._prevuTotal != null ? `<div><span>Vèsman prevwa</span><b>${k._prevuTotal}</b><small class="mut">san dimanch ni jou ferye</small></div>
-    <div><span>Total pou l sanble</span><b>${gd(k._totalPrevu)}</b></div>` : ""}
-    ${k.jours_paiement?.length ? `<div class="wide"><span>Peman jiska jodi a</span><b>${fè} jou peye · ${prevu} jou prevwa</b>
-      <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="${prevu}" aria-valuenow="${fè}"><i style="width:${prevu ? Math.min(100, (fè / prevu) * 100) : 0}%"></i></div></div>` : ""}
-  </div>
-  ${k._actif ? `<div class="btn-row"><a class="btn pri" href="#/tx/nouvo/${k.id_compte_epargne}">＋ Tranzaksyon</a><button class="btn" id="papeye">Pa peye · Fidbak</button></div>` : ""}
+  const ctx = {
+    ...ctxBase(M), k, c, fè: k._joursPeye.size, prevu: k._prevu, dots: k._dots, heat: k._heat, nPeye: k._joursPeye.size, nPrevu: k._prevuTotal, pwosan: k._pwosan,
+    solde: man ? k._solde : null, soldeValide: k.solde_actuel, depoAnAtant: k.depo_an_atant, local: k._local, nDepots: k._nDepots, depots: k._depots,
+    prevuTotal: k._prevuTotal, totalPrevu: k._totalPrevu, anReta: k._anReta,
+    badges: { kont: badgeKont(k), pend: badgePend(k) }, hrefTx: `#/tx/nouvo/${k.id_compte_epargne}`, hrefKliyan: `#/kliyan/${c.id_personne}`,
+    errHtml: k._error ? `<p class="note err">${d(t(k._error))} <a href="#/param">Wè</a></p>` : "",
+  };
+  $app.innerHTML = `<div id="cycle">${L().parts.cycleTop(ctx)}
   ${k._demandes.length ? `<h2>Demann retrè ak viman</h2><div class="list">${k._demandes.map((x) => liDemande(M, x, { decide: man })).join("")}</div>` : ""}
   ${k._suivis.length ? `<h2>Fidbak</h2><div class="list">${k._suivis.map((x) => `<div class="row">
       <div class="grow"><b>${t(motifLabel(x.motif))}</b> ${badgePend(x)}
         <div class="mut sm">${lè(x.capture_le)}${nomAjan(x.agent_id) ? ` · ${d(nomAjan(x.agent_id))}` : ""}</div>
         ${x.note ? `<div class="sm">${d(x.note)}</div>` : ""}</div></div>`).join("")}</div>` : ""}
   <h2>Tranzaksyon</h2>
-  <div class="list">${k._txs.map((x) => liTx(M, x, { kliyan: false })).join("") || `<p class="empty">Poko gen tranzaksyon.</p>`}</div>`;
+  <div class="list">${k._txs.map((x) => liTx(M, x, { kliyan: false })).join("") || `<p class="empty">Poko gen tranzaksyon.</p>`}</div></div>`;
   document.getElementById("papeye")?.addEventListener("click", () => paPeye(k, c));
   $app.querySelectorAll("[data-ok]").forEach((b) => (b.onclick = () => decider(M, b.dataset.ok, true)));
   $app.querySelectorAll("[data-non]").forEach((b) => (b.onclick = () => decider(M, b.dataset.non, false)));
@@ -1025,9 +952,16 @@ async function viewSync() {
   </div>
   <h2>Aparans</h2>
   <div class="card form">
+    <fieldset class="field"><legend>Look <small class="mut">(aparans aplikasyon an)</small></legend>
+      <div class="looks" role="radiogroup">${looks.LOOK_IDS.map((id) => { const Lk = looks.LOOKS[id]; return `<label class="look-opt ${pref.look === id ? "on" : ""}" data-look-opt="${id}">
+        <input type="radio" name="look" value="${id}" ${pref.look === id ? "checked" : ""}>
+        <span class="look-prev" aria-hidden="true"><i class="lp-bar"></i><i class="lp-card"></i><i class="lp-btn"></i><i class="lp-nav"></i></span>
+        <span class="look-nom" data-brut>${h(Lk.nom)}</span><span class="look-desk">${h(Lk.deskripsyon)}</span></label>`; }).join("")}</div>
+    </fieldset>
     <fieldset class="field"><legend>Lang</legend><div class="seg"><label><input type="radio" name="lang" value="ht" ${getLang() === "ht" ? "checked" : ""}><span data-brut>Kreyòl</span></label><label><input type="radio" name="lang" value="fr" ${getLang() === "fr" ? "checked" : ""}><span data-brut>Français</span></label></div></fieldset>
-    <fieldset class="field"><legend>Tèm</legend><div class="seg s3">
+    <fieldset class="field" id="f-tem" ${L().tem === "dark" ? "hidden" : ""}><legend>Tèm</legend><div class="seg s3">
       ${[["auto", "Otomatik"], ["light", "Klè"], ["dark", "Fonse"]].map(([v, l]) => `<label><input type="radio" name="tem" value="${v}" ${pref.tem === v ? "checked" : ""}><span>${l}</span></label>`).join("")}</div></fieldset>
+    ${L().tem === "dark" ? `<p class="mut sm">${t("Look sa a toujou fonse.")}</p>` : ""}
     <fieldset class="field"><legend>Gwosè tèks</legend><div class="seg s3">
       ${[["n", "Nòmal"], ["l", "Gwo"], ["xl", "Pi gwo"]].map(([v, l]) => `<label><input type="radio" name="teks" value="${v}" ${pref.teks === v ? "checked" : ""}><span>${l}</span></label>`).join("")}</div></fieldset>
   </div>
@@ -1055,6 +989,7 @@ async function viewSync() {
   $app.querySelectorAll('input[name="tem"], input[name="teks"]').forEach((r) => (r.onchange = () => {
     savePrefs({ tem: $app.querySelector('input[name="tem"]:checked').value, teks: $app.querySelector('input[name="teks"]:checked').value });
   }));
+  $app.querySelectorAll('input[name="look"]').forEach((r) => (r.onchange = () => { savePrefs({ look: r.value }); toast(`${looks.LOOKS[r.value].nom} ✓`); render(); }));
   document.getElementById("sync").onclick = async () => {
     const r = await S.run();
     r.notices.forEach((n) => toast(n, "info", 6000));

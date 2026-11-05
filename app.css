@@ -268,3 +268,35 @@ b.fee { color: var(--warn); }
 .note.info-note { border-color: var(--info); color: var(--ink); background: color-mix(in srgb, var(--info) 8%, var(--card)); margin: 8px 0; font-size: .9rem; }
 .row.demande .btns { margin-top: 10px; }
 .seg.s4 span { font-size: .85rem; }
+
+/* ---------- Mak nan ba a ---------- */
+.brand .mark { width: 26px; height: 26px; border-radius: 8px; border: 2px solid var(--acc); display: inline-flex; align-items: center; justify-content: center; font-weight: 800; font-size: .95rem; }
+
+/* ---------- Filt (Epay) ---------- */
+.chips.filt { grid-template-columns: repeat(3, 1fr); margin: 6px 0 8px; }
+.chips.filt .chip { min-height: 44px; flex-direction: row; gap: 6px; }
+
+/* ---------- Chwa look (Paramèt) ---------- */
+.looks { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.look-opt { position: relative; margin: 0; display: flex; flex-direction: column; gap: 6px; padding: 8px; border: 2px solid var(--line); border-radius: 14px; cursor: pointer; font-weight: 600; min-width: 0; }
+.look-opt input { position: absolute; inset: 0; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.look-opt.on, .look-opt:has(input:checked) { border-color: var(--acc); box-shadow: 0 0 0 3px color-mix(in srgb, var(--acc) 25%, transparent); }
+.look-opt:has(input:focus-visible) { outline: 2px solid var(--info); outline-offset: 2px; }
+.look-prev { display: block; height: 88px; border-radius: 10px; position: relative; overflow: hidden; border: 1px solid var(--line); }
+.look-prev i { position: absolute; display: block; border-radius: 4px; }
+.look-prev .lp-bar { left: 0; right: 0; top: 0; height: 18px; border-radius: 0; }
+.look-prev .lp-card { left: 8px; right: 8px; top: 26px; height: 24px; }
+.look-prev .lp-btn { left: 8px; width: 36px; top: 56px; height: 12px; }
+.look-prev .lp-nav { left: 0; right: 0; bottom: 0; height: 14px; border-radius: 0; }
+.look-opt[data-look-opt="a"] .look-prev { background: #f3f5f9; }
+.look-opt[data-look-opt="a"] .lp-bar { background: #14284b; } .look-opt[data-look-opt="a"] .lp-card { background: #fff; border: 1px solid #dde2ec; }
+.look-opt[data-look-opt="a"] .lp-btn { background: #c9a227; } .look-opt[data-look-opt="a"] .lp-nav { background: #14284b; margin: 0 6px 4px; border-radius: 8px; }
+.look-opt[data-look-opt="b"] .look-prev { background: #fff; }
+.look-opt[data-look-opt="b"] .lp-bar { background: #fff; border-bottom: 1px solid #e4e8f0; } .look-opt[data-look-opt="b"] .lp-card { background: #fff; border: 1px solid #e4e8f0; }
+.look-opt[data-look-opt="b"] .lp-btn { background: #f2a900; width: 60px; height: 14px; } .look-opt[data-look-opt="b"] .lp-nav { background: #fff; border-top: 1px solid #e4e8f0; }
+.look-opt[data-look-opt="c"] .look-prev { background: #0b1222; border-color: #23304d; }
+.look-opt[data-look-opt="c"] .lp-bar { background: #0f1830; } .look-opt[data-look-opt="c"] .lp-card { background: #141e33; border: 1px solid #23304d; }
+.look-opt[data-look-opt="c"] .lp-btn { background: #e8c15a; } .look-opt[data-look-opt="c"] .lp-nav { background: #0f1830; border-top: 1px solid #23304d; }
+.look-nom { font-size: .95rem; }
+.look-desk { font-size: .75rem; font-weight: 500; color: var(--mut); line-height: 1.3; }
+@media (max-width: 400px) { .looks { grid-template-columns: 1fr; } .look-opt { flex-direction: row; align-items: center; } .look-prev { width: 96px; height: 64px; flex-shrink: 0; } .look-nom, .look-desk { display: block; } }

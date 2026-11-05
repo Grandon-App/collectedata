@@ -147,6 +147,16 @@ const FR = {
   "Se yon manadjè ki ka otorize retrè ak viman.": "Seul un manager peut autoriser retraits et virements.",
   "Frè a ap tann depo yo valide (balans valide a poko ase). L ap reeseye otomatikman.": "Les frais attendent la validation des dépôts (solde validé insuffisant). Nouvel essai automatique.",
   "An atant": "En attente",
+  // Look / Paramèt
+  "Look": "Style", "aparans aplikasyon an": "apparence de l'application", "Look sa a toujou fonse.": "Ce style est toujours sombre.",
+  "An reta": "En retard", "Tout": "Tous", "Filt": "Filtre", "peman jodi a": "paiements du jour", "kolekte": "collectés",
+  "Kolekte jodi a": "Collecté aujourd'hui", "Kolekte": "Collecté", "Peye": "Payés", "kliyan rete pou w wè": "clients restent à voir",
+  "Pou wè jodi a": "À voir aujourd'hui", "Semèn sa a": "Cette semaine", "Jou peye": "Jours payés", "Rele": "Appeler", "Kat": "Carte",
+  "Cycle aktif": "Cycle actif", "Objektif": "Objectif", "Vèsman": "Versements", "semèn konplè": "semaine complète", "pasyèl": "partielle",
+  "13 dènye semèn": "13 dernières semaines", "Kolèk pa lè": "Collecte par heure", "Swivi kliyan yo": "Suivi des clients", "poko wè": "pas encore vus",
+  "Kach pou remèt nan kès": "Espèces à remettre à la caisse", "depo ou wè sou telefòn nan": "dépôts visibles sur le téléphone",
+  "Repase demen": "Repasser demain", "Pa la": "Absent", "Pa gen kòb": "Pas d'argent", "Fèmen": "Fermé", "Malad": "Malade", "Repase": "Repasser",
+  "jou": "jours", "retire": "retirés", "vèsman peye": "versements payés", "an reta": "en retard", "Nouvo cycle": "Nouveau cycle",
   // Idantite
   "Pseudo": "Pseudo", "non yo konnen l": "surnom", "Dat nesans": "Date de naissance", "Pyès idantifikasyon": "Pièce d'identification",
   "Nimewo idantifikasyon": "Numéro d'identification", "Mete nimewo pyès la.": "Indiquez le numéro de la pièce.",
@@ -167,10 +177,20 @@ const FR = {
   "pa nan lis plan Grandon yo.": "n'est pas dans la liste des plans Grandon.", "Kont Grandon an pa jwenn.": "Compte Grandon introuvable.",
   "Ou pa gen dwa": "Vous n'avez pas le droit de",
 };
-const KEYS = Object.keys(FR).sort((a, b) => b.length - a.length);
 const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+let RE = null;
 // Fraz kout (yon sèl mo) ranplase sèlman lè yo se yon mo antye.
-const RE = new RegExp(KEYS.map((k) => (/^[\p{L}-]+$/u.test(k) ? `(?<![\\p{L}])${esc(k)}(?![\\p{L}])` : esc(k))).join("|"), "gu");
+function konpile() {
+  const keys = Object.keys(FR).sort((a, b) => b.length - a.length);
+  RE = new RegExp(keys.map((k) => (/^[\p{L}-]+$/u.test(k) ? `(?<![\\p{L}])${esc(k)}(?![\\p{L}])` : esc(k))).join("|"), "gu");
+}
+konpile();
+// Modil yo (look-a/b/c.js…) ka ajoute pwòp tradiksyon yo. Fraz ki deja la yo pa ranplase.
+export function addTranslations(map) {
+  let n = 0;
+  for (const [k, v] of Object.entries(map || {})) if (FR[k] === undefined && typeof v === "string") { FR[k] = v; n++; }
+  if (n) konpile();
+}
 
 let lang = "ht";
 try { lang = localStorage.getItem("grandon-lang") || "ht"; } catch { /* navigatè prive */ }

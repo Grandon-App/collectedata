@@ -1,15 +1,27 @@
 <!doctype html>
-<html lang="ht">
+<html lang="ht" data-look="a">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#14284b">
   <meta name="description" content="Grandon: kliyan, cycle epay ak depo, menm san entènèt.">
   <title>Grandon</title>
+  <script>
+    // Mete look/tèm/gwosè tèks la ANVAN premye randering lan (pa gen flach).
+    try {
+      var p = JSON.parse(localStorage.getItem("grandon-prefs") || "{}"), r = document.documentElement;
+      r.dataset.look = ["a", "b", "c"].includes(p.look) ? p.look : "a";
+      if (r.dataset.look === "c" || p.tem === "dark") r.dataset.theme = "dark"; else if (p.tem === "light") r.dataset.theme = "light";
+      if (p.teks) r.dataset.teks = p.teks;
+    } catch (e) {}
+  </script>
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon-192.png">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
   <link rel="stylesheet" href="app.css">
+  <link rel="stylesheet" href="look-a.css">
+  <link rel="stylesheet" href="look-b.css">
+  <link rel="stylesheet" href="look-c.css">
 </head>
 <body>
   <header id="bar" hidden></header>

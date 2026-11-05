@@ -362,8 +362,85 @@ export async function model() {
     k._totalPrevu = k._prevuTotal != null && k.montant_plan ? k._prevuTotal * Number(k.montant_plan) : null;
     // Balans sistèm nan: sèvè a voye l pou manadjè yo sèlman (null pou ajan yo).
     k._solde = k.solde_actuel == null ? null : Number(k.solde_actuel) + Number(k.depo_an_atant || 0) + k._local;
+    // Reta: jou peman prevwa jiska jodi a ki poko gen depo.
+    k._anReta = Math.max(0, k._prevu - k._joursPeye.size);
+    k._pwosan = k._prevuTotal ? Math.min(100, Math.round((k._joursPeye.size / k._prevuTotal) * 100)) : 0;
+    k._dots = semenDots(k, M.feries, today);
+    k._heat = heatmap13(k, M.feries, today);
   }
+  M.today = today;
   return M;
+}
+
+// Lendi semèn yon dat (ISO).
+export const lendiDe = (iso) => ajouteJou(iso, 1 - isoJou(iso));
+
+// Semèn aktyèl la jou pa jou (lendi → samdi) pou yon kont.
+// state: pa (pa jou peman) · ferye · peye · rate (jou peman pase san depo) · jodi (jodi a, poko peye) · avni
+export function semenDots(k, feries = new Set(), today = jodi()) {
+  const lendi = lendiDe(today);
+  const out = [];
+  for (let j = 1; j <= 6; j++) {
+    const date = ajouteJou(lendi, j - 1);
+    let state = "pa";
+    const nanCycle = date >= (k.date_debut || "0000") && (!k.date_fin || date < k.date_fin);
+    if (k.jours_paiement?.includes(j) && nanCycle) {
+      if (feries.has(date)) state = "ferye";
+      else if (k._joursPeye?.has(date)) state = "peye";
+      else if (date < today) state = "rate";
+      else if (date === today) state = "jodi";
+      else state = "avni";
+    } else if (k._joursPeye?.has(date)) state = "peye"; // depo yon jou ki pa t prevwa: konte l kanmenm
+    out.push({ j, date, state, jodi: date === today });
+  }
+  return out;
+}
+
+// 13 dènye semèn yo (ansyen → aktyèl) pou yon kont.
+// state: okenn (pa gen jou peman nan semèn sa a) · konple · pasyel · rate · ankou (semèn aktyèl, poko gen depo) · avni
+export function heatmap13(k, feries = new Set(), today = jodi()) {
+  const lendi = lendiDe(today);
+  const out = [];
+  for (let w = 12; w >= 0; w--) {
+    const debut = ajouteJou(lendi, -7 * w), fen = ajouteJou(debut, 6);
+    let prevu = 0, peye = 0;
+    for (let i = 0; i < 7; i++) {
+      const date = ajouteJou(debut, i);
+      const j = i + 1;
+      const nanCycle = date >= (k.date_debut || "0000") && (!k.date_fin || date < k.date_fin);
+      if (j !== 7 && k.jours_paiement?.includes(j) && nanCycle && !feries.has(date) && date <= today) prevu++;
+      if (k._joursPeye?.has(date)) peye++;
+    }
+    let state = "okenn";
+    if (debut > today) state = "avni";
+    else if (prevu === 0 && peye === 0) state = "okenn";
+    else if (peye >= prevu && prevu > 0) state = "konple";
+    else if (peye > 0) state = "pasyel";
+    else state = w === 0 ? "ankou" : "rate";
+    out.push({ debut, fen, prevu, peye, state });
+  }
+  return out;
+}
+
+// Lè yon tranzaksyon (0–23) nan lè Ayiti. Dat sèvè yo (san fuseau) se lè Ayiti deja.
+const fmtLè = new Intl.DateTimeFormat("en-US", { timeZone: C.FUSEAU, hour: "numeric", hourCycle: "h23" });
+export function lèTx(t) {
+  const s = String(t.date_transaction || "");
+  if (!/[zZ]|[+-]\d\d:?\d\d$/.test(s) && s.length >= 13) return Number(s.slice(11, 13));
+  return Number(fmtLè.format(new Date(s)));
+}
+
+// Kolèk pa lè pou yon lis tranzaksyon (depo sèlman): [{h, montant, n}] pou 6è → 19è.
+export function kolekParLe(txs, { de = 6, a = 19 } = {}) {
+  const out = [];
+  for (let hh = de; hh <= a; hh++) out.push({ h: hh, montant: 0, n: 0 });
+  for (const t of txs) {
+    if (txKind(t) !== "depo" || t.validation_status === "rejected") continue;
+    const hh = lèTx(t);
+    const slot = out.find((x) => x.h === Math.min(a, Math.max(de, hh)));
+    if (slot) { slot.montant += Number(t.montant || 0); slot.n++; }
+  }
+  return out;
 }
 
 // Kalite yon tranzaksyon: depo, retrè, frè, viman (voye oswa resevwa).
