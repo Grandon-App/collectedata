@@ -16,4 +16,6 @@ Aplikasyon an gen 3 aparans konplè; chak ajan chwazi pa l nan **Paramèt → Lo
 - **B · Mache**: fon blan, gwo bouton jòn safran, fèt pou teren an (klè oswa fonse).
 - **C · Lannuit**: toujou fonse, kontras fò, chif an premye (ekonomi batri).
 
+Chak look adapte l ak ekran an: telefòn (navigasyon anba), tablèt, ak laptop / ekran laj (navigasyon agòch, kontni an plizyè kolòn).
+
 Detay teknik yo (kontra, hook obligatwa, tès) nan `LOOKS.md`.
