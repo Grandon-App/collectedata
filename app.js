@@ -301,7 +301,7 @@ async function viewKliyan() {
 // ---------- Pati komen pou Epay ----------
 const estManager = () => !!(moi && (moi.manager ?? (moi.admin || moi.role === "manager" || [1, 2, 5].includes(Number(moi.role)))));
 const jourTx = (tx) => (S.jouTx(tx) === S.jodi() ? t("jodi a") : datFr(S.jouTx(tx)));
-const nomAjan = (id) => (id === moi?.id || id === "moi" ? t("Mwen") : (ajans[id] || ""));
+const nomAjan = (id) => (id === moi?.id || id === "moi" ? t("Mwen") : (ajans[id] || (id ? t("Lòt ajan") : "")));
 let ajans = {};
 
 // Yon liy fidbak ("Pa peye"): kliyan + rezon + lè + nòt. kliyan=false sou paj cycle la (kliyan an deja konnen).
