@@ -10,7 +10,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "2.3";
+const APP_VERSION = "3.0";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin" };
 // Preferans aparans: pou aparèy sa a sèlman.
 function prefs() {
@@ -113,7 +113,7 @@ function tabActif(r) {
   if (/^#\/(kliyan)/.test(r)) return "kliyan";
   if (/^#\/(epay|cycle|tx|chwazi)/.test(r)) return "epay";
   if (/^#\/rapo/.test(r)) return "rapo";
-  if (/^#\/(param|ajan)/.test(r)) return "param";
+  if (/^#\/(param|ajan|feries)/.test(r)) return "param";
   return "tablo";
 }
 function updateNav() {
@@ -167,8 +167,8 @@ function viewLogin(expired) {
       }
       if (prev && prev !== s.user.id) { const keep = await db.meta("session"); await db.wipe(); await db.meta("session", keep); }
       moi = ga?.actif
-        ? { id: s.user.id, nom: ga.nom, role: ga.role, admin: ga.role === "admin", tel: api.telefon8(f.tel.value) }
-        : { id: s.user.id, nom: `${p.firstname || ""} ${p.name || ""}`.trim() || s.user.email, role: Number(p.role), admin: Number(p.role) === 1 };
+        ? { id: s.user.id, nom: ga.nom, role: ga.role, admin: ga.role === "admin", manager: ga.role === "admin" || ga.role === "manager", tel: api.telefon8(f.tel.value) }
+        : { id: s.user.id, nom: `${p.firstname || ""} ${p.name || ""}`.trim() || s.user.email, role: Number(p.role), admin: Number(p.role) === 1, manager: [1, 2, 5].includes(Number(p.role)) };
       await db.meta("owner", s.user.id);
       await db.meta("moi", moi);
       navigator.storage?.persist?.();
@@ -290,44 +290,149 @@ async function viewKliyan() {
   drawLocal(); drawBaz();
 }
 
-// ---------- 3. Epay: kont ak cycle aktif, tranzaksyon ----------
-let filtEpay = "";
+// ---------- Pati komen pou Epay ----------
+const estManager = () => !!(moi && (moi.manager ?? (moi.admin || moi.role === "manager" || [1, 2, 5].includes(Number(moi.role)))));
+const MOTIFS = [["repase", "Kliyan an di pou m repase"], ["pa_la", "Kliyan an pa la jodi a"], ["pa_gen_kob", "Kliyan an di li pa gen kòb jodi a"],
+  ["refize", "Kliyan an refize peye"], ["fenmen", "Biznis la fèmen"], ["malad", "Kliyan an malad"], ["lot", "Lòt rezon"]];
+const motifLabel = (m) => (MOTIFS.find(([v]) => v === m) || [m, m])[1];
+const TYPES_FRE = ["Frais carnet", "Frais d'ouverture", "Frais de gestion", "Pénalité", "Autre"];
+const LABEL_TX = { depo: "Depo", retre: "Retrè", fre: "Frè", viman_out: "Viman voye", viman_in: "Viman resevwa", lot: "Tranzaksyon" };
+const SIY = (kind) => (kind === "depo" || kind === "viman_in" ? "+" : "−");
+const KLAS = (kind) => (kind === "depo" || kind === "viman_in" ? "in" : kind === "fre" ? "fee" : "out");
+const jourTx = (tx) => (S.jouTx(tx) === S.jodi() ? t("jodi a") : datFr(S.jouTx(tx)));
+const nomAjan = (id) => (id === moi?.id || id === "moi" ? t("Mwen") : (ajans[id] || ""));
+let ajans = {};
+
+function liTx(M, tx, { kliyan = true } = {}) {
+  const k = M.comptes.get(tx.id_compte_epargne); const c = k && M.clients.get(k.id_personne);
+  const kind = S.txKind(tx);
+  const detay = [
+    kind === "fre" && tx.type_frais ? d(tx.type_frais) : "",
+    kind === "viman_out" && tx.virement_to ? `→ ${d(tx.virement_to)}` : "", kind === "viman_in" && tx.virement_from ? `← ${d(tx.virement_from)}` : "",
+    tx.solde_avant_declare != null && tx.solde_avant_declare !== "" ? `${t("kanè avan")} ${gd(tx.solde_avant_declare)}` : "",
+    tx.solde_declare != null && tx.solde_declare !== "" ? `${t("kanè apre")} ${gd(tx.solde_declare)}` : "",
+  ].filter(Boolean).join(" · ");
+  return `<a class="row" href="#/cycle/${tx.id_compte_epargne}">
+    <div class="grow"><b>${t(LABEL_TX[kind])}</b>${kliyan ? ` · ${d(non(c))}` : ""} ${badgeTx(tx)}
+      <div class="mut sm">${kliyan ? `${d(k?.no_compte || t("Cycle poko voye"))} · ` : ""}${jourTx(tx)}</div>
+      ${detay ? `<div class="mut sm">${detay}</div>` : ""}
+      ${tx._error ? `<div class="err-msg sm">${d(t(tx._error))}</div>` : ""}</div>
+    <div class="right"><b class="${KLAS(kind)}">${SIY(kind)}${gd(tx.montant)}</b></div></a>`;
+}
+
+const badgeDm = (dm) => dm._error ? `<span class="badge err">Erè sync</span>` : dm._pending ? `<span class="badge pend">Poko voye</span>`
+  : dm.statut === "approuvee" ? `<span class="badge ok">Apwouve</span>` : dm.statut === "refusee" ? `<span class="badge err">Refize</span>`
+  : `<span class="badge warn">An atant otorizasyon</span>`;
+function liDemande(M, dm, { decide = false } = {}) {
+  const k = M.comptes.get(dm.id_compte_epargne); const c = k && M.clients.get(k.id_personne);
+  const kd = dm.id_compte_dest && M.comptes.get(dm.id_compte_dest); const cd = kd && M.clients.get(kd.id_personne);
+  return `<div class="row col demande">
+    <div class="grow"><b>${dm.type === "V" ? t("Viman") : t("Retrè")} · ${gd(dm.montant)}</b> ${badgeDm(dm)}
+      <div class="mut sm">${d(non(c))} · ${d(k?.no_compte || "")}${dm.type === "V" ? ` → ${d(non(cd))} · ${d(kd?.no_compte || "")}` : ""}</div>
+      <div class="mut sm">${lè(dm.capture_le)}${nomAjan(dm.agent_id) ? ` · ${d(nomAjan(dm.agent_id))}` : ""}${dm.note ? ` · ${d(dm.note)}` : ""}</div>
+      ${dm.motif_refus ? `<div class="err-msg sm">${t("Rezon")}: ${d(dm.motif_refus)}</div>` : ""}
+      ${dm._error ? `<div class="err-msg sm">${d(t(dm._error))}</div>` : ""}</div>
+    ${decide && dm.statut === "en_attente" && !dm._pending ? `<div class="btns"><button class="btn sm pri" data-ok="${dm.id}">Apwouve</button><button class="btn sm danger" data-non="${dm.id}">Refize</button></div>` : ""}
+  </div>`;
+}
+async function decider(M, id, ok) {
+  const dm = M.demandes.get(id);
+  const k = M.comptes.get(dm.id_compte_epargne); const c = k && M.clients.get(k.id_personne);
+  if (!navigator.onLine) return ui.info("Pa gen koneksyon.", "Fòk ou gen entènèt pou otorize yon demann.");
+  let motif = null;
+  if (ok) {
+    if (!(await ui.ask({ titre: dm.type === "V" ? "Apwouve viman sa a?" : "Apwouve retrè sa a?", ok: "Apwouve", foto: c?.photo_url,
+      detay: [["Kliyan", non(c)], ["Kont", k?.no_compte || ""], ["Montan (goud)", gd(dm.montant)],
+        ...(dm.type === "V" ? [["Kont ki resevwa", M.comptes.get(dm.id_compte_dest)?.no_compte || ""]] : []),
+        ...(k?._solde != null ? [["Balans kont lan", gd(k._solde)]] : [])] }))) return;
+  } else {
+    motif = await ui.askText({ titre: "Refize demann sa a?", label: "Rezon refi a", min: 3 });
+    if (!motif) return;
+  }
+  try {
+    await api.rpc("grandon_decider", { p_id: id, p_ok: ok, p_motif: motif });
+    toast(ok ? "Demann lan apwouve." : "Demann lan refize.");
+    await S.pull();
+  } catch (e) { return ui.info("Erè", e.message); }
+  render();
+}
+async function paPeye(k, c) {
+  const r = await ui.askChoice({ titre: "Kliyan an pa peye", tekst: `${non(c)} · ${k.no_compte || ""}`, options: MOTIFS,
+    noteLabel: "Nòt (opsyonèl)", noteObligatwaPou: ["lot"] });
+  if (!r) return;
+  await S.enqueue("suivi", { id: S.uuid(), compte: k.id_compte_epargne, motif: r.valeur, note: r.note, gps: await getGps(4000), capture_le: new Date().toISOString() },
+    k._pending ? [k.id_compte_epargne] : []);
+  toast("Fidbak la anrejistre.");
+  render();
+}
+
+// ---------- 3. Epay: onglè Kont / Tranzaksyon / Validasyon ----------
+let filtEpay = "", ongEpay = "kont";
 async function viewEpay() {
   const M = await S.model();
-  const pouJodi = [...M.comptes.values()].filter((k) => k._jodiPeman)
-    .sort((a, b) => (a._jodi >= a.montant_plan) - (b._jodi >= b.montant_plan));
-  const peye = pouJodi.filter((k) => k._jodi >= Number(k.montant_plan || 0)).length;
-  const aktif = [...M.comptes.values()].filter((k) => k._actif)
-    .sort((a, b) => non(M.clients.get(a.id_personne)).localeCompare(non(M.clients.get(b.id_personne))));
-  const txs = [...M.txs.values()].sort((a, b) => String(b.date_transaction).localeCompare(String(a.date_transaction))).slice(0, 30);
-  const liKont = (k) => { const c = M.clients.get(k.id_personne) || {}; return `<div class="row">
-      <a class="grow lnk" href="#/cycle/${k.id_compte_epargne}"><b>${d(non(c))}</b> ${badgePend(k)}
-        <div class="mut sm">${d(k.no_compte || "Cycle poko voye")} · plan ${gd(k.montant_plan)}</div>
-        <div class="mut sm">${k.frequence_semaine ? `${k.frequence_semaine}×/sem · ${lisJou(k.jours_paiement)}` : "—"} · ${gd(k._total)}</div></a>
-      <a class="btn sm pri" href="#/tx/nouvo/${k.id_compte_epargne}">Depo</a></div>`; };
+  ajans = (await db.meta("ajans")) || {};
+  const man = estManager();
+  const enAtant = [...M.demandes.values()].filter((x) => x.statut === "en_attente").sort((a, b) => String(a.capture_le).localeCompare(String(b.capture_le)));
+  if (ongEpay === "valid" && !man) ongEpay = "kont";
+  const ong = [["kont", "Kont"], ["tx", "Tranzaksyon"], ...(man ? [["valid", "Validasyon"]] : [])];
   $app.innerHTML = `
   <div class="page-head"><h1>Epay</h1><a class="btn pri" href="#/chwazi/cycle">＋ Nouvo cycle</a></div>
-  <h2>Peman jodi a <small class="mut">(${peye}/${pouJodi.length})</small></h2>
-  <div class="list grid-t">${pouJodi.map((k) => { const c = M.clients.get(k.id_personne) || {}; return `<a class="row" href="#/tx/nouvo/${k.id_compte_epargne}">
-      ${avatar(c)}<div class="grow"><b>${d(non(c))}</b><div class="mut sm">${d(k.no_compte || "Cycle poko voye")} · plan ${gd(k.montant_plan)}</div></div>
-      <div class="right">${k._jodi >= Number(k.montant_plan || 0) ? `<span class="badge ok">✓ ${gd(k._jodi)}</span>` : k._jodi > 0 ? `<span class="badge warn">${gd(k._jodi)}</span>` : `<span class="btn sm pri">Depo</span>`}</div></a>`; }).join("")
-    || `<p class="empty">Pa gen peman ki tonbe jodi a.</p>`}</div>
-  <h2>Kont ak cycle aktif <small class="mut">(${aktif.length})</small></h2>
-  <input id="q" type="search" class="search" placeholder="Chèche kliyan oswa nimewo kont…" aria-label="Chèche kont" value="${h(filtEpay)}">
-  <div class="list grid-t" id="kont"></div>
-  <h2>Dènye tranzaksyon yo</h2>
-  <div class="list">${txs.map((t) => { const k = M.comptes.get(t.id_compte_epargne); const c = k && M.clients.get(k.id_personne); return `<a class="row" href="#/cycle/${t.id_compte_epargne}">
-      <div class="grow"><b>${t.type_transaction === "D" ? "Depo" : "Retrè"}</b> · ${d(non(c))} ${badgeTx(t)}
-        <div class="mut sm">${d(k?.no_compte || "")} · ${S.jouTx(t) === S.jodi() ? "jodi a" : datFr(S.jouTx(t))}</div></div>
-      <div class="right"><b class="${t.type_transaction === "D" ? "in" : "out"}">${t.type_transaction === "D" ? "+" : "−"}${gd(t.montant)}</b></div></a>`; }).join("") || `<p class="empty">Poko gen tranzaksyon.</p>`}</div>`;
-  const q = document.getElementById("q");
-  const draw = () => {
-    const v = filtEpay.trim().toLowerCase();
-    const l = aktif.filter((k) => !v || non(M.clients.get(k.id_personne)).toLowerCase().includes(v) || String(k.no_compte || "").toLowerCase().includes(v));
-    document.getElementById("kont").innerHTML = l.map(liKont).join("") || `<p class="empty">${v ? "Anyen pa koresponn." : "Pa gen kont ak cycle aktif."}</p>`;
-  };
-  q.oninput = () => { filtEpay = q.value; draw(); };
-  draw();
+  <div class="tabs" role="tablist">${ong.map(([k, l]) => `<button role="tab" class="tab ${k === ongEpay ? "on" : ""}" aria-selected="${k === ongEpay}" data-ong="${k}">${l}${k === "valid" && enAtant.length ? ` <span class="cnt-b">${enAtant.length}</span>` : ""}</button>`).join("")}</div>
+  <div id="ong"></div>`;
+  $app.querySelectorAll("[data-ong]").forEach((b) => (b.onclick = () => { ongEpay = b.dataset.ong; viewEpay(); }));
+  const box = document.getElementById("ong");
+
+  if (ongEpay === "kont") {
+    const pouJodi = [...M.comptes.values()].filter((k) => k._jodiPeman)
+      .sort((a, b) => (a._jodi >= a.montant_plan) - (b._jodi >= b.montant_plan));
+    const peye = pouJodi.filter((k) => k._jodi >= Number(k.montant_plan || 0)).length;
+    const aktif = [...M.comptes.values()].filter((k) => k._actif)
+      .sort((a, b) => non(M.clients.get(a.id_personne)).localeCompare(non(M.clients.get(b.id_personne))));
+    const swiviJodi = new Set([...M.suivis.values()].filter((x) => S.jouLokal(new Date(x.capture_le)) === S.jodi()).map((x) => x.id_compte_epargne));
+    box.innerHTML = `
+    <h2>Peman jodi a <small class="mut">(${peye}/${pouJodi.length})</small></h2>
+    <div class="list grid-t">${pouJodi.map((k) => { const c = M.clients.get(k.id_personne) || {}; const ok = k._jodi >= Number(k.montant_plan || 0); return `<div class="row">
+        ${avatar(c)}<a class="grow lnk" href="#/cycle/${k.id_compte_epargne}"><b>${d(non(c))}</b><div class="mut sm">${d(k.no_compte || t("Cycle poko voye"))} · plan ${gd(k.montant_plan)}</div>
+          ${swiviJodi.has(k.id_compte_epargne) && !ok ? `<div class="sm"><span class="badge warn">Fidbak anrejistre</span></div>` : ""}</a>
+        ${ok ? `<span class="badge ok">✓ ${gd(k._jodi)}</span>` : `<div class="btns-v"><a class="btn sm pri" href="#/tx/nouvo/${k.id_compte_epargne}">Depo</a><button class="btn sm" data-papeye="${k.id_compte_epargne}">Pa peye</button></div>`}</div>`; }).join("")
+      || `<p class="empty">Pa gen peman ki tonbe jodi a.</p>`}</div>
+    <h2>Kont ak cycle aktif <small class="mut">(${aktif.length})</small></h2>
+    <input id="q" type="search" class="search" placeholder="Chèche kliyan oswa nimewo kont…" aria-label="Chèche kont" value="${h(filtEpay)}">
+    <div class="list grid-t" id="kont"></div>`;
+    const liKont = (k) => { const c = M.clients.get(k.id_personne) || {}; return `<div class="row">
+        <a class="grow lnk" href="#/cycle/${k.id_compte_epargne}"><b>${d(non(c))}</b> ${badgePend(k)}
+          <div class="mut sm">${d(k.no_compte || t("Cycle poko voye"))} · plan ${gd(k.montant_plan)}</div>
+          <div class="mut sm">${k.frequence_semaine ? `${k.frequence_semaine}×/sem · ${lisJou(k.jours_paiement)}` : "—"} · ${k._joursPeye.size}/${k._prevuTotal ?? "?"} ${t("vèsman")}</div>
+          ${man && k._solde != null ? `<div class="sm"><b>${t("Balans")}: ${gd(k._solde)}</b></div>` : ""}</a>
+        <a class="btn sm pri" href="#/tx/nouvo/${k.id_compte_epargne}">Depo</a></div>`; };
+    const q = document.getElementById("q");
+    const draw = () => {
+      const v = filtEpay.trim().toLowerCase();
+      const l = aktif.filter((k) => !v || non(M.clients.get(k.id_personne)).toLowerCase().includes(v) || String(k.no_compte || "").toLowerCase().includes(v));
+      document.getElementById("kont").innerHTML = l.map(liKont).join("") || `<p class="empty">${v ? "Anyen pa koresponn." : "Pa gen kont ak cycle aktif."}</p>`;
+    };
+    q.oninput = () => { filtEpay = q.value; draw(); };
+    draw();
+    box.querySelectorAll("[data-papeye]").forEach((b) => (b.onclick = () => { const k = M.comptes.get(b.dataset.papeye); paPeye(k, M.clients.get(k.id_personne) || {}); }));
+  }
+
+  if (ongEpay === "tx") {
+    const mesDm = [...M.demandes.values()].filter((x) => man || x.agent_id === moi.id || x.agent_id === "moi")
+      .sort((a, b) => String(b.capture_le).localeCompare(String(a.capture_le))).slice(0, 20);
+    const txs = [...M.txs.values()].sort((a, b) => String(b.date_transaction).localeCompare(String(a.date_transaction))).slice(0, 60);
+    box.innerHTML = `
+    ${mesDm.length ? `<h2>Demann retrè ak viman</h2><div class="list">${mesDm.map((x) => liDemande(M, x)).join("")}</div>` : ""}
+    <h2>Tranzaksyon yo</h2>
+    <div class="list">${txs.map((x) => liTx(M, x)).join("") || `<p class="empty">Poko gen tranzaksyon.</p>`}</div>`;
+  }
+
+  if (ongEpay === "valid") {
+    box.innerHTML = `
+    <p class="mut sm">Retrè ak viman yo bezwen otorizasyon yon manadjè. Lè ou apwouve, ekriti yo pase touswit sou kont yo.</p>
+    <div class="list">${enAtant.map((x) => liDemande(M, x, { decide: true })).join("") || `<p class="empty">Pa gen demann an atant.</p>`}</div>`;
+    box.querySelectorAll("[data-ok]").forEach((b) => (b.onclick = () => decider(M, b.dataset.ok, true)));
+    box.querySelectorAll("[data-non]").forEach((b) => (b.onclick = () => decider(M, b.dataset.non, false)));
+  }
 }
 
 // ---------- 4. Rapò ajan an (3 dènye jou) ----------
@@ -336,33 +441,37 @@ async function viewRapo() {
   const M = await S.model();
   const jou = [0, 1, 2].map((n) => S.ajouteJou(S.jodi(), -n));
   const D = jou[jouRapo];
-  const mwen = (x) => x.created_by === moi.id || x.created_by === "moi";
-  const txs = [...M.txs.values()].filter((t) => mwen(t) && S.jouTx(t) === D && t.validation_status !== "rejected")
+  const mwen = (x) => x.created_by === moi.id || x.created_by === "moi" || x.agent_id === moi.id || x.agent_id === "moi";
+  const txs = [...M.txs.values()].filter((x) => mwen(x) && S.jouTx(x) === D && x.validation_status !== "rejected")
     .sort((a, b) => String(b.date_transaction).localeCompare(String(a.date_transaction)));
-  const dep = txs.filter((t) => t.type_transaction === "D"), ret = txs.filter((t) => t.type_transaction === "R");
-  const sum = (l) => l.reduce((a, t) => a + Number(t.montant || 0), 0);
+  const par = (k) => txs.filter((x) => S.txKind(x) === k);
+  const sum = (l) => l.reduce((a, x) => a + Number(x.montant || 0), 0);
+  const dep = par("depo"), ret = par("retre"), fre = par("fre"), vim = par("viman_out");
   const depo = sum(dep), retre = sum(ret);
-  const deklare = txs.reduce((a, t) => a + Number(t.solde_declare || 0), 0);
-  const nDeklare = txs.filter((t) => t.solde_declare != null && t.solde_declare !== "").length;
+  const deklare = txs.reduce((a, x) => a + Number(x.solde_declare || 0), 0);
+  const nDeklare = txs.filter((x) => x.solde_declare != null && x.solde_declare !== "").length;
   const cycles = [...M.comptes.values()].filter((k) => mwen(k) && k.created_at && S.jouLokal(new Date(k.created_at)) === D).length;
-  const poko = txs.filter((t) => t._pending).length;
+  const swivi = [...M.suivis.values()].filter((x) => mwen(x) && S.jouLokal(new Date(x.capture_le)) === D).length;
+  const dmAtant = [...M.demandes.values()].filter((x) => mwen(x) && x.statut === "en_attente").length;
+  const poko = txs.filter((x) => x._pending).length;
   const nonJou = (n) => (n === 0 ? "Jodi a" : n === 1 ? "Yè" : "Avan-yè");
   $app.innerHTML = `
   <div class="page-head"><h1>Rapò</h1></div>
-  <div class="chips" role="tablist">${jou.map((d, i) => `<button role="tab" aria-selected="${i === jouRapo}" class="chip ${i === jouRapo ? "on" : ""}" data-j="${i}">${nonJou(i)}<small>${datFr(d)}</small></button>`).join("")}</div>
+  <div class="chips" role="tablist">${jou.map((dd, i) => `<button role="tab" aria-selected="${i === jouRapo}" class="chip ${i === jouRapo ? "on" : ""}" data-j="${i}">${nonJou(i)}<small>${datFr(dd)}</small></button>`).join("")}</div>
   <div class="kpis">
     <div class="kpi"><span>Depo ankese</span><b class="in">${gd(depo)}</b><small>${dep.length} depo</small></div>
-    <div class="kpi"><span>Retrè</span><b class="out">${ret.length}</b><small>${gd(retre)}</small></div>
+    <div class="kpi"><span>Retrè peye</span><b class="out">${gd(retre)}</b><small>${ret.length} retrè</small></div>
+    <div class="kpi"><span>Frè</span><b class="fee">${gd(sum(fre))}</b><small>${fre.length} · ${t("pa afekte kach la")}</small></div>
+    <div class="kpi"><span>Viman</span><b>${gd(sum(vim))}</b><small>${vim.length} · ${t("pa afekte kach la")}</small></div>
     <div class="kpi"><span>Balans deklare (total)</span><b>${gd(deklare)}</b><small>${nDeklare} kont deklare</small></div>
-    <div class="kpi"><span>Cycle kreye</span><b>${cycles}</b><small>${nonJou(jouRapo).toLowerCase()}</small></div>
-    <div class="kpi main"><span>Kach nan men pou remèt nan kès</span><b>${gd(depo - retre)}</b><small>Depo − retrè</small></div>
+    <div class="kpi"><span>Cycle kreye</span><b>${cycles}</b><small>${t(nonJou(jouRapo)).toLowerCase()}</small></div>
+    <div class="kpi"><span>Kliyan ki pa peye</span><b>${swivi}</b><small>${t("fidbak anrejistre")}</small></div>
+    <div class="kpi"><span>Demann an atant</span><b>${dmAtant}</b><small>${t("retrè / viman")}</small></div>
+    <div class="kpi main"><span>Kach nan men pou remèt nan kès</span><b>${gd(depo - retre)}</b><small>Depo − retrè peye · ${t("frè ak viman pa ladan l")}</small></div>
   </div>
   ${poko ? `<p class="note warn">${poko} tranzaksyon poko voye: yo konte nan rapò a, men sèvè a poko resevwa yo.</p>` : ""}
   <h2>Tranzaksyon mwen yo <small class="mut">(${txs.length})</small></h2>
-  <div class="list">${txs.map((t) => { const k = M.comptes.get(t.id_compte_epargne); const c = k && M.clients.get(k.id_personne); return `<div class="row">
-      <div class="grow"><b>${t.type_transaction === "D" ? "Depo" : "Retrè"}</b> · ${d(non(c))} ${badgeTx(t)}
-        <div class="mut sm">${d(k?.no_compte || "")}${t.solde_declare != null && t.solde_declare !== "" ? ` · balans deklare ${gd(t.solde_declare)}` : ""}</div></div>
-      <div class="right"><b class="${t.type_transaction === "D" ? "in" : "out"}">${t.type_transaction === "D" ? "+" : "−"}${gd(t.montant)}</b></div></div>`; }).join("") || `<p class="empty">Pa gen tranzaksyon ${nonJou(jouRapo).toLowerCase()}.</p>`}</div>`;
+  <div class="list">${txs.map((x) => liTx(M, x)).join("") || `<p class="empty">Pa gen tranzaksyon ${t(nonJou(jouRapo)).toLowerCase()}.</p>`}</div>`;
   $app.querySelectorAll("[data-j]").forEach((b) => (b.onclick = () => { jouRapo = Number(b.dataset.j); viewRapo(); }));
 }
 
@@ -615,7 +724,7 @@ async function viewClient(id) {
       <div class="grow"><b>${d(k.no_compte || t("Cycle poko voye"))}</b> ${badgePend(k)}
         <div class="mut sm">Plan ${gd(k.montant_plan)} · ${k.frequence_semaine ? `${k.frequence_semaine}×/sem (${lisJou(k.jours_paiement)})` : "—"}</div>
         <div class="mut sm">${datFr(k.date_debut)} → ${datFr(k.date_fin)}</div></div>
-      <div class="right"><b>${gd(k._total)}</b><br>${badgeKont(k)}</div></a>`).join("") || `<p class="empty">Pa gen cycle.</p>`}</div>`;
+      <div class="right"><b>${estManager() && k._solde != null ? gd(k._solde) : `${k._joursPeye.size}/${k._prevuTotal ?? "?"}`}</b><br>${badgeKont(k)}</div></a>`).join("") || `<p class="empty">Pa gen cycle.</p>`}</div>`;
 }
 
 // ---------- Chwazi ----------
@@ -663,7 +772,7 @@ async function viewCycleNew(idPersonne) {
       <div class="seg s4">${FREKANS.map((n) => `<label><input type="radio" name="freq" value="${n}" ${n === freq ? "checked" : ""}><span>${n}×</span></label>`).join("")}</div>
     </fieldset>
     <fieldset class="field"><legend>Jou peman yo * <small class="mut" id="jou-hint"></small></legend>
-      <div class="jours" id="jours">${[1, 2, 3, 4, 5, 6, 7].map((j) => `<label><input type="checkbox" name="jou" value="${j}"><span>${JOU_KOUT[j]}</span></label>`).join("")}</div>
+      <div class="jours" id="jours">${[1, 2, 3, 4, 5, 6, 7].map((j) => `<label ${j === 7 ? 'title="Dimanch pa yon jou peman"' : ""}><input type="checkbox" name="jou" value="${j}" ${j === 7 ? "disabled" : ""}><span>${JOU_KOUT[j]}</span></label>`).join("")}</div>
     </fieldset>
     <label>Plan * <small class="mut">(minimòm chak fwa li peye)</small>
       <select name="plan">${plans.map((p) => `<option value="${p}" ${p === planDef ? "selected" : ""}>${gd(p)}</option>`).join("")}</select></label>
@@ -684,12 +793,13 @@ async function viewCycleNew(idPersonne) {
     const duree = Number(f.duree.value), plan = Number(f.plan.value), debut = f.debut.value;
     if (!debut) return;
     const fin = S.ajouteMwa(debut, duree);
-    const n = S.joursPeman(debut, fin, jours);
+    const n = S.joursPeman(debut, S.ajouteJou(fin, -1), jours, M.feries);
+    const ok = jours.length === freq;
     document.getElementById("recap").innerHTML = `
       <div><span>Fen cycle a</span><b>${datFr(fin)}</b></div>
-      <div><span>Jou peman</span><b>${jours.length === freq ? lisJou([...jours].sort()) : "—"}</b></div>
-      <div><span>Minimòm pa semèn</span><b>${gd(plan * freq)}</b></div>
-      <div><span>Minimòm sou ${duree} mwa</span><b>${jours.length === freq ? `${gd(plan * n)}` : "—"}</b><small class="mut">${jours.length === freq ? `${n} peman` : ""}</small></div>`;
+      <div><span>Jou peman</span><b>${ok ? lisJou([...jours].sort()) : "—"}</b></div>
+      <div><span>Vèsman prevwa</span><b>${ok ? n : "—"}</b><small class="mut">san dimanch ni jou ferye</small></div>
+      <div><span>Total pou l sanble</span><b>${ok ? gd(plan * n) : "—"}</b><small class="mut">${gd(plan)} × ${ok ? n : "…"}</small></div>`;
   };
   f.querySelectorAll('input[name="freq"]').forEach((r) => (r.onchange = () => {
     freq = Number(r.value);
@@ -717,7 +827,9 @@ async function viewCycleNew(idPersonne) {
     const js = [...jours].sort();
     if (!(await ui.ask({ titre: "Kreye cycle Grandon sa a?", ok: "Kreye cycle a", foto: c.photo_url, detay: [
       ["Kliyan", non(c)], ["Dire", `${duree} ${t("mwa")}`], ["Frekans", `${freq}× ${t("pa semèn")}`],
-      ["Jou peman", js.map((j) => t(JOU[j])).join(", ")], ["Plan", `${gd(plan)}`], ["Fen cycle a", datFr(S.ajouteMwa(debut, duree))]] }))) return;
+      ["Jou peman", js.map((j) => t(JOU[j])).join(", ")], ["Plan", `${gd(plan)}`], ["Fen cycle a", datFr(S.ajouteMwa(debut, duree))],
+      ["Vèsman prevwa", String(S.joursPeman(debut, S.ajouteJou(S.ajouteMwa(debut, duree), -1), js, M.feries))],
+      ["Total pou l sanble", gd(plan * S.joursPeman(debut, S.ajouteJou(S.ajouteMwa(debut, duree), -1), js, M.feries))]] }))) return;
     const b = f.querySelector("button[type=submit]"); b.disabled = true;
     const id = S.uuid();
     const gps = await getGps(5000);
@@ -733,95 +845,168 @@ async function viewCycleNew(idPersonne) {
 // ---------- Fich cycle ----------
 async function viewCycle(id) {
   const M = await S.model();
+  ajans = (await db.meta("ajans")) || {};
   const k = M.comptes.get(id);
   if (!k) { $app.innerHTML = `<a href="#/epay" class="back">‹ Epay</a><p class="empty">Cycle sa a pa sou telefòn nan.</p>`; return; }
-  const c = M.clients.get(k.id_personne);
+  const c = M.clients.get(k.id_personne) || {};
+  const man = estManager();
   const fè = k._joursPeye.size, prevu = k._prevu;
   $app.innerHTML = `
   <a href="#/epay" class="back">‹ Epay</a>
-  <h1>${d(k.no_compte || "Cycle poko voye")} ${badgeKont(k)} ${badgePend(k)}</h1>
-  ${k._error ? `<p class="note err">${h(k._error)} <a href="#/param">Wè</a></p>` : ""}
-  <div class="card solde"><span>Total kliyan an mete</span><b>${gd(k._total)}</b>
-    <small class="mut">Balans valide: ${gd(k.solde_actuel)}${Number(k.depo_an_atant) ? ` · an atant validasyon: ${gd(k.depo_an_atant)}` : ""}${k._local ? ` · poko voye: ${gd(k._local)}` : ""}</small></div>
+  <div class="card head">
+    ${avatar(c, "avatar")}
+    <div class="grow"><h1>${d(k.no_compte || t("Cycle poko voye"))} ${badgeKont(k)} ${badgePend(k)}</h1>
+      <a class="mut" href="#/kliyan/${c.id_personne}">${d(non(c))}</a></div>
+  </div>
+  ${k._error ? `<p class="note err">${d(t(k._error))} <a href="#/param">Wè</a></p>` : ""}
+  ${man && k._solde != null ? `<div class="card solde"><span>Balans kont lan</span><b>${gd(k._solde)}</b>
+      <small class="mut">Balans valide: ${gd(k.solde_actuel)}${Number(k.depo_an_atant) ? ` · an atant validasyon: ${gd(k.depo_an_atant)}` : ""}${k._local ? ` · poko voye: ${gd(k._local)}` : ""}</small></div>`
+    : `<div class="card solde"><span>Vèsman fèt</span><b>${k._nDepots}</b><small class="mut">${gd(k._depots)} · ${t("depo ou wè sou telefòn nan")}</small></div>`}
   <div class="card stats">
     <div><span>Plan (minimòm)</span><b>${gd(k.montant_plan)}</b></div>
     <div><span>Frekans</span><b>${k.frequence_semaine ? `${k.frequence_semaine}× pa semèn` : "—"}</b></div>
     <div class="wide"><span>Jou peman</span><b>${k.jours_paiement?.length ? k.jours_paiement.map((j) => JOU[j]).join(", ") : "—"}</b></div>
     <div><span>Kòmanse</span><b>${datFr(k.date_debut)}</b></div>
     <div><span>Fini</span><b>${datFr(k.date_fin)}</b></div>
+    ${k._prevuTotal != null ? `<div><span>Vèsman prevwa</span><b>${k._prevuTotal}</b><small class="mut">san dimanch ni jou ferye</small></div>
+    <div><span>Total pou l sanble</span><b>${gd(k._totalPrevu)}</b></div>` : ""}
     ${k.jours_paiement?.length ? `<div class="wide"><span>Peman jiska jodi a</span><b>${fè} jou peye · ${prevu} jou prevwa</b>
       <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="${prevu}" aria-valuenow="${fè}"><i style="width:${prevu ? Math.min(100, (fè / prevu) * 100) : 0}%"></i></div></div>` : ""}
   </div>
-  ${k._actif ? `<a class="btn pri block" href="#/tx/nouvo/${k.id_compte_epargne}">＋ Depo / Retrè</a>` : ""}
+  ${k._actif ? `<div class="btn-row"><a class="btn pri" href="#/tx/nouvo/${k.id_compte_epargne}">＋ Tranzaksyon</a><button class="btn" id="papeye">Pa peye · Fidbak</button></div>` : ""}
+  ${k._demandes.length ? `<h2>Demann retrè ak viman</h2><div class="list">${k._demandes.map((x) => liDemande(M, x, { decide: man })).join("")}</div>` : ""}
+  ${k._suivis.length ? `<h2>Fidbak</h2><div class="list">${k._suivis.map((x) => `<div class="row">
+      <div class="grow"><b>${t(motifLabel(x.motif))}</b> ${badgePend(x)}
+        <div class="mut sm">${lè(x.capture_le)}${nomAjan(x.agent_id) ? ` · ${d(nomAjan(x.agent_id))}` : ""}</div>
+        ${x.note ? `<div class="sm">${d(x.note)}</div>` : ""}</div></div>`).join("")}</div>` : ""}
   <h2>Tranzaksyon</h2>
-  <div class="list">${k._txs.map((t) => `<div class="row">
-      <div><b>${t.type_transaction === "D" ? "Depo" : "Retrè"}</b> ${badgeTx(t)}
-        <div class="mut sm">${t._pending ? lè(t.date_transaction) : datFr(t.date_transaction)}</div>
-        ${t._error ? `<div class="err-msg sm">${h(t._error)}</div>` : ""}</div>
-      <div class="right"><b class="${t.type_transaction === "D" ? "in" : "out"}">${t.type_transaction === "D" ? "+" : "−"}${gd(t.montant)}</b></div></div>`).join("") || `<p class="empty">Poko gen tranzaksyon.</p>`}</div>`;
+  <div class="list">${k._txs.map((x) => liTx(M, x, { kliyan: false })).join("") || `<p class="empty">Poko gen tranzaksyon.</p>`}</div>`;
+  document.getElementById("papeye")?.addEventListener("click", () => paPeye(k, c));
+  $app.querySelectorAll("[data-ok]").forEach((b) => (b.onclick = () => decider(M, b.dataset.ok, true)));
+  $app.querySelectorAll("[data-non]").forEach((b) => (b.onclick = () => decider(M, b.dataset.non, false)));
 }
 
-// ---------- Nouvo tranzaksyon ----------
+// ---------- Nouvo tranzaksyon: Depo, Frè, Retrè, Viman ----------
+const TIP_TX = [["D", "Depo"], ["FL", "Frè"], ["R", "Retrè"], ["V", "Viman"]];
 async function viewTxNew(compteId) {
   const M = await S.model();
   const k = M.comptes.get(compteId);
   const c = k && M.clients.get(k.id_personne);
   if (!k) { $app.innerHTML = `<a href="#/epay" class="back">‹ Epay</a><p class="empty">Cycle la pa jwenn.</p>`; return; }
   const plan = Number(k.montant_plan || 0);
-  const disponib = Number(k.solde_actuel || 0) + Math.min(0, k._local); // retrè: sèlman balans valide
+  const lòt = [...M.comptes.values()].filter((x) => x.id_compte_epargne !== compteId && x.no_compte)
+    .sort((a, b) => non(M.clients.get(a.id_personne)).localeCompare(non(M.clients.get(b.id_personne))));
   $app.innerHTML = `
-  <a href="#/cycle/${k.id_compte_epargne}" class="back">‹ ${d(k.no_compte || "Cycle")}</a>
-  <h1>Depo / Retrè</h1>
-  <p class="mut">${d(non(c))} · ${d(k.no_compte || "cycle poko voye")} · plan ${gd(plan)}</p>
+  <a href="#/cycle/${k.id_compte_epargne}" class="back">‹ ${d(k.no_compte || t("Cycle"))}</a>
+  <h1>Tranzaksyon</h1>
+  <p class="mut">${d(non(c))} · ${d(k.no_compte || t("cycle poko voye"))} · plan ${gd(plan)}</p>
   <form id="f" class="card form" novalidate>
-    <fieldset class="field"><legend class="sr">Tip</legend><div class="seg">
-      <label><input type="radio" name="type" value="D" checked><span>Depo</span></label>
-      <label><input type="radio" name="type" value="R"><span>Retrè</span></label></div></fieldset>
+    <fieldset class="field"><legend class="sr">Tip</legend><div class="seg s4">
+      ${TIP_TX.map(([v, l], i) => `<label><input type="radio" name="type" value="${v}" ${i === 0 ? "checked" : ""}><span>${l}</span></label>`).join("")}</div></fieldset>
+    <p class="note info-note" id="oto" hidden>Sa a bezwen otorizasyon yon manadjè. Peye kliyan an sèlman lè demann lan apwouve.</p>
+    <label id="l-fre" hidden>Tip frè *<select name="type_frais"><option value="">Chwazi…</option>${TYPES_FRE.map((x) => opt(x, "")).join("")}</select></label>
+    <label id="l-dest" hidden>Kont ki resevwa viman an *<select name="dest"><option value="">Chwazi…</option>${lòt.map((x) => `<option value="${x.id_compte_epargne}">${h(non(M.clients.get(x.id_personne)))} · ${h(x.no_compte)}</option>`).join("")}</select></label>
     <label>Montan (goud) *<input name="montant" type="number" inputmode="decimal" min="1" step="any" required value="${plan || ""}"></label>
     <p class="mut sm" id="hint"></p>
-    <label>Balans sou kanè a apre tranzaksyon an <small class="mut">(opsyonèl)</small><input name="solde" type="number" inputmode="decimal" step="any"></label>
+    <div class="grid2">
+      <label>Balans kanè a avan <small class="mut">(opsyonèl)</small><input name="solde_avant" type="number" inputmode="decimal" step="any"></label>
+      <label>Balans kanè a apre <small class="mut">(opsyonèl)</small><input name="solde" type="number" inputmode="decimal" step="any"></label>
+    </div>
     <label>Nòt<textarea name="note" rows="2"></textarea></label>
     <p class="err-msg" id="err" role="alert"></p>
-    <button class="btn pri" type="submit">Anrejistre</button>
+    <button class="btn pri" type="submit" id="go">Anrejistre</button>
   </form>`;
   const f = document.getElementById("f");
-  const hint = () => {
-    document.getElementById("hint").textContent = f.type.value === "D"
-      ? `Minimòm plan an: ${gd(plan)}${k._jodi ? ` · deja peye jodi a: ${gd(k._jodi)}` : ""}`
-      : `Balans valide disponib: ${gd(disponib)}`;
+  const maj = () => {
+    const tp = f.type.value;
+    document.getElementById("oto").hidden = !(tp === "R" || tp === "V");
+    document.getElementById("l-fre").hidden = tp !== "FL";
+    document.getElementById("l-dest").hidden = tp !== "V";
+    document.getElementById("go").textContent = t(tp === "R" || tp === "V" ? "Voye demann lan" : "Anrejistre");
+    document.getElementById("hint").textContent = tp === "D" ? `${t("Minimòm plan an")}: ${gd(plan)}${k._jodi ? ` · ${t("deja peye jodi a")}: ${gd(k._jodi)}` : ""}`
+      : tp === "FL" ? t("Frè a soti sou kont kliyan an. Li pa afekte kach ou.") : tp === "V" ? t("Kòb la ap soti sou kont sa a pou l antre sou lòt kont lan.") : "";
   };
-  f.querySelectorAll('input[name="type"]').forEach((r) => (r.onchange = () => { f.montant.value = r.value === "D" ? plan || "" : ""; hint(); }));
-  hint();
+  f.querySelectorAll('input[name="type"]').forEach((r) => (r.onchange = () => { f.montant.value = r.value === "D" ? plan || "" : ""; maj(); }));
+  maj();
+  // Si balans avan an ak montan an la, kalkile balans apre a.
+  const autoApre = () => {
+    const av = f.solde_avant.value, m = Number(f.montant.value);
+    if (av === "" || !(m > 0) || f.solde.dataset.manuel) return;
+    f.solde.value = Number(av) + (f.type.value === "D" ? m : -m);
+  };
+  f.solde_avant.oninput = autoApre; f.montant.addEventListener("input", autoApre);
+  f.solde.oninput = () => (f.solde.dataset.manuel = "1");
   f.onsubmit = async (e) => {
     e.preventDefault();
     const err = document.getElementById("err");
     const typ = f.type.value, m = Number(f.montant.value);
-    if (!(m > 0)) return (err.textContent = "Mete montan an.");
+    if (!(m > 0)) return (err.textContent = t("Mete montan an."));
+    if (typ === "FL" && !f.type_frais.value) return (err.textContent = t("Chwazi tip frè a."));
+    if (typ === "V" && !f.dest.value) return (err.textContent = t("Chwazi kont ki resevwa viman an."));
     if (typ === "D" && plan && m < plan && !(await ui.ask({ titre: "Montan an pi piti pase plan an", ikon: "!", ok: "Kontinye",
       detay: [["Montan (goud)", gd(m)], ["Minimòm plan an", gd(plan)]] }))) return;
-    if (typ === "R" && m > disponib) return (err.textContent = `Retrè a depase balans valide a (${gd(disponib)}).`);
-    const solde = f.solde.value === "" ? null : Number(f.solde.value);
-    if (!(await ui.ask({ titre: typ === "D" ? "Depo" : "Retrè", ok: "Konfime", foto: c?.photo_url, ikon: typ === "D" ? "+" : "−",
-      detay: [["Kliyan", non(c)], ["Kont", k.no_compte || t("cycle poko voye")], ["Montan (goud)", gd(m)],
-        ...(f.solde.value !== "" ? [["Balans sou kanè a apre tranzaksyon an", gd(f.solde.value)]] : [])] }))) return;
+    const av = f.solde_avant.value === "" ? null : Number(f.solde_avant.value);
+    const ap = f.solde.value === "" ? null : Number(f.solde.value);
+    const kd = typ === "V" ? M.comptes.get(f.dest.value) : null;
+    const lib = Object.fromEntries(TIP_TX)[typ];
+    if (!(await ui.ask({ titre: typ === "R" || typ === "V" ? `${t("Demann")} · ${t(lib)}` : lib, ok: typ === "R" || typ === "V" ? "Voye demann lan" : "Konfime",
+      foto: c?.photo_url, ikon: typ === "D" ? "+" : "−", detay: [["Kliyan", non(c)], ["Kont", k.no_compte || t("cycle poko voye")], ["Montan (goud)", gd(m)],
+        ...(typ === "FL" ? [["Tip frè", f.type_frais.value]] : []),
+        ...(kd ? [["Kont ki resevwa", `${non(M.clients.get(kd.id_personne))} · ${kd.no_compte}`]] : []),
+        ...(av != null ? [["Balans kanè a avan", gd(av)]] : []), ...(ap != null ? [["Balans kanè a apre", gd(ap)]] : [])] }))) return;
     const b = f.querySelector("button[type=submit]"); b.disabled = true;
-    const gps = await getGps(5000);
-    await S.enqueue("tx", {
-      id: S.uuid(), compte: k.id_compte_epargne, type: typ, montant: m, solde_declare: solde, note: f.note.value.trim() || null,
-      gps, capture_le: new Date().toISOString(), appareil: S.appareil(),
-    }, k._pending ? [k.id_compte_epargne] : []);
-    toast(typ === "D" ? "Depo anrejistre." : "Retrè anrejistre.");
+    const base = { id: S.uuid(), compte: k.id_compte_epargne, montant: m, solde_avant_declare: av, solde_declare: ap,
+      note: f.note.value.trim() || null, gps: await getGps(5000), capture_le: new Date().toISOString() };
+    const deps = k._pending ? [k.id_compte_epargne] : [];
+    if (typ === "R" || typ === "V") {
+      await S.enqueue("demande", { ...base, type: typ, compte_dest: kd?.id_compte_epargne || null }, deps);
+      toast("Demann lan voye bay manadjè a.");
+    } else {
+      await S.enqueue("tx", { ...base, type: typ, type_frais: typ === "FL" ? f.type_frais.value : null, appareil: S.appareil() }, deps);
+      toast(typ === "D" ? "Depo anrejistre." : "Frè a anrejistre.");
+    }
     go(`#/cycle/${k.id_compte_epargne}`);
   };
 }
 
+// ---------- Jou ferye (manadjè) ----------
+async function viewFeries() {
+  const M = await S.model();
+  const jodi = S.jodi();
+  const l = [...M.feriesList].sort((a, b) => a.jour.localeCompare(b.jour));
+  const avni = l.filter((x) => x.jour >= jodi), pase = l.filter((x) => x.jour < jodi).reverse().slice(0, 10);
+  const li = (x) => `<div class="row"><div class="grow"><b>${datFr(x.jour)}</b> · ${t(JOU[S.isoJou(x.jour)])}<div class="mut sm" data-brut>${h(x.libelle)}</div></div>
+    ${estManager() ? `<button class="btn sm danger" data-del="${x.jour}">Efase</button>` : ""}</div>`;
+  $app.innerHTML = `<a href="#/param" class="back">‹ Paramèt</a><h1>Jou ferye</h1>
+    <p class="mut sm">Dimanch ak jou sa yo pa konte nan vèsman prevwa yo.</p>
+    ${estManager() ? `<form id="f" class="card form" novalidate><div class="grid2">
+      <label>Dat *<input name="jour" type="date" required></label><label>Non jou a *<input name="libelle" required autocomplete="off"></label></div>
+      <p class="err-msg" id="err" role="alert"></p><button class="btn pri" type="submit" ${navigator.onLine ? "" : "disabled"}>Ajoute jou a</button></form>` : ""}
+    <h2>Pwochen jou ferye yo <small class="mut">(${avni.length})</small></h2><div class="list">${avni.map(li).join("") || `<p class="empty">Pa gen jou ferye.</p>`}</div>
+    ${pase.length ? `<h2>Jou ki pase yo</h2><div class="list">${pase.map(li).join("")}</div>` : ""}`;
+  const f = document.getElementById("f");
+  if (f) f.onsubmit = async (e) => {
+    e.preventDefault();
+    const err = document.getElementById("err");
+    if (!f.jour.value || !f.libelle.value.trim()) return (err.textContent = t("Mete dat la ak non jou a."));
+    try { await api.insertRow("grandon_jours_feries", { jour: f.jour.value, libelle: f.libelle.value.trim() }); await S.pull(); toast("Jou ferye a ajoute."); viewFeries(); }
+    catch (e2) { err.textContent = e2.status === 409 || e2.code === "23505" ? t("Jou sa a deja nan lis la.") : e2.message; }
+  };
+  $app.querySelectorAll("[data-del]").forEach((b) => (b.onclick = async () => {
+    if (!(await ui.ask({ titre: "Efase jou ferye sa a?", tekst: datFr(b.dataset.del), ok: "Efase", danje: true }))) return;
+    try { await api.deleteRows(`grandon_jours_feries?jour=eq.${b.dataset.del}`); await S.pull(); viewFeries(); } catch (e2) { ui.info("Erè", e2.message); }
+  }));
+}
+
 // ---------- Senkronizasyon ----------
-const KIND = { client: "Kliyan", adopte: "Kliyan (ajoute)", maj: "Enfòmasyon kliyan an", cycle: "Cycle", tx: "Tranzaksyon" };
+const KIND = { client: "Kliyan", adopte: "Kliyan (ajoute)", maj: "Enfòmasyon kliyan an", cycle: "Cycle", tx: "Tranzaksyon", demande: "Demann", suivi: "Fidbak" };
 function resume(o, M) {
   const p = o.payload;
   if (o.kind === "client") return `${p.prenom} ${p.nom} · ${p.telephone}`;
   if (o.kind === "adopte") return `${p.prenom} ${p.nom} · ${p.code_client || ""}`;
   if (o.kind === "maj") return non(M.clients.get(p.id));
+  if (o.kind === "suivi") { const k = M.comptes.get(p.compte); return `${t(motifLabel(p.motif))} · ${non(k && M.clients.get(k.id_personne))}`; }
+  if (o.kind === "demande") { const k = M.comptes.get(p.compte); return `${p.type === "V" ? t("Viman") : t("Retrè")} ${gd(p.montant)} · ${non(k && M.clients.get(k.id_personne))}`; }
   if (o.kind === "cycle") return `${non(M.clients.get(p.id_personne))} · ${p.duree} mwa · ${p.frequence}×/sem · ${gd(p.montant)}`;
   const k = M.comptes.get(p.compte);
   return `${p.type === "D" ? "Depo" : "Retrè"} ${gd(p.montant)} · ${non(k && M.clients.get(k.id_personne))}`;
@@ -856,12 +1041,14 @@ async function viewSync() {
   </div>
   <h2>Poko voye <small class="mut">(${M.outbox.length})</small></h2>
   <div class="list">${M.outbox.map((o) => `<div class="row col">
-      <div><b>${KIND[o.kind]}</b> ${o.status === "erè" ? `<span class="badge err">Erè</span>` : `<span class="badge pend">Poko voye</span>`}
+      <div><b>${KIND[o.kind]}</b> ${o.status === "erè" ? `<span class="badge err">Erè</span>` : o.attente ? `<span class="badge warn">An atant</span>` : `<span class="badge pend">Poko voye</span>`}
         <div class="mut sm">${h(resume(o, M))} · ${lè(o.created)}</div>
-        ${o.error ? `<div class="err-msg sm">${h(o.error)}</div>` : ""}</div>
+        ${o.error ? `<div class="${o.attente ? "mut" : "err-msg"} sm">${h(t(o.error))}</div>` : ""}</div>
       ${o.status === "erè" ? `<div class="btns"><button class="btn sm" data-retry="${o.seq}">Eseye ankò</button><button class="btn sm danger" data-drop="${o.seq}">Efase</button></div>` : ""}
     </div>`).join("") || `<p class="empty">Tout bagay voye ✓</p>`}</div>
-  ${moi.admin ? `<h2>Administrasyon</h2><a class="btn block" href="#/ajan">Jere ajan yo</a>` : ""}
+  ${estManager() || moi.admin ? `<h2>Administrasyon</h2>` : ""}
+  ${estManager() ? `<a class="btn block" href="#/feries">Jou ferye</a>` : ""}
+  ${moi.admin ? `<a class="btn block" href="#/ajan">Jere ajan yo</a>` : ""}
   <button class="btn block danger" id="logout">Dekonekte</button>
   <p class="mut sm center">Grandon · vèsyon ${h(APP_VERSION)}</p>`;
   $app.querySelectorAll('input[name="lang"]').forEach((r) => (r.onchange = () => { setLang(r.value); location.reload(); }));
@@ -970,6 +1157,7 @@ async function render() {
   if ((m = r.match(/^#\/tx\/nouvo\/([\w-]+)$/))) return viewTxNew(m[1]);
   if (r === "#/param" || r === "#/senk") return viewSync();
   if (r === "#/ajan" && moi.admin) return viewAjan();
+  if (r === "#/feries") return viewFeries();
   go("#/");
 }
 

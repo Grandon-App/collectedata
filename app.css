@@ -250,3 +250,21 @@ img.thumb, img.avatar, img.prev { cursor: zoom-in; }
 
 /* Chan obligatwa ki manke */
 [aria-invalid="true"] { border-color: var(--err) !important; box-shadow: 0 0 0 3px color-mix(in srgb, var(--err) 18%, transparent); }
+.modal-choix fieldset { border: 0; padding: 0; margin: 14px 0 0; display: grid; gap: 6px; }
+.modal-choix label:not(.modal-l) { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; cursor: pointer; font-weight: 600; }
+.modal-choix input[type=radio] { width: 20px; height: 20px; margin: 0; accent-color: var(--pri); }
+.modal-choix label:has(input:checked) { border-color: var(--pri); background: color-mix(in srgb, var(--pri) 8%, transparent); }
+.modal-choix textarea { margin-top: 6px; }
+
+/* Onglè (Epay) */
+.tabs { display: flex; gap: 4px; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 4px; margin: 0 0 6px; }
+.tab { flex: 1; min-height: 44px; border: 0; border-radius: 10px; background: none; font: inherit; font-weight: 700; color: var(--mut); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; }
+.tab.on { background: var(--pri); color: var(--pri-ink); }
+.tab:focus-visible { outline: 2px solid var(--info); }
+.cnt-b { background: var(--err); color: #fff; border-radius: 99px; padding: 0 7px; font-size: .75rem; }
+.btns-v { display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; }
+.btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 10px 0; }
+b.fee { color: var(--warn); }
+.note.info-note { border-color: var(--info); color: var(--ink); background: color-mix(in srgb, var(--info) 8%, var(--card)); margin: 8px 0; font-size: .9rem; }
+.row.demande .btns { margin-top: 10px; }
+.seg.s4 span { font-size: .85rem; }

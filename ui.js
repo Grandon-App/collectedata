@@ -88,3 +88,33 @@ export function activerZoom() {
     zoom(img.src, img.dataset.legend || "");
   }, true);
 }
+
+// Chwazi yon opsyon nan yon lis + nòt (pa egzanp, fidbak lè kliyan an pa peye).
+// Retounen { valeur, note } oswa null.
+export function askChoice({ titre, tekst = "", options, noteLabel = "Nòt", noteObligatwaPou = [], ok = "Anrejistre" }) {
+  let form;
+  const opts = {
+    onOpen: (w) => {
+      form = w.querySelector("form");
+      const okb = w.querySelector("[data-v=ok]");
+      const chk = () => {
+        const v = form.querySelector("input[name=ch]:checked")?.value;
+        const n = form.note.value.trim();
+        okb.disabled = !v || (noteObligatwaPou.includes(v) && !n);
+      };
+      form.oninput = chk; chk();
+      form.onsubmit = (e) => { e.preventDefault(); if (!okb.disabled) okb.click(); };
+    },
+  };
+  opts.onOpen.valeur = () => ({ valeur: form.querySelector("input[name=ch]:checked")?.value, note: form.note.value.trim() });
+  return ouvrir(`
+    <div class="modal-h"><span class="modal-ico" aria-hidden="true">✎</span><h2 id="modal-t">${h(t(titre))}</h2></div>
+    ${tekst ? `<p class="modal-p" data-brut>${h(tekst)}</p>` : ""}
+    <form class="modal-choix">
+      <fieldset><legend class="sr">${h(t(titre))}</legend>
+      ${options.map(([v, l], i) => `<label><input type="radio" name="ch" value="${h(v)}" ${i === 0 ? "autofocus" : ""}><span>${h(t(l))}</span></label>`).join("")}
+      </fieldset>
+      <label class="modal-l">${h(t(noteLabel))}<textarea name="note" rows="2"></textarea></label>
+    </form>
+    <div class="modal-b"><button class="btn" data-v="no">${h(t("Anile"))}</button><button class="btn pri" data-v="ok">${h(t(ok))}</button></div>`, opts);
+}

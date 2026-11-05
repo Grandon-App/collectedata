@@ -136,6 +136,12 @@ export async function selectAll(path, size = 1000) {
 export async function rpc(name, args) {
   return (await raw(`/rest/v1/rpc/${name}`, { method: "POST", body: args })).data;
 }
+export async function insertRow(table, row) {
+  await raw(`/rest/v1/${table}`, { method: "POST", body: row, headers: { Prefer: "return=minimal" } });
+}
+export async function deleteRows(path) {
+  await raw(`/rest/v1/${path}`, { method: "DELETE", headers: { Prefer: "return=minimal" } });
+}
 export const rechercher = (q) => rpc("grandon_rechercher", { p_q: q });
 export const rechercherGps = (lat, lng, rayon = 300) => rpc("grandon_rechercher_gps", { p_lat: lat, p_lng: lng, p_rayon_m: rayon });
 export const publicUrl = (path) => `${C.SUPABASE_URL}/storage/v1/object/public/${C.BUCKET_FOTO}/${path}`;
