@@ -132,7 +132,7 @@ b.in { color: var(--ok); } b.out { color: var(--err); }
 .toast.update { border: 0; font: inherit; font-weight: 700; cursor: pointer; }
 
 /* ---------- Ba navigasyon anba ---------- */
-.tabbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; display: grid; grid-template-columns: repeat(5, 1fr);
+.tabbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; display: grid; grid-template-columns: repeat(6, 1fr);
   background: var(--card); border-top: 1px solid var(--line); padding: 4px max(4px, env(safe-area-inset-right)) max(4px, env(safe-area-inset-bottom)) max(4px, env(safe-area-inset-left));
   box-shadow: 0 -4px 16px rgba(10, 20, 40, .06); }
 .tabbar a { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 56px;
@@ -370,3 +370,32 @@ html[data-look] .alet-h.enpotan .modal-ico { background: var(--warn); color: #ff
 @media (prefers-reduced-motion: reduce) { .alet-h .modal-ico { animation: none; } }
 .alet-form select, .alet-form input[type=date], .alet-form input[name=tit] { width: 100%; min-height: 44px; }
 .alet-form fieldset { display: flex; flex-wrap: wrap; gap: 6px; }
+
+/* ---------- Onglè Kat ---------- */
+.kat { height: min(58vh, 560px); min-height: 300px; border-radius: 14px; border: 1px solid var(--line); overflow: hidden; margin: 10px 0 12px; background: #dfe5ec; z-index: 0; position: relative; }
+.kat .empty { padding-top: 120px; }
+#kat-p .tabs { margin-bottom: 8px; }
+.kat-aj { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 4px; }
+html[data-look] .kat-aj .chip { flex: 0 1 auto; min-height: 44px; display: inline-flex; align-items: center; gap: 6px; }
+.kat-dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.25); flex: none; }
+.kat-chk { display: flex; align-items: center; gap: 8px; min-height: 44px; font-weight: 600; }
+.kat-chk input { width: 20px; height: 20px; }
+.kat-dat label { display: flex; align-items: center; gap: 10px; font-weight: 600; }
+.kat-dat input { min-height: 44px; }
+.kat-rez { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 4px 0 10px; }
+.kat-rez .btn { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; }
+.kat-rez .btn svg { width: 18px; height: 18px; }
+.kat-ol { list-style: none; padding: 0; margin: 0; }
+.kat-ol .row { display: flex; align-items: center; gap: 10px; }
+.kat-ol a.grow { color: inherit; text-decoration: none; min-height: 44px; display: flex; flex-direction: column; justify-content: center; }
+.kat-num { display: inline-flex; align-items: center; justify-content: center; min-width: 26px; height: 26px; border-radius: 50%; color: #fff; font-weight: 800; font-size: .8rem; flex: none; }
+.kat-km { white-space: nowrap; }
+.kat-n span { display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; color: #fff; font: 800 13px/1 system-ui, sans-serif; border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.4); }
+.kat-san { margin: 10px 0; } .kat-san summary { min-height: 44px; display: flex; align-items: center; font-weight: 600; cursor: pointer; }
+.kat-aj-r { margin: 10px 0; } .kat-aj-r h2 { display: flex; align-items: center; gap: 8px; margin: 0 0 4px; }
+.kat-tl { list-style: none; padding: 0; margin: 8px 0 0; display: flex; flex-direction: column; gap: 6px; font-size: .9rem; }
+.kat-tl li { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.leaflet-popup-content { font-size: .9rem; line-height: 1.4; } .leaflet-popup-content a { font-weight: 700; }
+.leaflet-container { font: inherit; }
+@media (min-width: 1024px) { .kat { height: calc(100vh - var(--bar-h, 56px) - 220px); min-height: 420px; } }
+@media (max-width: 400px) { .tabbar a { font-size: .62rem; } }

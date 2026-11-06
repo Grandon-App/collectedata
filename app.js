@@ -6,6 +6,7 @@ import * as TX from "./taxonomy.js";
 import { t, setLang, getLang, demarrerTraduction } from "./i18n.js";
 import * as F from "./fmt.js";
 import * as looks from "./looks.js";
+import * as KAT from "./kat.js";
 
 const $app = document.getElementById("app");
 // Klavye sou onglè yo (role=tab nan yon role=tablist): flèch, Home, End deplase fokis la epi chwazi onglè a.
@@ -28,7 +29,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "4.7";
+const APP_VERSION = "4.8";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
@@ -106,11 +107,12 @@ async function updateBar() {
 
 // ---------- Ba navigasyon anba ----------
 const $nav = document.getElementById("nav");
-const TABS = [["tablo", "#/", "Tablo"], ["kliyan", "#/kliyan", "Kliyan"], ["epay", "#/epay", "Epay"], ["rapo", "#/rapo", "Rapò"], ["param", "#/param", "Paramèt"]];
+const TABS = [["tablo", "#/", "Tablo"], ["kliyan", "#/kliyan", "Kliyan"], ["epay", "#/epay", "Epay"], ["rapo", "#/rapo", "Rapò"], ["kat", "#/kat", "Kat"], ["param", "#/param", "Paramèt"]];
 function tabActif(r) {
   if (/^#\/(kliyan)/.test(r)) return "kliyan";
   if (/^#\/(epay|cycle|tx|chwazi)/.test(r)) return "epay";
   if (/^#\/rapo/.test(r)) return "rapo";
+  if (/^#\/kat/.test(r)) return "kat";
   if (/^#\/(param|ajan|feries)/.test(r)) return "param";
   return "tablo";
 }
@@ -119,6 +121,7 @@ function updateNav() {
   if (!moi || r === "#/login") { $nav.hidden = true; document.body.classList.remove("has-nav"); return; }
   const a = tabActif(r);
   $nav.hidden = false;
+  if (!window.L?.map) setTimeout(() => KAT.chajeLeaflet().catch(() => {}), 400); // kat la pare menm si entènèt koupe apre
   document.body.classList.add("has-nav");
   $nav.innerHTML = TABS.map(([k, href, label]) => `<a href="${href}" class="${k === a ? "on" : ""}" ${k === a ? 'aria-current="page"' : ""}>${ICO[k]}<span>${label}</span></a>`).join("")
     + `<div class="nav-foot"><span class="nav-moi" data-brut>${h(moi.nom || "")}</span><span class="nav-wol">${WOL[moi.role] || "Anplwaye"}</span><span class="nav-ver mut">v${h(APP_VERSION)}</span></div>`;
@@ -1228,6 +1231,7 @@ async function render() {
   if (r === "#/kliyan") return viewKliyan();
   if (r === "#/epay") return viewEpay();
   if (r === "#/rapo") return viewRapo();
+  if (r === "#/kat") { const M = await S.model(); ajans = (await db.meta("ajans")) || {}; return KAT.viewKat({ $app, M, man: estManager(), moi, ajans, getGps, toast }); }
   if (r === "#/kliyan/nouvo") return viewClientNew();
   if ((m = r.match(/^#\/kliyan\/([\w-]+)\/modifye$/))) return viewClientEdit(m[1]);
   if ((m = r.match(/^#\/kliyan\/([\w-]+)$/))) return viewClient(m[1]);
