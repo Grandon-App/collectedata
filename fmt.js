@@ -120,12 +120,6 @@ export function mwa(st) {
   <h2 id="mwa-t">Mwa a <small>${h(st.nonMwa)}</small></h2>
   <div class="obj-dwe ${st.mwaDwe ? "warn" : "ok"}" data-obj="mwa-dwe" data-val="${st.mwaDwe}"><span>Kòb ki dwe pou mwa a, poko rantre</span><b>${gd(st.mwaDwe)}</b>
     <small>${st.nDwe ? `${st.nDwe} ${t("kliyan pou ale fè peye")}` : t("Okenn kliyan pa dwe")} · ${t("li desann lè yo peye, li monte lè yo rate")}</small></div>
-  <div class="obj-g">
-    <div class="obj-i" data-obj="mwa-prevu" data-val="${st.mwaPrevu}"><span>Te dwe peye jiska jodi a</span><b>${gd(st.mwaPrevu)}</b><small>${t("sou")} ${gd(st.mwaPrevuTotal)} ${t("pou tout mwa a")}</small></div>
-    <div class="obj-i ok" data-obj="mwa-plan" data-val="${st.mwaPlan}"><span>Rantre sou plan</span><b>${gd(st.mwaPlan)}</b><small>${st.mwaPwosan}% ${t("nan sa ki te dwe a")}</small></div>
-    <div class="obj-i" data-obj="mwa-kolekte" data-val="${st.mwaKolekte}"><span>Total kolekte nan mwa a</span><b>${gd(st.mwaKolekte)}</b><small>${t("tout depo")}</small></div>
-  </div>
-  <div class="bar obj-bar" role="progressbar" aria-label="${t("Mwa a")}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${st.mwaPwosan}"><i style="width:${Math.min(100, st.mwaPwosan)}%"></i></div>
   ${st.nDwe ? `<p class="obj-p"><a href="#/epay" data-mwa-reta>${t("Wè kliyan ki an reta yo")} →</a></p>` : ""}
 </section>`;
 }
