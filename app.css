@@ -350,3 +350,23 @@ html[data-look="c"] .obj-i > b, html[data-look="c"] .obj-tot > b, html[data-look
 .obj-dwe.warn > b { color: var(--warn); } .obj-dwe.ok > b { color: var(--ok); }
 .obj-p a { display: inline-flex; align-items: center; min-height: 44px; font-weight: 600; }
 html[data-look="c"] .obj-dwe > b { font-family: var(--mono); }
+
+/* ---------- Alèt kliyan (popup + seksyon) ---------- */
+.seg.s2 { grid-template-columns: repeat(2, 1fr); }
+.alet-tit { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 18px; }
+html[data-look] .alet-tit h2 { margin: 0; }
+.alet-tit .btn { min-height: 44px; }
+.row.alet { border-left: 4px solid var(--warn); align-items: flex-start; gap: 10px; }
+.row.alet.ijan { border-left-color: var(--err); } .row.alet.info { border-left-color: var(--info); }
+.row.alet.fini { border-left-color: var(--line); }
+.row.alet .alet-m { margin: 4px 0 2px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.row.alet .btn { flex: none; min-height: 44px; }
+.alet-lis { display: flex; flex-direction: column; gap: 8px; max-height: min(52vh, 420px); overflow-y: auto; margin: 4px 0 12px; text-align: left; }
+.alet-lis .row.alet { margin: 0; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); border-left-width: 4px; background: var(--card); }
+html[data-look] .alet-h.ijan .modal-ico { background: var(--err); color: #fff; }
+html[data-look] .alet-h.enpotan .modal-ico { background: var(--warn); color: #fff; }
+.alet-h .modal-ico { animation: alet-pil 1s ease-in-out 3; }
+@keyframes alet-pil { 50% { transform: scale(1.12); } }
+@media (prefers-reduced-motion: reduce) { .alet-h .modal-ico { animation: none; } }
+.alet-form select, .alet-form input[type=date], .alet-form input[name=tit] { width: 100%; min-height: 44px; }
+.alet-form fieldset { display: flex; flex-wrap: wrap; gap: 6px; }

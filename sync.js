@@ -152,6 +152,19 @@ const EXEC = {
       note: p.note || null, agent_id: api.getSession()?.user?.id, capture_le: p.capture_le, statut: r.statut });
   },
 
+  async alet(p) {
+    await api.rpc("grandon_alet_kreye", { p_id: p.id, p_compte: p.compte, p_tit: p.tit, p_mesaj: p.mesaj || null, p_nivo: p.nivo,
+      p_fen: p.fen, p_fen_dat: p.fen === "dat" ? p.fen_dat : null, p_kreye_le: p.kreye_le });
+    await db.put("alet", { id: p.id, id_compte_epargne: p.compte, tit: p.tit, mesaj: p.mesaj || null, nivo: p.nivo, fen_kondisyon: p.fen,
+      fen_dat: p.fen === "dat" ? p.fen_dat : null, kreye_pa: api.getSession()?.user?.id, kreye_le: p.kreye_le, fermen_le: null });
+  },
+
+  async alet_fermen(p) {
+    await api.rpc("grandon_alet_fermen", { p_id: p.id, p_le: p.le });
+    const a = await db.get("alet", p.id);
+    if (a) { a.fermen_le = p.le; a.fermen_pa = api.getSession()?.user?.id; await db.put("alet", a); }
+  },
+
   async suivi(p) {
     await api.rpc("grandon_suivi", { p_id: p.id, p_compte: p.compte, p_motif: p.motif, p_note: p.note || null, ...gpsArgs(p.gps), p_capture_le: p.capture_le });
     await db.put("suivis", { id: p.id, id_compte_epargne: p.compte, motif: p.motif, note: p.note || null, agent_id: api.getSession()?.user?.id, capture_le: p.capture_le });
@@ -268,10 +281,11 @@ export async function pull() {
     api.selectAll(`grandon_v_transactions?date_transaction=gte.${depi}&select=id_transaction_epargne,id_compte_epargne,type_transaction,montant,date_transaction,validation_status,solde_apres_transactions,created_by,solde_declare,solde_avant_declare,type_frais,virement_from,virement_to&order=date_transaction`),
   ]);
   const depi2 = ajouteJou(jodi(), -90);
-  const [feries, suivis, demandes] = await Promise.all([
+  const [feries, suivis, demandes, alet] = await Promise.all([
     api.selectAll("grandon_jours_feries?select=jour,libelle&order=jour"),
     api.selectAll(`grandon_suivis?capture_le=gte.${depi2}&select=id,id_compte_epargne,motif,note,agent_id,capture_le&order=capture_le.desc`),
     api.selectAll(`grandon_demandes?or=${encodeURIComponent(`(statut.eq.en_attente,created_at.gte.${depi2})`)}&select=*&order=created_at.desc`),
+    api.selectAll(`grandon_alet?or=${encodeURIComponent(`(fermen_le.is.null,fermen_le.gte.${depi2})`)}&select=*&order=kreye_le.desc`).catch(() => null),
   ]);
   try { // non ajan yo (manadjè yo wè tout moun; yon ajan wè sèlman pa l)
     const aj = await api.select("grandon_ajan?select=user_id,nom");
@@ -280,6 +294,7 @@ export async function pull() {
   await db.replaceAll("feries", feries);
   await db.replaceAll("suivis", suivis);
   await db.replaceAll("demandes", demandes);
+  if (alet) await db.replaceAll("alet", alet); // null: tab la poko la sou sèvè a
   await db.replaceAll("clients", clients);
   await db.replaceAll("comptes", comptes);
   await db.replaceAll("plans", plans);
@@ -291,8 +306,8 @@ export async function pull() {
 export const jouTx = (t) => (t._pending || t._local_date ? jouLokal(new Date(t.date_transaction)) : String(t.date_transaction).slice(0, 10));
 
 export async function model() {
-  const [clients, comptes, txs, outbox, plans, feries, suivis, demandes] = await Promise.all(
-    ["clients", "comptes", "transactions", "outbox", "plans", "feries", "suivis", "demandes"].map((s) => db.all(s)));
+  const [clients, comptes, txs, outbox, plans, feries, suivis, demandes, alet] = await Promise.all(
+    ["clients", "comptes", "transactions", "outbox", "plans", "feries", "suivis", "demandes", "alet"].map((s) => db.all(s)));
   const M = {
     clients: new Map(clients.map((c) => [c.id_personne, { ...c }])),
     comptes: new Map(comptes.map((k) => [k.id_compte_epargne, { ...k }])),
@@ -301,6 +316,7 @@ export async function model() {
     feries: new Set(feries.map((f) => f.jour)), feriesList: feries,
     suivis: new Map(suivis.map((x) => [x.id, { ...x }])),
     demandes: new Map(demandes.map((x) => [x.id, { ...x }])),
+    alet: new Map(alet.map((x) => [x.id, { ...x }])),
     outbox: outbox.sort((a, b) => a.seq - b.seq),
   };
   for (const o of M.outbox) {
@@ -325,6 +341,10 @@ export async function model() {
     if (o.kind === "demande")
       M.demandes.set(p.id, { id: p.id, type: p.type, id_compte_epargne: p.compte, id_compte_dest: p.compte_dest || null, montant: p.montant,
         note: p.note, agent_id: "moi", capture_le: p.capture_le, statut: "en_attente", ...pend });
+    if (o.kind === "alet")
+      M.alet.set(p.id, { id: p.id, id_compte_epargne: p.compte, tit: p.tit, mesaj: p.mesaj, nivo: p.nivo, fen_kondisyon: p.fen,
+        fen_dat: p.fen === "dat" ? p.fen_dat : null, kreye_pa: "moi", kreye_le: p.kreye_le, fermen_le: null, ...pend });
+    if (o.kind === "alet_fermen" && M.alet.has(p.id)) Object.assign(M.alet.get(p.id), { fermen_le: p.le, fermen_pa: "moi", _fermenPending: true });
     if (o.kind === "suivi")
       M.suivis.set(p.id, { id: p.id, id_compte_epargne: p.compte, motif: p.motif, note: p.note, agent_id: "moi", capture_le: p.capture_le, ...pend });
     if (o.kind === "tx")
@@ -334,7 +354,7 @@ export async function model() {
         type_frais: p.type_frais, note: p.note, created_by: "moi", ...pend });
   }
   const today = jodi();
-  for (const k of M.comptes.values()) Object.assign(k, { _txs: [], _local: 0, _jodi: 0, _depots: 0, _nDepots: 0, _joursPeye: new Set(), _suivis: [], _demandes: [], _kolekMwa: 0 });
+  for (const k of M.comptes.values()) Object.assign(k, { _txs: [], _local: 0, _jodi: 0, _depots: 0, _nDepots: 0, _joursPeye: new Set(), _suivis: [], _demandes: [], _kolekMwa: 0, _alet: [] });
   for (const t of M.txs.values()) {
     const k = M.comptes.get(t.id_compte_epargne);
     if (!k) continue;
@@ -351,6 +371,7 @@ export async function model() {
   }
   for (const x of M.suivis.values()) M.comptes.get(x.id_compte_epargne)?._suivis.push(x);
   for (const x of M.demandes.values()) M.comptes.get(x.id_compte_epargne)?._demandes.push(x);
+  for (const a of M.alet.values()) M.comptes.get(a.id_compte_epargne)?._alet.push(a);
   for (const k of M.comptes.values()) {
     k._txs.sort((a, b) => String(b.date_transaction).localeCompare(String(a.date_transaction)));
     k._suivis.sort((a, b) => String(b.capture_le).localeCompare(String(a.capture_le)));
@@ -379,6 +400,13 @@ export async function model() {
     k._mwaPlan = Math.min(k._kolekMwa, k._mwaPrevu);
     k._mwaDwe = Math.max(0, k._mwaPrevu - k._kolekMwa);
     k._dots = semenDots(k, M.feries, today);
+    // Alèt manadjè yo: eta a evalye isit la (menm offline). fermen: fèmen manyèlman · oto: kondisyon an rive.
+    for (const a of k._alet) {
+      const depoApre = k._txs.some((t) => txKind(t) === "depo" && t.validation_status !== "rejected" && new Date(t.date_transaction) >= new Date(a.kreye_le));
+      a._eta = a.fermen_le ? "fermen"
+        : (a.fen_kondisyon === "pa_reta" && k._aRekipere === 0) || (a.fen_kondisyon === "depo" && depoApre) || (a.fen_kondisyon === "dat" && a.fen_dat && today > a.fen_dat) ? "oto"
+        : "aktif";
+    }
     k._heat = heatmap13(k, M.feries, today);
   }
   M.today = today;

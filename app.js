@@ -28,10 +28,10 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "4.6";
+const APP_VERSION = "4.7";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin" };
 // Preferans aparans: pou aparèy sa a sèlman.
-const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO };
+const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
 function prefs() {
   try { return { ...PREFS_DEFO, ...JSON.parse(localStorage.getItem("grandon-prefs") || "{}") }; }
   catch { return { ...PREFS_DEFO }; }
@@ -708,6 +708,76 @@ async function viewClientEdit(id) {
 }
 
 // ---------- Fich kliyan ----------
+// ---------- Alèt kliyan ----------
+// Alèt sistèm (rekouvreman) + alèt manadjè ki toujou aktif. Yo parèt nan yon popup chak fwa ajan an antre
+// sou paj kliyan an, cycle li oswa depo li, jiskaske pwoblèm lan rezoud.
+const NIVO_ALET = { info: ["Enfòmasyon", "info"], enpotan: ["Enpòtan", "warn"], ijan: ["Ijan", "err"] };
+const FEN_ALET = { manyel: "Fèmen pa yon manadjè", pa_reta: "Fèmen lè kliyan an pa an reta ankò", depo: "Fèmen lè kliyan an fè yon depo", dat: "Fèmen nan dat" };
+function aletYo(k, { tout = false } = {}) {
+  const l = [];
+  if (k._actif && k._aRekipere > 0)
+    l.push({ id: `sys-${k.id_compte_epargne}`, sistem: true, k, nivo: k._anReta >= 3 ? "ijan" : "enpotan", tit: "Rekouvreman",
+      mesaj: `${t("Kliyan an dwe")} ${F.rekipere(k._aRekipere, k._anReta)}. ${t("Fè l peye anvan l ale pi lwen.")}`, _eta: "aktif" });
+  for (const a of k._alet) if (tout || a._eta === "aktif") l.push({ ...a, k });
+  return l.sort((a, b) => (a._eta !== "aktif") - (b._eta !== "aktif") || ["ijan", "enpotan", "info"].indexOf(a.nivo) - ["ijan", "enpotan", "info"].indexOf(b.nivo));
+}
+function liAlet(a, { man = false, kont = false } = {}) {
+  const [nl, kl] = NIVO_ALET[a.nivo] || NIVO_ALET.enpotan;
+  const eta = a._eta === "fermen" ? `<span class="badge mut">${t("Fèmen")}</span>` : a._eta === "oto" ? `<span class="badge ok">${t("Rezoud otomatik")}</span>` : "";
+  const sous = a.sistem ? t("Alèt sistèm · li disparèt lè kliyan an peye sa l dwe a")
+    : `${nomAjan(a.kreye_pa) || t("Manadjè")} · ${lè(a.kreye_le)} · ${t(FEN_ALET[a.fen_kondisyon] || "")}${a.fen_kondisyon === "dat" && a.fen_dat ? ` ${datFr(a.fen_dat)}` : ""}`;
+  return `<div class="row alet ${h(a.nivo)} ${a._eta !== "aktif" ? "fini" : ""}" data-alet="${h(a.id)}">
+    <div class="grow"><b>${a.sistem ? t(a.tit) : d(a.tit)}</b> <span class="badge ${kl}">${t(nl)}</span> ${eta} ${a._pending || a._fermenPending ? `<span class="badge pend">${t("Poko voye")}</span>` : ""}
+      ${kont ? `<div class="mut sm">${d(a.k.no_compte || t("Cycle poko voye"))}</div>` : ""}
+      ${a.mesaj ? `<div class="sm alet-m">${a.sistem ? a.mesaj : d(a.mesaj)}</div>` : ""}
+      <div class="mut sm">${sous}</div></div>
+    ${man && !a.sistem && a._eta === "aktif" ? `<button type="button" class="btn sm" data-fermen="${h(a.id)}">${t("Fèmen l")}</button>` : ""}</div>`;
+}
+// Seksyon «Alèt» sou paj cycle/fich: manadjè wè tout (ak bouton), ajan wè sa ki aktif.
+function seksyonAlet(ks, man) {
+  const l = ks.flatMap((k) => aletYo(k, { tout: man }));
+  const kAktif = ks.find((k) => k._actif) || ks[0];
+  if (!l.length && !man) return "";
+  return `<section class="alet-sek" id="alet-sek"><div class="alet-tit"><h2>Alèt</h2>${man && kAktif ? `<button type="button" class="btn sm" data-alet-nouvo="${h(kAktif.id_compte_epargne)}">＋ ${t("Alèt")}</button>` : ""}</div>
+    <div class="list">${l.map((a) => liAlet(a, { man, kont: ks.length > 1 })).join("") || `<p class="empty">${t("Pa gen alèt sou kliyan sa a.")}</p>`}</div></section>`;
+}
+async function kreyeAlet(M, k) {
+  const c = M.clients.get(k.id_personne) || {};
+  const r = await ui.askAlet({ tekst: `${non(c)} · ${k.no_compte || ""}`, jodi: M.today });
+  if (!r) return;
+  await S.enqueue("alet", { id: S.uuid(), compte: k.id_compte_epargne, ...r, kreye_le: new Date().toISOString() }, k._pending ? [k.id_compte_epargne] : []);
+  toast("Alèt la kreye.");
+  aletDenye = ""; render();
+}
+async function fermenAlet(id) {
+  if (!(await ui.ask({ titre: "Fèmen alèt la?", tekst: t("Ajan yo p ap wè l ankò."), ok: "Fèmen l" }))) return;
+  await S.enqueue("alet_fermen", { id, le: new Date().toISOString() });
+  toast("Alèt la fèmen.");
+  aletDenye = location.hash; render();
+}
+function brancherAlet(M) {
+  $app.querySelectorAll("[data-alet-nouvo]").forEach((b) => (b.onclick = () => kreyeAlet(M, M.comptes.get(b.dataset.aletNouvo))));
+  $app.querySelectorAll("#alet-sek [data-fermen]").forEach((b) => (b.onclick = () => fermenAlet(b.dataset.fermen)));
+}
+// Popup la: yon fwa chak fwa ajan an antre sou paj la (pa lè paj la re-rann pou menm wout la).
+let aletDenye = "";
+async function montreAlet(M, ks) {
+  const wout = location.hash;
+  if (aletDenye === wout) return;
+  aletDenye = wout;
+  const l = ks.flatMap((k) => aletYo(k));
+  if (!l.length) return;
+  const man = estManager();
+  const nivo = l.some((a) => a.nivo === "ijan") ? "ijan" : l.some((a) => a.nivo === "enpotan") ? "enpotan" : "info";
+  if (prefs().son !== false) ui.son(nivo);
+  const c = M.clients.get(ks[0].id_personne) || {};
+  const r = await ui.aletPopup({ titre: l.length > 1 ? `${l.length} ${t("alèt sou kliyan sa a")}` : t("Alèt sou kliyan sa a"), soutit: non(c), nivo,
+    html: l.map((a) => liAlet(a, { man, kont: ks.length > 1 })).join(""), nouvo: man });
+  if (r?.fermen) await fermenAlet(r.fermen);
+  else if (r?.nouvo) await kreyeAlet(M, ks.find((k) => k._actif) || ks[0]);
+}
+addEventListener("hashchange", () => { if (!/^#\/(kliyan|cycle|tx\/nouvo)\//.test(location.hash)) aletDenye = ""; });
+
 async function viewClient(id) {
   const M = await S.model();
   const c = M.clients.get(id);
@@ -735,7 +805,10 @@ async function viewClient(id) {
   const ctx = { ...ctxBase(M), c, photo, gpsOk, ks, age: aj, info, hrefModifye: `#/kliyan/${id}/modifye`, hrefNouvoCycle: `#/cycle/nouvo/${c.id_personne}`,
     mapsHref: gpsOk ? `https://maps.google.com/?q=${c.gps_lat},${c.gps_lng}` : null, telHref: c.telephone ? `tel:${String(c.telephone).replace(/\D/g, "")}` : null,
     errHtml: c._error ? `<p class="note err">${d(t(c._error))} <a href="#/param">Wè</a></p>` : "" };
-  $app.innerHTML = `<div id="fich">${L().parts.fich(ctx)}</div>`;
+  const ksM = S.comptesDuClient(M, id);
+  $app.innerHTML = `<div id="fich">${L().parts.fich(ctx)}${seksyonAlet(ksM, man)}</div>`;
+  brancherAlet(M);
+  if (ksM.length) montreAlet(M, ksM);
 }
 
 // ---------- Chwazi ----------
@@ -869,11 +942,14 @@ async function viewCycle(id) {
     errHtml: k._error ? `<p class="note err">${d(t(k._error))} <a href="#/param">Wè</a></p>` : "",
   };
   $app.innerHTML = `<div id="cycle">${L().parts.cycleTop(ctx)}
+  ${seksyonAlet([k], man)}
   ${k._demandes.length ? `<h2>Demann retrè ak viman</h2><div class="list">${k._demandes.map((x) => liDemande(M, x, { decide: man })).join("")}</div>` : ""}
   ${k._suivis.length ? `<h2>Fidbak</h2><div class="list">${k._suivis.map((x) => liSwivi(M, x, { kliyan: false })).join("")}</div>` : ""}
   <h2>Tranzaksyon</h2>
   <div class="list">${k._txs.map((x) => liTx(M, x, { kliyan: false })).join("") || `<p class="empty">Poko gen tranzaksyon.</p>`}</div></div>`;
   document.getElementById("papeye")?.addEventListener("click", () => paPeye(k, c));
+  brancherAlet(M);
+  montreAlet(M, [k]);
   $app.querySelectorAll("[data-ok]").forEach((b) => (b.onclick = () => decider(M, b.dataset.ok, true)));
   $app.querySelectorAll("[data-non]").forEach((b) => (b.onclick = () => decider(M, b.dataset.non, false)));
 }
@@ -908,6 +984,7 @@ async function viewTxNew(compteId) {
     <p class="err-msg" id="err" role="alert"></p>
     <button class="btn pri" type="submit" id="go">Anrejistre</button>
   </form>`;
+  montreAlet(M, [k]);
   const f = document.getElementById("f");
   const maj = () => {
     const tp = f.type.value;
@@ -1029,6 +1106,8 @@ async function viewSync() {
     ${L().tem === "dark" ? `<p class="mut sm">${t("Look sa a toujou fonse.")}</p>` : ""}
     <fieldset class="field"><legend>Gwosè tèks</legend><div class="seg s3">
       ${[["n", "Nòmal"], ["l", "Gwo"], ["xl", "Pi gwo"]].map(([v, l]) => `<label><input type="radio" name="teks" value="${v}" ${pref.teks === v ? "checked" : ""}><span>${l}</span></label>`).join("")}</div></fieldset>
+    <fieldset class="field"><legend>Son alèt yo</legend><div class="seg s2">
+      ${[["1", "Wi"], ["0", "Non"]].map(([v, l]) => `<label><input type="radio" name="son" value="${v}" ${(pref.son !== false) === (v === "1") ? "checked" : ""}><span>${l}</span></label>`).join("")}</div></fieldset>
   </div>
   <h2>Senkronizasyon</h2>
   <div class="card">
@@ -1054,6 +1133,7 @@ async function viewSync() {
   $app.querySelectorAll('input[name="tem"], input[name="teks"]').forEach((r) => (r.onchange = () => {
     savePrefs({ tem: $app.querySelector('input[name="tem"]:checked').value, teks: $app.querySelector('input[name="teks"]:checked').value });
   }));
+  $app.querySelectorAll('input[name="son"]').forEach((r) => (r.onchange = () => { savePrefs({ son: r.value === "1" }); if (r.value === "1") ui.son("info"); }));
   $app.querySelectorAll('input[name="look"]').forEach((r) => (r.onchange = () => { savePrefs({ look: r.value }); toast(`${looks.LOOKS[r.value].nom} ✓`); render(); }));
   document.getElementById("sync").onclick = async () => {
     const r = await S.run();
