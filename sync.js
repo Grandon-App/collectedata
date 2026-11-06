@@ -364,7 +364,10 @@ export async function model() {
     // Balans sistèm nan: sèvè a voye l pou manadjè yo sèlman (null pou ajan yo).
     k._solde = k.solde_actuel == null ? null : Number(k.solde_actuel) + Number(k.depo_an_atant || 0) + k._local;
     // Reta: jou peman prevwa jiska jodi a ki poko gen depo.
-    k._anReta = Math.max(0, k._prevu - k._joursPeye.size);
+    // Kòb pou rekipere: vèsman prevwa jiska jodi a × plan − sa kliyan an depoze sou cycle la. Vèsman an reta = kòb sa a / plan (awondi anlè).
+    const planK = Number(k.montant_plan || 0);
+    k._aRekipere = planK ? Math.max(0, k._prevu * planK - k._depots) : 0;
+    k._anReta = planK ? Math.ceil(k._aRekipere / planK) : Math.max(0, k._prevu - k._joursPeye.size);
     k._pwosan = k._prevuTotal ? Math.min(100, Math.round((k._joursPeye.size / k._prevuTotal) * 100)) : 0;
     // Mwa a (pati 2 tablo a): sa kliyan an te dwe peye depi 1ye mwa a (oswa debi cycle la) jiska jodi a, ak sa l peye nan mwa a.
     // Dwe = prevu jiska jodi a − kolekte (maks prevu a): li desann lè l peye, li monte lè l rate yon jou.

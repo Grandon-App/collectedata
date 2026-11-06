@@ -129,3 +129,6 @@ export function mwa(st) {
   ${st.nDwe ? `<p class="obj-p"><a href="#/epay" data-mwa-reta>${t("Wè kliyan ki an reta yo")} →</a></p>` : ""}
 </section>`;
 }
+
+// «2 000 G pou rekipere (1 vèsman)»: sa kliyan an dwe sou cycle la jiska jodi a.
+export const rekipere = (a, n) => `${gd(a)} ${t("pou rekipere")} (${n} ${n > 1 ? t("vèsman") : t("vèsman (1)").replace(" (1)", "")})`;

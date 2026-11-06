@@ -1,5 +1,5 @@
 // LOOK B · Mache — klè, gwo bouton jòn safran, fèt pou teren an. (Kontra: LOOKS.md. Modèl vizyèl: tests/refonte/B-*.dc.html)
-import { h, d, gd, gn, datFr, datKout, lè, non, inisyal, telFmt, JOU, JOU_KOUT, lisJou, badgePend, badgeKont, ICO, MOTIF_KOUT, pct, t, objektif, mwa } from "./fmt.js";
+import { h, d, gd, gn, datFr, datKout, lè, non, inisyal, telFmt, JOU, JOU_KOUT, lisJou, badgePend, badgeKont, ICO, MOTIF_KOUT, pct, t, objektif, mwa, rekipere } from "./fmt.js";
 
 // ---------- Ti zouti pwòp look la ----------
 const prenon = (moi) => h(String(moi?.nom || "").trim().split(" ")[0] || "");
@@ -73,7 +73,7 @@ export function kontRow(r) {
     ${tile(c)}
     <a class="grow lnk" href="#/cycle/${id}"><b class="nm" id="nm-${id}">${d(r.nonKliyan || non(c))}</b> ${badgePend(k)}
       <div class="mut sm">${kont} · Plan ${gd(plan)}</div>
-      <div class="mut xs">${[k.frequence_semaine ? `${k.frequence_semaine}×/sem · ${lisJou(k.jours_paiement)}` : "", `<b class="ink">${np}/${nv ?? "?"}</b> ${t("vèsman")}`, r.anReta > 0 ? `<b class="err-t">${r.anReta} ${t("an reta")}</b>` : ""].filter(Boolean).join(" · ")}</div>
+      <div class="mut xs">${[k.frequence_semaine ? `${k.frequence_semaine}×/sem · ${lisJou(k.jours_paiement)}` : "", `<b class="ink">${np}/${nv ?? "?"}</b> ${t("vèsman")}`, r.aRekipere > 0 ? `<b class="err-t">${rekipere(r.aRekipere, r.anReta)}</b>` : ""].filter(Boolean).join(" · ")}</div>
       ${man && r.solde != null ? `<div class="sm bal">${t("Balans")}: <b>${gd(r.solde)}</b></div>` : ""}
       <div class="bar mini" aria-hidden="true"><i style="width:${pct(np, nv || 0)}%"></i></div></a>
     <a class="btn pri sm sq" href="#/tx/nouvo/${id}" aria-labelledby="dep-${id} nm-${id}">${ICO.plus}<span id="dep-${id}">Depo</span></a>
@@ -208,7 +208,7 @@ export function cycleTop(ctx) {
     </div>`
     : `<div class="solde tiles2">
       <div class="tile g"><span>Vèsman fèt</span><b>${ctx.nDepots}</b><em>${t("depo ou wè sou telefòn nan")}</em></div>
-      <div class="tile n"><span>Total kliyan an mete</span><b class="amt">${gd(ctx.depots)}</b>${ctx.anReta > 0 ? `<em class="err-t">${ctx.anReta} ${t("vèsman")} ${t("an reta")}</em>` : `<em>${t("Aktif")}</em>`}</div>
+      <div class="tile n"><span>Total kliyan an mete</span><b class="amt">${gd(ctx.depots)}</b>${ctx.aRekipere > 0 ? `<em class="err-t">${rekipere(ctx.aRekipere, ctx.anReta)}</em>` : `<em>${t("Aktif")}</em>`}</div>
     </div>`}
   <div class="stats card">
     <div><span>Plan (minimòm)</span><b>${gd(k.montant_plan)}</b></div>

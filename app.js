@@ -28,7 +28,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "4.4";
+const APP_VERSION = "4.5";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO };
@@ -397,7 +397,7 @@ function ctxKontRow(M, k, sekyon, swiviJodi) {
   const c = M.clients.get(k.id_personne) || {};
   return {
     k, c, man: estManager(), sekyon, ok: k._jodi >= Number(k.montant_plan || 0), jodiPeman: k._jodiPeman,
-    fidbakJodi: swiviJodi.get(k.id_compte_epargne) || null, dots: k._dots, heat: k._heat, anReta: k._anReta,
+    fidbakJodi: swiviJodi.get(k.id_compte_epargne) || null, dots: k._dots, heat: k._heat, anReta: k._anReta, aRekipere: k._aRekipere,
     plan: Number(k.montant_plan || 0), jodiMontan: k._jodi, solde: estManager() ? k._solde : null, pwosan: k._pwosan,
     nPeye: k._joursPeye.size, nPrevu: k._prevuTotal, noKont: k.no_compte || null, nonKliyan: non(c), today: M.today,
   };
@@ -864,7 +864,7 @@ async function viewCycle(id) {
   const ctx = {
     ...ctxBase(M), k, c, fè: k._joursPeye.size, prevu: k._prevu, dots: k._dots, heat: k._heat, nPeye: k._joursPeye.size, nPrevu: k._prevuTotal, pwosan: k._pwosan,
     solde: man ? k._solde : null, soldeValide: k.solde_actuel, depoAnAtant: k.depo_an_atant, local: k._local, nDepots: k._nDepots, depots: k._depots,
-    prevuTotal: k._prevuTotal, totalPrevu: k._totalPrevu, anReta: k._anReta,
+    prevuTotal: k._prevuTotal, totalPrevu: k._totalPrevu, anReta: k._anReta, aRekipere: k._aRekipere,
     badges: { kont: badgeKont(k), pend: badgePend(k) }, hrefTx: `#/tx/nouvo/${k.id_compte_epargne}`, hrefKliyan: `#/kliyan/${c.id_personne}`,
     errHtml: k._error ? `<p class="note err">${d(t(k._error))} <a href="#/param">Wè</a></p>` : "",
   };

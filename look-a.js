@@ -1,6 +1,6 @@
 // LOOK A · Prestige — ble marin ak lò. (Kontra: LOOKS.md. Modèl vizyèl: tests/refonte/Main.dc.html, A-Fich.dc.html, A-Rapo.dc.html)
 // Chak pati = fn(ctx) → HTML. app.js branche evènman yo sou hook yo (id, klas, data-attribut) — pa retire yo.
-import { h, d, gd, gn, datFr, datKout, non, inisyal, JOU, lisJou, badgePend, badgeKont, ICO, pct, t, MOTIF_KOUT, objektif, mwa } from "./fmt.js";
+import { h, d, gd, gn, datFr, datKout, non, inisyal, JOU, lisJou, badgePend, badgeKont, ICO, pct, t, MOTIF_KOUT, objektif, mwa, rekipere } from "./fmt.js";
 
 // ---------- Ti zouti lokal ----------
 // Jou ISO (1 = lendi … 7 = dimanch) yon dat "YYYY-MM-DD".
@@ -65,7 +65,7 @@ export function kontRow(r) {
   }
   // Liy detay: sèlman moso ki egziste yo (pa gen "—" k ap pandye lè pa gen frekans).
   const liy = [k.frequence_semaine ? `${k.frequence_semaine}×/sem · ${lisJou(k.jours_paiement)}` : "", `${r.nPeye}/${r.nPrevu ?? "?"} ${t("vèsman")}`,
-    r.anReta ? `<span class="reta">${r.anReta} jou an reta</span>` : ""].filter(Boolean).join(" · ");
+    r.aRekipere ? `<span class="reta">${rekipere(r.aRekipere, r.anReta)}</span>` : ""].filter(Boolean).join(" · ");
   return `<div class="row kr">
     ${av(c)}<a class="grow lnk" href="#/cycle/${id}"><b>${d(r.nonKliyan)}</b> ${badgePend(k)}${sub}
       <div class="mut sm">${liy}</div>
@@ -179,7 +179,7 @@ export function cycleTop(ctx) {
     <div><span>Fini</span><b>${datFr(k.date_fin)}</b></div>
     ${ctx.prevuTotal != null ? `<div><span>Vèsman prevwa</span><b>${ctx.prevuTotal}</b><small>san dimanch ni jou ferye</small></div>
     <div><span>Total pou l sanble</span><b>${gd(ctx.totalPrevu)}</b></div>` : ""}
-    ${k.jours_paiement?.length ? `<div class="wide"><span>Peman jiska jodi a</span><b>${fè} ${t("jou peye")} · ${prevu} ${t("jou prevwa")}${ctx.anReta ? ` · <span class="reta">${ctx.anReta} jou an reta</span>` : ""}</b>
+    ${k.jours_paiement?.length ? `<div class="wide"><span>Peman jiska jodi a</span><b>${fè} ${t("jou peye")} · ${prevu} ${t("jou prevwa")}${ctx.aRekipere ? ` · <span class="reta">${rekipere(ctx.aRekipere, ctx.anReta)}</span>` : ""}</b>
       ${bar(pct(fè, prevu), "", "Peman jiska jodi a")}</div>` : ""}
   </div>
   ${k._actif ? `<div class="btn-row"><a class="btn pri" href="${ctx.hrefTx}" data-act="tx">＋ Tranzaksyon</a><button type="button" class="btn" id="papeye">Pa peye · Fidbak</button></div>` : ""}

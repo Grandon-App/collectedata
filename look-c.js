@@ -1,6 +1,6 @@
 // LOOK C · Lannuit — toujou fonse, kontras fò, chif an mono. (Kontra: LOOKS.md. Modèl vizyèl: tests/refonte/C-*.dc.html)
 // Chak pati = fn(ctx) → HTML. app.js branche evènman yo sou hook yo (id, klas, data-attribut) — pa retire yo.
-import { h, d, gd, gn, datFr, datKout, lèKout, non, inisyal, JOU, JOU_KOUT, lisJou, avatar, badgePend, badgeKont, ICO, MOTIF_KOUT, pct, t, FUSEAU, objektif, mwa } from "./fmt.js";
+import { h, d, gd, gn, datFr, datKout, lèKout, non, inisyal, JOU, JOU_KOUT, lisJou, avatar, badgePend, badgeKont, ICO, MOTIF_KOUT, pct, t, FUSEAU, objektif, mwa, rekipere } from "./fmt.js";
 
 // ---------- Ti zouti pwòp look la ----------
 const isoJouDe = (iso) => ((new Date(String(iso).slice(0, 10) + "T12:00:00Z").getUTCDay() + 6) % 7) + 1;
@@ -92,7 +92,7 @@ export function kontRow(r) {
   return `<div class="row kr">
     ${avatar(c)}
     <a class="grow lnk" href="#/cycle/${id}"><div class="nml">${nom} ${badgePend(k)}</div>${sub}
-      ${k.frequence_semaine || r.anReta > 0 ? `<div class="mut xs">${[k.frequence_semaine ? `${k.frequence_semaine}×/sem · ${lisJou(k.jours_paiement)}` : "", r.anReta > 0 ? `<span class="err-t"><span class="mono">${r.anReta}</span> jou an reta</span>` : ""].filter(Boolean).join(" · ")}</div>` : ""}
+      ${k.frequence_semaine || r.aRekipere > 0 ? `<div class="mut xs">${[k.frequence_semaine ? `${k.frequence_semaine}×/sem · ${lisJou(k.jours_paiement)}` : "", r.aRekipere > 0 ? `<span class="err-t">${rekipere(r.aRekipere, r.anReta)}</span>` : ""].filter(Boolean).join(" · ")}</div>` : ""}
       ${man && r.solde != null ? `<div class="bal">${t("Balans")}: <b class="mono">${gd(r.solde)}</b></div>` : ""}</a>
     <div class="btns-v"><b class="mono cnt-v">${r.nPeye}/${r.nPrevu ?? "?"}</b><a class="btn sm pri" href="#/tx/nouvo/${id}">Depo</a></div>
   </div>`;
@@ -184,7 +184,7 @@ export function fich(ctx) {
 // ---------- Tèt fich cycle ----------
 export function cycleTop(ctx) {
   const { k, c, man, fè, prevu } = ctx;
-  const prog = k.jours_paiement?.length ? `<div class="prog"><span>Peman jiska jodi a</span><b><span class="mono">${fè}</span> jou peye · <span class="mono">${prevu}</span> jou prevwa${ctx.anReta ? ` · <span class="err-t"><span class="mono">${ctx.anReta}</span> jou an reta</span>` : ""}</b>
+  const prog = k.jours_paiement?.length ? `<div class="prog"><span>Peman jiska jodi a</span><b><span class="mono">${fè}</span> jou peye · <span class="mono">${prevu}</span> jou prevwa${ctx.aRekipere ? ` · <span class="err-t">${rekipere(ctx.aRekipere, ctx.anReta)}</span>` : ""}</b>
       <div class="bar" role="progressbar" aria-label="${h(t("Peman jiska jodi a"))}" aria-valuemin="0" aria-valuemax="${prevu}" aria-valuenow="${fè}"><i style="width:${pct(fè, prevu)}%"></i></div></div>` : "";
   return `
   <div class="topr"><a href="#/epay" class="back">‹ Epay</a><a class="kli" href="${ctx.hrefKliyan}">${avatar(c, "thumb xs")}<span>${d(non(c))}</span>${ICO.retou}</a></div>
