@@ -334,7 +334,7 @@ export async function model() {
         type_frais: p.type_frais, note: p.note, created_by: "moi", ...pend });
   }
   const today = jodi();
-  for (const k of M.comptes.values()) Object.assign(k, { _txs: [], _local: 0, _jodi: 0, _depots: 0, _nDepots: 0, _joursPeye: new Set(), _suivis: [], _demandes: [] });
+  for (const k of M.comptes.values()) Object.assign(k, { _txs: [], _local: 0, _jodi: 0, _depots: 0, _nDepots: 0, _joursPeye: new Set(), _suivis: [], _demandes: [], _kolekMwa: 0 });
   for (const t of M.txs.values()) {
     const k = M.comptes.get(t.id_compte_epargne);
     if (!k) continue;
@@ -346,6 +346,7 @@ export async function model() {
       k._joursPeye.add(j);
       k._depots += Number(t.montant); k._nDepots++;
       if (j === today) k._jodi += Number(t.montant);
+      if (j.slice(0, 7) === today.slice(0, 7) && j <= today) k._kolekMwa += Number(t.montant);
     }
   }
   for (const x of M.suivis.values()) M.comptes.get(x.id_compte_epargne)?._suivis.push(x);
@@ -365,6 +366,15 @@ export async function model() {
     // Reta: jou peman prevwa jiska jodi a ki poko gen depo.
     k._anReta = Math.max(0, k._prevu - k._joursPeye.size);
     k._pwosan = k._prevuTotal ? Math.min(100, Math.round((k._joursPeye.size / k._prevuTotal) * 100)) : 0;
+    // Mwa a (pati 2 tablo a): sa kliyan an te dwe peye depi 1ye mwa a (oswa debi cycle la) jiska jodi a, ak sa l peye nan mwa a.
+    // Dwe = prevu jiska jodi a − kolekte (maks prevu a): li desann lè l peye, li monte lè l rate yon jou.
+    const mwa1 = today.slice(0, 8) + "01", mwaFen = ajouteJou(ajouteJou(mwa1, 32).slice(0, 8) + "01", -1);
+    const dMwa = k.date_debut > mwa1 ? k.date_debut : mwa1, plan = Number(k.montant_plan || 0);
+    const fMwa = (fin) => (finCycle && finCycle < fin ? finCycle : fin);
+    k._mwaPrevu = joursPeman(dMwa, fMwa(today), k.jours_paiement, M.feries) * plan;
+    k._mwaPrevuTotal = joursPeman(dMwa, fMwa(mwaFen), k.jours_paiement, M.feries) * plan;
+    k._mwaPlan = Math.min(k._kolekMwa, k._mwaPrevu);
+    k._mwaDwe = Math.max(0, k._mwaPrevu - k._kolekMwa);
     k._dots = semenDots(k, M.feries, today);
     k._heat = heatmap13(k, M.feries, today);
   }

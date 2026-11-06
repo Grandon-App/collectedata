@@ -28,7 +28,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "4.3";
+const APP_VERSION = "4.4";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO };
@@ -215,7 +215,15 @@ async function viewTablo() {
   st.rete = Math.max(0, st.prevuJodi - st.kolekPlan);
   st.anplis = Math.max(0, st.kolekte - st.kolekPlan);
   st.pwosanPlan = st.prevuJodi ? Math.round((st.kolekPlan / st.prevuJodi) * 100) : 0;
+  // Pati 2: mwa a (kont ki aktif nan mwa a)
+  const ks = [...M.comptes.values()].filter((k) => k._mwaPrevuTotal > 0 || k._kolekMwa > 0);
+  const som = (f) => ks.reduce((a, k) => a + (f(k) || 0), 0);
+  Object.assign(st, { mwaPrevuTotal: som((k) => k._mwaPrevuTotal), mwaPrevu: som((k) => k._mwaPrevu), mwaPlan: som((k) => k._mwaPlan),
+    mwaDwe: som((k) => k._mwaDwe), mwaKolekte: som((k) => k._kolekMwa), nDwe: ks.filter((k) => k._mwaDwe > 0).length,
+    nonMwa: new Date(M.today + "T12:00:00Z").toLocaleDateString(getLang() === "fr" ? "fr-FR" : "fr-FR", { month: "long", year: "numeric", timeZone: "UTC" }) });
+  st.mwaPwosan = st.mwaPrevu ? Math.round((st.mwaPlan / st.mwaPrevu) * 100) : 0;
   $app.innerHTML = `<div id="tablo">${L().parts.tablo({ ...ctxBase(M), stats: st, isoJou: S.isoJou(M.today) })}</div>`;
+  $app.querySelector("[data-mwa-reta]")?.addEventListener("click", () => { ongEpay = "kont"; filtKont = "reta"; });
 }
 
 // Chif komen pou Epay/Tablo

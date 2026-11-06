@@ -1,6 +1,6 @@
 // LOOK C · Lannuit — toujou fonse, kontras fò, chif an mono. (Kontra: LOOKS.md. Modèl vizyèl: tests/refonte/C-*.dc.html)
 // Chak pati = fn(ctx) → HTML. app.js branche evènman yo sou hook yo (id, klas, data-attribut) — pa retire yo.
-import { h, d, gd, gn, datFr, datKout, lèKout, non, inisyal, JOU, JOU_KOUT, lisJou, avatar, badgePend, badgeKont, ICO, MOTIF_KOUT, pct, t, FUSEAU, objektif } from "./fmt.js";
+import { h, d, gd, gn, datFr, datKout, lèKout, non, inisyal, JOU, JOU_KOUT, lisJou, avatar, badgePend, badgeKont, ICO, MOTIF_KOUT, pct, t, FUSEAU, objektif, mwa } from "./fmt.js";
 
 // ---------- Ti zouti pwòp look la ----------
 const isoJouDe = (iso) => ((new Date(String(iso).slice(0, 10) + "T12:00:00Z").getUTCDay() + 6) % 7) + 1;
@@ -63,6 +63,7 @@ export function tablo(ctx) {
     ${stile("Demann", `<b class="mono ${stats.enAtant ? "gold" : ""}">${stats.enAtant}</b>`, "retrè · viman")}
   </div>
   ${objektif(stats)}
+  ${mwa(stats)}
   ${lbl("Ale nan")}
   <div class="nl">
     <a href="#/kliyan">${ICO.kliyan}<span class="grow"><b>Kliyan</b><small><span class="mono">${stats.kliyan}</span> kliyan</small></span><i>${ICO.retou}</i></a>

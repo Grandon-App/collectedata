@@ -342,3 +342,11 @@ html[data-look="b"] .obj { border-radius: 20px; }
 html[data-look="b"] .obj-bar i { background: var(--acc); }
 html[data-look="c"] .obj-i > b, html[data-look="c"] .obj-tot > b, html[data-look="c"] .obj-p b { font-family: var(--mono); }
 @media (min-width: 1024px) { html[data-look] .obj { margin-top: 20px; } html[data-look] .obj-i { padding: 14px 16px; } html[data-look] .obj-i > b { font-size: 1.4rem; } }
+
+.mwa h2 small { font-weight: 500; color: var(--mut); font-size: .8em; margin-left: 6px; text-transform: none; letter-spacing: 0; }
+.obj-dwe { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 2px 12px; padding: 12px 14px; margin-bottom: 8px; border-radius: 12px; border: 1px solid var(--line); }
+.obj-dwe > span { font-weight: 700; } .obj-dwe > b { font-size: 1.6rem; font-variant-numeric: tabular-nums; }
+.obj-dwe > small { flex-basis: 100%; color: var(--mut); font-size: .8rem; }
+.obj-dwe.warn > b { color: var(--warn); } .obj-dwe.ok > b { color: var(--ok); }
+.obj-p a { display: inline-flex; align-items: center; min-height: 44px; font-weight: 600; }
+html[data-look="c"] .obj-dwe > b { font-family: var(--mono); }
