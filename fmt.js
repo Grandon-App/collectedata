@@ -96,3 +96,20 @@ export const ICO = {
 export const pct = (a, b) => (b ? Math.max(0, Math.min(100, Math.round((a / b) * 100))) : 0);
 
 export { t };
+
+// Blòk «Objektif jodi a» (Tablo de bò): sa ajan an ta dwe kolekte sou potfèy li jodi a, sa l kolekte, sa k rete.
+// stats: prevuJodi, kolekPlan (chak kliyan konte pou plan li maks), rete, kolekte (tout depo), anplis, pouJodi, peye, pwosanPlan.
+export function objektif(st) {
+  const pa = Math.max(0, st.pouJodi - st.peye);
+  return `<section class="obj" aria-labelledby="obj-t">
+  <h2 id="obj-t">Objektif jodi a</h2>
+  <div class="obj-g">
+    <div class="obj-i" data-obj="prevu" data-val="${st.prevuJodi}"><span>Pou kolekte jodi a</span><b>${gd(st.prevuJodi)}</b><small>${st.pouJodi} ${t("kliyan dwe peye")}</small></div>
+    <div class="obj-i ok" data-obj="plan" data-val="${st.kolekPlan}"><span>Kolekte sou plan</span><b>${gd(st.kolekPlan)}</b><small>${st.peye}/${st.pouJodi} ${t("kliyan peye")}</small></div>
+    <div class="obj-i ${st.rete ? "warn" : "ok"}" data-obj="rete" data-val="${st.rete}"><span>Rete pou kolekte</span><b>${gd(st.rete)}</b><small>${pa ? `${pa} ${t("kliyan poko peye")}` : t("Tout moun peye")}</small></div>
+  </div>
+  <div class="bar obj-bar" role="progressbar" aria-label="${t("Objektif jodi a")}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${st.pwosanPlan}"><i style="width:${Math.min(100, st.pwosanPlan)}%"></i></div>
+  <p class="obj-p"><b>${st.pwosanPlan}%</b> ${t("objektif la rive")}</p>
+  <div class="obj-tot" data-obj="total" data-val="${st.kolekte}"><span>Total kolekte jodi a <small>(tout depo)</small></span><b>${gd(st.kolekte)}</b>${st.anplis ? `<small>${t("ladan l")} ${gd(st.anplis)} ${t("anplis plan yo")}</small>` : ""}</div>
+</section>`;
+}

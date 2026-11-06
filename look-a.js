@@ -1,6 +1,6 @@
 // LOOK A · Prestige — ble marin ak lò. (Kontra: LOOKS.md. Modèl vizyèl: tests/refonte/Main.dc.html, A-Fich.dc.html, A-Rapo.dc.html)
 // Chak pati = fn(ctx) → HTML. app.js branche evènman yo sou hook yo (id, klas, data-attribut) — pa retire yo.
-import { h, d, gd, gn, datFr, datKout, non, inisyal, JOU, lisJou, badgePend, badgeKont, ICO, pct, t, MOTIF_KOUT } from "./fmt.js";
+import { h, d, gd, gn, datFr, datKout, non, inisyal, JOU, lisJou, badgePend, badgeKont, ICO, pct, t, MOTIF_KOUT, objektif } from "./fmt.js";
 
 // ---------- Ti zouti lokal ----------
 // Jou ISO (1 = lendi … 7 = dimanch) yon dat "YYYY-MM-DD".
@@ -44,7 +44,8 @@ export function tablo(ctx) {
     <a class="tile pri" href="#/epay">${ICO.epay}<span>Epay</span></a>
     <a class="tile" href="#/rapo">${ICO.rapo}<span>Rapò</span></a>
   </div>
-  </div>`;
+  </div>
+  ${objektif(stats)}`;
 }
 
 // ---------- Yon liy kont (Epay) ----------

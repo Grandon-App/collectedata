@@ -1,5 +1,5 @@
 // LOOK B · Mache — klè, gwo bouton jòn safran, fèt pou teren an. (Kontra: LOOKS.md. Modèl vizyèl: tests/refonte/B-*.dc.html)
-import { h, d, gd, gn, datFr, datKout, lè, non, inisyal, telFmt, JOU, JOU_KOUT, lisJou, badgePend, badgeKont, ICO, MOTIF_KOUT, pct, t } from "./fmt.js";
+import { h, d, gd, gn, datFr, datKout, lè, non, inisyal, telFmt, JOU, JOU_KOUT, lisJou, badgePend, badgeKont, ICO, MOTIF_KOUT, pct, t, objektif } from "./fmt.js";
 
 // ---------- Ti zouti pwòp look la ----------
 const prenon = (moi) => h(String(moi?.nom || "").trim().split(" ")[0] || "");
@@ -39,6 +39,7 @@ export function tablo(ctx) {
     <div class="tile b"><span>Kolekte jodi a</span><b class="amt">${gd(stats.kolekte)}</b></div>
     <div class="tile ${stats.enAtant ? "r" : "g"}"><span>Demann an atant</span><b>${stats.enAtant}</b><em>${t("retrè / viman")}</em></div>
   </div>
+  ${objektif(stats)}
   <div class="bigl">
     <a href="#/kliyan"><span class="bi b">${ICO.kliyan}</span><span class="grow"><b>Kliyan</b><small>${stats.kliyan} ${t("Kliyan")}</small></span><i>${ICO.retou}</i></a>
     <a href="#/epay"><span class="bi y">${ICO.epay}</span><span class="grow"><b>Epay</b><small>${stats.aktif} ${t("cycle aktif")}${stats.anReta ? ` · ${stats.anReta} ${t("an reta")}` : ""}</small></span><i>${ICO.retou}</i></a>

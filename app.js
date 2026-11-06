@@ -28,7 +28,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "4.2";
+const APP_VERSION = "4.3";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO };
@@ -212,6 +212,9 @@ function liKliyan(M, c, href) {
 async function viewTablo() {
   const M = await S.model();
   const st = statsEpay(M);
+  st.rete = Math.max(0, st.prevuJodi - st.kolekPlan);
+  st.anplis = Math.max(0, st.kolekte - st.kolekPlan);
+  st.pwosanPlan = st.prevuJodi ? Math.round((st.kolekPlan / st.prevuJodi) * 100) : 0;
   $app.innerHTML = `<div id="tablo">${L().parts.tablo({ ...ctxBase(M), stats: st, isoJou: S.isoJou(M.today) })}</div>`;
 }
 
@@ -222,6 +225,10 @@ function statsEpay(M) {
   return {
     pouJodi: pouJodi.length, peye: pouJodi.filter((k) => k._jodi >= Number(k.montant_plan || 0)).length,
     kolekte: [...M.comptes.values()].reduce((a, k) => a + k._jodi, 0),
+    // Objektif jodi a: sòm plan kliyan ki dwe peye jodi a. Sou plan an, yon kliyan konte pou plan li sèlman
+    // (plan 1 000, li bay 10 000 → 1 000), pou depo an plis pa kache kliyan ki pa peye yo.
+    prevuJodi: pouJodi.reduce((a, k) => a + Number(k.montant_plan || 0), 0),
+    kolekPlan: pouJodi.reduce((a, k) => a + Math.min(k._jodi, Number(k.montant_plan || 0)), 0),
     enAtant: [...M.demandes.values()].filter((x) => x.statut === "en_attente").length,
     aktif: aktif.length, anReta: aktif.filter((k) => k._anReta > 0).length, kliyan: M.clients.size,
   };
