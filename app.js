@@ -29,7 +29,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "4.9";
+const APP_VERSION = "4.10";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
@@ -63,13 +63,13 @@ function toast(msg, kind = "ok", ms = 3500) {
   setTimeout(() => el.remove(), ms);
 }
 
-function getGps(timeout = 10000) {
+function getGps(timeout = 10000, { fre = false } = {}) { // fre: pa itilize yon pozisyon ki gen plis pase 2 minit
   return new Promise((res) => {
     if (!navigator.geolocation) return res(null);
     navigator.geolocation.getCurrentPosition(
       (p) => res({ lat: p.coords.latitude, lng: p.coords.longitude, acc: Math.round(p.coords.accuracy) }),
       () => res(null),
-      { enableHighAccuracy: true, timeout, maximumAge: 120000 });
+      { enableHighAccuracy: true, timeout, maximumAge: fre ? 0 : 120000 });
   });
 }
 
@@ -587,7 +587,14 @@ function okObligatwa(f, err, { photo } = {}) {
 const valeursOccupation = (v) => Object.fromEntries(S.CHAN_FICH.map((k) => [k, (v[k] || "").trim()]));
 function brancherGps(el, cb) {
   const txt = el.querySelector(".gps-t");
-  const go_ = async () => { txt.textContent = t("GPS: ap chèche…"); const g = await getGps(); cb(g); txt.textContent = g ? `GPS: ✓ (±${g.acc} m)` : t("GPS: pa jwenn (pa obligatwa)"); };
+  const go_ = async () => {
+    txt.textContent = t("GPS: ap chèche…"); txt.classList.remove("err-t");
+    const g = await getGps(15000, { fre: true }); cb(g);
+    if (!g) { txt.textContent = t("GPS: pa jwenn (pa obligatwa)"); return; }
+    // Laptop ak telefòn san GPS aktive bay yon pozisyon apwoksimatif (Wi-Fi/IP): avèti ajan an.
+    if (g.acc > 100) { txt.classList.add("err-t"); txt.textContent = `GPS: ±${g.acc} m — ${t("pa presi. Aktive GPS telefòn nan, ale deyò, epi peze ankò.")}`; }
+    else txt.textContent = `GPS: ✓ (±${g.acc} m)`;
+  };
   el.querySelector("button").onclick = go_;
   return go_;
 }

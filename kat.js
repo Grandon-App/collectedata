@@ -109,15 +109,16 @@ export async function viewKat({ $app, M, man, moi, ajans, getGps, toast }) {
     let pwen = null, sèk = null;
     const montreMwen = async (santre) => {
       const btn = el.querySelector(".kat-loc"); btn?.classList.add("ap");
-      const p = await getGps(santre ? 12000 : 6000);
+      const p = await getGps(santre ? 15000 : 8000, { fre: santre });
       btn?.classList.remove("ap");
       if (m !== kat) return;
       if (!p) { if (santre) toast(t("Pa ka jwenn pozisyon ou. Aktive GPS la epi bay aplikasyon an pèmisyon."), "err", 5000); return; }
       pwen?.remove(); sèk?.remove();
       sèk = Lf.circle([p.lat, p.lng], { radius: p.acc || 30, color: "#2563eb", weight: 1, fillColor: "#2563eb", fillOpacity: 0.12, interactive: false }).addTo(m);
       pwen = Lf.marker([p.lat, p.lng], { icon: Lf.divIcon({ className: "kat-mwen", html: "<i></i>", iconSize: [22, 22], iconAnchor: [11, 11] }), zIndexOffset: 1000, keyboard: false })
-        .bindPopup(`${t("Ou la")}${p.acc ? ` · ±${p.acc} m` : ""}`).addTo(m);
-      if (santre) m.setView([p.lat, p.lng], Math.max(m.getZoom(), 16), { animate: false });
+        .bindPopup(`${t("Ou la")}${p.acc ? ` · ±${p.acc} m` : ""}${p.acc > 100 ? `<br>${t("Pozisyon apwoksimatif: aparèy sa a pa gen GPS presi.")}` : ""}`).addTo(m);
+      if (santre && p.acc > 100) toast(`±${p.acc} m — ${t("Pozisyon apwoksimatif: aparèy sa a pa gen GPS presi.")}`, "info", 6000);
+      if (santre) { if ((p.acc || 0) > 150) m.fitBounds(sèk.getBounds(), { animate: false, padding: [20, 20] }); else m.setView([p.lat, p.lng], Math.max(m.getZoom(), 16), { animate: false }); }
     };
     const Loc = Lf.Control.extend({ options: { position: "topleft" }, onAdd() {
       const b = Lf.DomUtil.create("button", "kat-loc");
