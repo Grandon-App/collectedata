@@ -29,7 +29,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "4.31";
+const APP_VERSION = "4.32";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin", kesye: "Responsab kès" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
@@ -255,9 +255,39 @@ function modèlAjan(M, ajanId, ekipIds) {
     demandes: new Map([...M.demandes].filter(([, x]) => nanKont(x))), suivis: new Map([...M.suivis].filter(([, x]) => nanKont(x))),
     alet: new Map([...M.alet].filter(([, x]) => nanKont(x))) };
 }
+// Pòtfèy: kont ki atache ak moun ki konekte a (created_by). Objektif ak chif yo kalkile sou kont sa yo sèlman,
+// ak tout depo sou kont yo, kèlkeswa ajan ki touche kòb la.
+let pòtfèy = null; // null = otomatik · "mwen" · "tout"
+const nPòtfèy = (M) => [...M.comptes.values()].filter((k) => mwenSe(k.created_by)).length;
+function skòp(M) { // agent: toujou pòtfèy li · manadjè/admin: chwa (otomatik: pòtfèy li si l genyen, sinon tout ekip la)
+  if (!estManager()) return "mwen";
+  return pòtfèy || (nPòtfèy(M) ? "mwen" : "tout");
+}
+function modèlPòtfèy(M) {
+  const comptes = new Map([...M.comptes].filter(([, k]) => mwenSe(k.created_by)));
+  const nanKont = (x) => comptes.has(x.id_compte_epargne);
+  const moun = new Set([...comptes.values()].map((k) => k.id_personne));
+  return { ...M, comptes, clients: new Map([...M.clients].filter(([id]) => moun.has(id))), txs: new Map([...M.txs].filter(([, x]) => nanKont(x))),
+    demandes: new Map([...M.demandes].filter(([, x]) => nanKont(x))), suivis: new Map([...M.suivis].filter(([, x]) => nanKont(x))),
+    alet: new Map([...M.alet].filter(([, x]) => nanKont(x))) };
+}
+function chwaPòtfèy(M, ret) { // bouton «Pòtfèy mwen / Tout kliyan»
+  const sk = ret.sk, nT = [...M.comptes.values()].filter((k) => k._actif).length, nM = [...M.comptes.values()].filter((k) => k._actif && mwenSe(k.created_by)).length;
+  return `<div class="chips filt potfey-ch" role="group" aria-label="${h(t("Ki kont"))}">
+    <button type="button" class="chip ${sk === "mwen" ? "on" : ""}" data-potfey="mwen" aria-pressed="${sk === "mwen"}">${t("Pòtfèy mwen")}<small>${nM}</small></button>
+    <button type="button" class="chip ${sk === "tout" ? "on" : ""}" data-potfey="tout" aria-pressed="${sk === "tout"}">${t(ret.tout)}<small>${nT}</small></button></div>`;
+}
+// Kòb moun ki konekte a touche jodi a, ak pati ki pou kliyan lòt ajan.
+function touchJodi(M) {
+  const xs = [...M.txs.values()].filter((x) => S.txKind(x) === "depo" && x.validation_status !== "rejected" && mwenSe(x.created_by) && S.jouTx(x) === M.today);
+  const som = (l) => l.reduce((a, x) => a + Number(x.montant || 0), 0);
+  const lòt = xs.filter((x) => !mwenSe(M.comptes.get(x.id_compte_epargne)?.created_by));
+  return { tout: som(xs), n: xs.length, lòt: som(lòt), nLòt: lòt.length };
+}
 // Ajan teren yo (+ «San ajan» si gen kont ki pa atache ak okenn ajan).
 async function ekipAjan(M) {
-  const ekip = ((await db.meta("ekip")) || []).filter((x) => x.role === "agent");
+  const genKont = new Set([...M.comptes.values()].map((k) => k.created_by));
+  const ekip = ((await db.meta("ekip")) || []).filter((x) => x.role === "agent" || genKont.has(x.user_id));
   const ids = new Set(ekip.map((x) => x.user_id));
   const lis = ekip.filter((x) => x.actif !== false || [...M.comptes.values()].some((k) => k.created_by === x.user_id)).sort((a, b) => a.nom.localeCompare(b.nom, "fr"));
   if ([...M.comptes.values()].some((k) => k._actif && !ids.has(k.created_by))) lis.push({ user_id: SAN_AJAN, nom: t("San ajan"), role: "agent", actif: true });
@@ -265,6 +295,7 @@ async function ekipAjan(M) {
 }
 async function viewTablo(ajanId = null) {
   let M = await S.model();
+  const M0 = M;
   const man = estManager();
   let ajan = null;
   if (ajanId && man) {
@@ -273,11 +304,18 @@ async function viewTablo(ajanId = null) {
     ajan = lis.find((x) => x.user_id === ajanId) || { user_id: ajanId, nom: ajans[ajanId] || t("Lòt ajan") };
     M = modèlAjan(M, ajanId, ids);
   }
+  const sk = ajan ? null : skòp(M);
+  if (sk === "mwen") M = modèlPòtfèy(M);
   const st = statsTablo(M);
+  const tc = ajan ? null : touchJodi(M0);
+  const tètSk = ajan ? "" : `${man ? chwaPòtfèy(M0, { sk, tout: "Tout ekip la" }) : ""}<p class="mut sm potfey-not">${sk === "mwen"
+    ? t("Chif yo se pou kliyan ki nan pòtfèy ou sèlman, ak tout depo yo, kèlkeswa ajan ki touche kòb la.")
+    : t("Chif yo se pou tout kliyan Grandon yo (tout pòtfèy).")}${tc && tc.n ? ` ${t("Jodi a ou touche")} <b>${gd(tc.tout)}</b>${tc.nLòt ? ` · ${t("ladan l")} <b>${gd(tc.lòt)}</b> ${t("pou kliyan lòt ajan")} (${tc.nLòt})` : ""}.` : ""}</p>`;
   const tèt = ajan ? `<div class="ekip-tet"><a href="#/ekip" class="back">‹ ${t("Ekip")}</a><div class="ekip-non"><span class="ekip-av" aria-hidden="true">${h(inisyalNon(ajan.nom))}</span><div><b data-brut>${h(ajan.nom)}</b><small>${t("Done ajan sa a sèlman")}</small></div></div></div>` : "";
-  $app.innerHTML = `<div id="tablo"${ajan ? ' class="tablo-ajan"' : ""}>${tèt}${L().parts.tablo({ ...ctxBase(M), stats: st, isoJou: S.isoJou(M.today) })}${man && !ajan ? `${await seksyonEkip(M)}${seksyonKontwol(M)}<section class="doublon-sek" id="doublon" hidden></section>` : ""}${ajan ? lisKontAjan(M) : ""}</div>`;
+  $app.innerHTML = `<div id="tablo"${ajan ? ' class="tablo-ajan"' : ""}>${tèt}${tètSk}${L().parts.tablo({ ...ctxBase(M), stats: st, isoJou: S.isoJou(M.today) })}${man && !ajan ? `${await seksyonEkip(M0)}${seksyonKontwol(M0)}<section class="doublon-sek" id="doublon" hidden></section>` : ""}${ajan ? lisKontAjan(M) : ""}</div>`;
   $app.querySelector("[data-mwa-reta]")?.addEventListener("click", () => { ongEpay = "kont"; filtKont = "reta"; });
-  if (man && !ajan) { ajans = (await db.meta("ajans")) || {}; montreKontwol(M); chajeDoublon(); }
+  if (man && !ajan) { ajans = (await db.meta("ajans")) || {}; montreKontwol(M0); chajeDoublon(); }
+  $app.querySelectorAll("[data-potfey]").forEach((b) => (b.onclick = () => { pòtfèy = b.dataset.potfey; viewTablo(); }));
   if (ajan) $app.querySelectorAll("[data-papeye]").forEach((b) => (b.onclick = () => { const k = M.comptes.get(b.dataset.papeye); paPeye(k, M.clients.get(k.id_personne) || {}); }));
 }
 const inisyalNon = (n) => String(n || "?").split(/\s+/).filter(Boolean).slice(0, 2).map((x) => x[0]).join("").toUpperCase();
@@ -809,11 +847,13 @@ function lisKont(M, aktif, swiviJodi, v) {
   } else html = rann(l.sort(CMP[kxF.tri] || CMP.kliyan));
   return { html: html || `<p class="empty">${v || filtKont !== "tout" ? t("Anyen pa koresponn.") : t("Pa gen kont ak cycle aktif.")}</p>`, n: l.length };
 }
-function seksyonKont(M, aktif, swiviJodi, st) {
-  const r = lisKont(M, aktif, swiviJodi, filtEpay.trim().toLowerCase());
+function seksyonKont(M, aktif, swiviJodi, st, ek = null) {
+  const v0 = filtEpay.trim().toLowerCase();
+  const r = lisKont(v0 && ek ? ek.M0 : M, v0 && ek ? ek.tout : aktif, swiviJodi, v0);
   const nRete = aktif.filter((k) => k._jodiPeman && k._jodi < Number(k.montant_plan || 0)).length;
   const FILT = [["tout", "Tout", aktif.length], ["jodi", "Peman jodi a", st.pouJodi], ["rete", "Poko peye", nRete], ["peye", "Peye jodi a", st.peye], ["reta", "An reta", st.anReta]];
-  return `<section class="tx-seksyon kx-seksyon"><h2>Kont ak cycle aktif <small id="kx-n">${r.n}</small></h2>
+  return `<section class="tx-seksyon kx-seksyon"><h2>${ek?.sk === "mwen" ? t("Kont nan pòtfèy ou") : "Kont ak cycle aktif"} <small id="kx-n">${r.n}</small></h2>
+    ${ek?.chwa || ""}${ek?.sk === "mwen" ? `<p class="mut sm potfey-not">${t("Pou touche pou yon kliyan lòt ajan, chèche non l oswa nimewo kont li: rechèch la gade tout kliyan yo.")}</p>` : ""}
     <div class="tx-tool kx-tool">
       <input id="q" type="search" class="search" placeholder="Chèche kliyan oswa nimewo kont…" aria-label="Chèche kont" value="${h(filtEpay)}" autocomplete="off">
       <label class="tx-sel"><span>Triye pa</span><select id="kx-tri">${KX_TRI.map(([k, l]) => `<option value="${k}" ${k === kxF.tri ? "selected" : ""}>${t(l)}</option>`).join("")}</select></label>
@@ -896,22 +936,26 @@ function ctxKontRow(M, k, sekyon, swiviJodi) {
   };
 }
 async function viewEpay() {
-  const M = await S.model();
+  const M0 = await S.model();
+  const sk = pòtfèy || skòp(M0); // Kont sèlman: tranzaksyon ak fidbak yo rete sou tout done ajan an wè
+  const M = sk === "mwen" ? modèlPòtfèy(M0) : M0;
   ajans = (await db.meta("ajans")) || {};
   const man = estManager();
-  const enAtant = [...M.demandes.values()].filter((x) => x.statut === "en_attente").sort((a, b) => String(a.capture_le).localeCompare(String(b.capture_le)));
+  const enAtant = [...M0.demandes.values()].filter((x) => x.statut === "en_attente").sort((a, b) => String(a.capture_le).localeCompare(String(b.capture_le)));
   if (ongEpay === "valid" && !man) ongEpay = "kont";
-  const swivis = [...M.suivis.values()].sort((a, b) => String(b.capture_le).localeCompare(String(a.capture_le)));
+  const swivis = [...M0.suivis.values()].sort((a, b) => String(b.capture_le).localeCompare(String(a.capture_le)));
   const jouSwivi = (x) => S.jouLokal(new Date(x.capture_le));
   const semenDe = S.ajouteJou(M.today, -6);
   const nFbJodi = swivis.filter((x) => jouSwivi(x) === M.today).length, nFbSemen = swivis.filter((x) => jouSwivi(x) >= semenDe).length;
-  const modifAtant = [...M.modif.values()].filter((x) => x.statut === "an_atant" && x.kind === "kliyan").sort((a, b) => String(a.kreye_le).localeCompare(String(b.kreye_le)));
+  const modifAtant = [...M0.modif.values()].filter((x) => x.statut === "an_atant" && x.kind === "kliyan").sort((a, b) => String(a.kreye_le).localeCompare(String(b.kreye_le)));
   const ongs = [["kont", "Kont", null], ["tx", "Tranzaksyon", null], ["fidbak", "Fidbak", nFbJodi || null], ...(man ? [["valid", "Validasyon", modifAtant.length || null]] : [])];
   const st = statsEpay(M);
-  const swiviJodi = new Map([...M.suivis.values()].filter((x) => S.jouLokal(new Date(x.capture_le)) === M.today).map((x) => [x.id_compte_epargne, x.motif]));
+  const swiviJodi = new Map([...M0.suivis.values()].filter((x) => S.jouLokal(new Date(x.capture_le)) === M.today).map((x) => [x.id_compte_epargne, x.motif]));
   const pouJodi = [...M.comptes.values()].filter((k) => k._jodiPeman).sort((a, b) => (a._jodi >= a.montant_plan) - (b._jodi >= b.montant_plan));
   const aktif = [...M.comptes.values()].filter((k) => k._actif)
     .sort((a, b) => non(M.clients.get(a.id_personne)).localeCompare(non(M.clients.get(b.id_personne))));
+  const aktifTout = [...M0.comptes.values()].filter((k) => k._actif);
+  const ekKont = { sk, M0, tout: aktifTout, chwa: chwaPòtfèy(M0, { sk, tout: "Tout kliyan" }) };
   const P = L().parts;
   const rowsKont = () => {
     const v = filtEpay.trim().toLowerCase();
@@ -924,48 +968,49 @@ async function viewEpay() {
     ...ctxBase(M), isoJou: S.isoJou(M.today), ong: ongEpay, ongs, stats: st, filt: filtKont, q: filtEpay, nJodi: pouJodi.length, nKont: aktif.length, nEnAtant: enAtant.length,
     jodiHtml: pouJodi.map((k) => P.kontRow(ctxKontRow(M, k, "jodi", swiviJodi))).join(""), kontHtml: rowsKont(),
     txHtml: "", demannHtml: "", validHtml: "", fidbakHtml: "", fidbakFilt: "", fidbakVid: "", nFidbak: 0, filtFb: filtFidbak,
-    kontSeksyon: ongEpay === "kont" ? seksyonKont(M, aktif, swiviJodi, st) : "", fidbakSeksyon: "",
+    kontSeksyon: ongEpay === "kont" ? seksyonKont(M, aktif, swiviJodi, st, ekKont) : "", fidbakSeksyon: "",
   };
   if (ongEpay === "fidbak") {
     const lis = swivis.filter((x) => (filtFidbak === "jodi" ? jouSwivi(x) === M.today : filtFidbak === "semen" ? jouSwivi(x) >= semenDe : true));
     const FF = [["jodi", "Jodi a", nFbJodi], ["semen", "7 jou", nFbSemen], ["tout", "Tout", swivis.length]];
     ctx.fidbakFilt = `<div class="chips filt" role="group" aria-label="Filt fidbak">${FF.map(([v, l, n]) => `<button type="button" class="chip ${filtFidbak === v ? "on" : ""}" data-ffb="${v}" aria-pressed="${filtFidbak === v}">${l}<small>${n}</small></button>`).join("")}</div>`;
-    ctx.fidbakHtml = lis.map((x) => liSwivi(M, x)).join("");
+    ctx.fidbakHtml = lis.map((x) => liSwivi(M0, x)).join("");
     ctx.nFidbak = lis.length;
     ctx.fidbakVid = filtFidbak === "jodi" ? "Pa gen fidbak jodi a." : filtFidbak === "semen" ? "Pa gen fidbak nan 7 dènye jou yo." : "Poko gen fidbak.";
-    ctx.fidbakSeksyon = seksyonFb(M, swivis, semenDe, FF);
+    ctx.fidbakSeksyon = seksyonFb(M0, swivis, semenDe, FF);
   }
   if (ongEpay === "tx") {
-    const mesDm = [...M.demandes.values()].filter((x) => man || x.agent_id === moi.id || x.agent_id === "moi")
+    const mesDm = [...M0.demandes.values()].filter((x) => man || x.agent_id === moi.id || x.agent_id === "moi")
       .sort((a, b) => String(b.capture_le).localeCompare(String(a.capture_le))).slice(0, 20);
-    const mesModif = [...M.modif.values()].filter((x) => man || mwenSe(x.agent_id)).sort((a, b) => String(b.kreye_le).localeCompare(String(a.kreye_le))).slice(0, 20);
-    ctx.demannHtml = mesDm.map((x) => liDemande(M, x)).join("") + mesModif.map((x) => liModif(M, x)).join("");
-    ctx.txHtml = seksyonTx(M);
+    const mesModif = [...M0.modif.values()].filter((x) => man || mwenSe(x.agent_id)).sort((a, b) => String(b.kreye_le).localeCompare(String(a.kreye_le))).slice(0, 20);
+    ctx.demannHtml = mesDm.map((x) => liDemande(M0, x)).join("") + mesModif.map((x) => liModif(M0, x)).join("");
+    ctx.txHtml = seksyonTx(M0);
   }
   if (ongEpay === "valid") {
     ctx.validNote = t("Demann modifikasyon fich kliyan yo. Depo, retrè, viman ak modifikasyon tranzaksyon yo ale kay responsab kès la.");
-    ctx.validHtml = modifAtant.map((x) => liModif(M, x, { decide: true })).join("");
+    ctx.validHtml = modifAtant.map((x) => liModif(M0, x, { decide: true })).join("");
   }
   $app.innerHTML = `<div id="epay">${P.epay(ctx)}</div>`;
   // Apre yon klik sou onglè/filt, paj la re-rann: remete fokis la sou menm bouton an (klavye / lektè ekran).
   const reRann = (sel) => viewEpay().then(() => requestAnimationFrame(() => $app.querySelector(sel)?.focus({ preventScroll: true })));
   $app.querySelectorAll("[data-ong]").forEach((b) => (b.onclick = () => { ongEpay = b.dataset.ong; reRann(`[data-ong="${ongEpay}"]`); }));
+  $app.querySelectorAll("[data-potfey]").forEach((b) => (b.onclick = () => { pòtfèy = b.dataset.potfey; reRann(`[data-potfey="${pòtfèy}"]`); }));
   $app.querySelectorAll("[data-filt]").forEach((b) => (b.onclick = () => { filtKont = b.dataset.filt; reRann(`[data-filt="${filtKont}"]`); }));
   $app.querySelectorAll("[data-ffb]").forEach((b) => (b.onclick = () => { filtFidbak = b.dataset.ffb; reRann(`[data-ffb="${filtFidbak}"]`); }));
   const q = document.getElementById("q");
-  const rannKont = () => { const box = document.getElementById("kont"); if (!box) return; const r = lisKont(M, aktif, swiviJodi, filtEpay.trim().toLowerCase()); box.innerHTML = r.html; document.getElementById("kx-n").textContent = r.n; brancherKont(); };
+  const rannKont = () => { const box = document.getElementById("kont"); if (!box) return; const v = filtEpay.trim().toLowerCase(), r = lisKont(v ? M0 : M, v ? aktifTout : aktif, swiviJodi, v); box.innerHTML = r.html; document.getElementById("kx-n").textContent = r.n; brancherKont(); };
   if (q) q.oninput = () => { filtEpay = q.value; rannKont(); };
   const kxTri = document.getElementById("kx-tri"); if (kxTri) kxTri.onchange = () => { kxF.tri = kxTri.value; rannKont(); };
-  const rannFb = () => { const r = lisFb(M, swivis, semenDe); document.getElementById("fidbak-list").innerHTML = r.html; document.getElementById("fb-n").textContent = r.n; };
+  const rannFb = () => { const r = lisFb(M0, swivis, semenDe); document.getElementById("fidbak-list").innerHTML = r.html; document.getElementById("fb-n").textContent = r.n; };
   const fbq = document.getElementById("fb-q"); if (fbq) fbq.oninput = () => { fbF.q = fbq.value; rannFb(); };
   for (const [id, cle] of [["fb-tri", "tri"], ["fb-motif", "motif"], ["fb-kw", "kw"]]) { const e = document.getElementById(id); if (e) e.onchange = () => { fbF[cle] = e.value; rannFb(); }; }
-  const brancherKont = () => $app.querySelectorAll("[data-papeye]").forEach((b) => (b.onclick = () => { const k = M.comptes.get(b.dataset.papeye); paPeye(k, M.clients.get(k.id_personne) || {}); }));
+  const brancherKont = () => $app.querySelectorAll("[data-papeye]").forEach((b) => (b.onclick = () => { const k = M0.comptes.get(b.dataset.papeye); paPeye(k, M0.clients.get(k.id_personne) || {}); }));
   brancherKont();
-  brancheTx(M);
-  $app.querySelectorAll("[data-ok]").forEach((b) => (b.onclick = () => decider(M, b.dataset.ok, true)));
-  $app.querySelectorAll("[data-non]").forEach((b) => (b.onclick = () => decider(M, b.dataset.non, false)));
-  $app.querySelectorAll("[data-mok]").forEach((b) => (b.onclick = () => decideModif(M, b.dataset.mok, true)));
-  $app.querySelectorAll("[data-mnon]").forEach((b) => (b.onclick = () => decideModif(M, b.dataset.mnon, false)));
+  brancheTx(M0);
+  $app.querySelectorAll("[data-ok]").forEach((b) => (b.onclick = () => decider(M0, b.dataset.ok, true)));
+  $app.querySelectorAll("[data-non]").forEach((b) => (b.onclick = () => decider(M0, b.dataset.non, false)));
+  $app.querySelectorAll("[data-mok]").forEach((b) => (b.onclick = () => decideModif(M0, b.dataset.mok, true)));
+  $app.querySelectorAll("[data-mnon]").forEach((b) => (b.onclick = () => decideModif(M0, b.dataset.mnon, false)));
 }
 
 // ---------- 4. Rapò ajan an (3 dènye jou) ----------

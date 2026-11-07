@@ -608,3 +608,6 @@ html[data-look] .login h1.wordmark::after { content: ""; position: absolute; lef
 .ekip-kont { margin-top: 18px; }
 @media (min-width: 720px) { .ekip-g { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (min-width: 1440px) { .ekip-g { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+/* Pòtfèy: «Pòtfèy mwen / Tout» */
+.chips.filt.potfey-ch, html[data-look] .chips.filt.potfey-ch { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: 460px; margin: 4px 0 6px; }
+.potfey-not { margin: 0 0 12px; }
