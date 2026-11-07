@@ -29,7 +29,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "4.32";
+const APP_VERSION = "4.33";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin", kesye: "Responsab kès" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
@@ -577,13 +577,14 @@ const CHAN_KLIYAN = [["prenom", "Prenon"], ["nom", "Non"], ["telephone", "Telef�
   ["activite", "Aktivite"], ["point_de_vente", "Pwen de vant"], ["capacite_distribution", "Kapasite distribisyon"], ["gps", "Pozisyon GPS"]];
 const CHAN_TX = [["montant", "Montan"], ["solde_avant_declare", "Balans kanè avan"], ["solde_declare", "Balans kanè apre"], ["type_frais", "Tip frè"], ["note", "Nòt"]];
 const CHAN_CYCLE = [["duree_mois", "Dire"], ["frequence_semaine", "Frekans"], ["jours_paiement", "Jou peman"], ["montant_plan", "Plan"], ["date_debut", "Dat kòmansman"]];
-const etikètChan = (kind, k) => ((kind === "kliyan" ? CHAN_KLIYAN : kind === "cycle" ? CHAN_CYCLE : CHAN_TX).find(([x]) => x === k) || [k, k])[1];
+const CHAN_POTFEY = [["ajan", "Ajan pòtfèy"]];
+const etikètChan = (kind, k) => ((kind === "kliyan" ? CHAN_KLIYAN : kind === "cycle" ? CHAN_CYCLE : kind === "potfey" ? CHAN_POTFEY : CHAN_TX).find(([x]) => x === k) || [k, k])[1];
 const mwenSe = (id) => id === moi?.id || id === "moi";
 const otorizasyon = (M, kind, ref) => [...M.modif.values()].find((x) => x.kind === kind && x.ref_id === ref && x.operasyon === "modifye" && x.statut === "apwouve" && mwenSe(x.agent_id));
 const demannModif = (M, kind, ref) => [...M.modif.values()].find((x) => x.kind === kind && x.ref_id === ref && x.statut === "an_atant");
 function ciblModif(M, kind, ref) {
   if (kind === "kliyan") return non(M.clients.get(ref));
-  if (kind === "cycle") { const k = M.comptes.get(ref); return `${t("Cycle")} ${k?.no_compte || ""} · ${non(k && M.clients.get(k.id_personne))}`; }
+  if (kind === "cycle" || kind === "potfey") { const k = M.comptes.get(ref); return `${t(kind === "potfey" ? "Pòtfèy" : "Cycle")} ${k?.no_compte || ""} · ${non(k && M.clients.get(k.id_personne))}`; }
   const tx = M.txs.get(ref); const k = tx && M.comptes.get(tx.id_compte_epargne);
   return tx ? `${t(LABEL_TX[S.txKind(tx)])} ${gd(tx.montant)} · ${non(k && M.clients.get(k.id_personne))}` : t("Tranzaksyon");
 }
@@ -594,7 +595,7 @@ function chanTx(tx) {
 function liModif(M, x, { decide = false } = {}) {
   const ETA = { an_atant: ["warn", "An atant"], apwouve: ["ok", "Apwouve: ou ka modifye"], refize: ["err", "Refize"], itilize: ["mut", "Fèt"], fini: ["mut", "Fèt"] };
   const [kl, et] = ETA[x.statut] || ["mut", x.statut];
-  const href = x.kind === "kliyan" ? `#/kliyan/${x.ref_id}` : x.kind === "cycle" ? `#/cycle/${x.ref_id}` : (() => { const tx = M.txs.get(x.ref_id); return tx ? `#/cycle/${tx.id_compte_epargne}` : "#/epay"; })();
+  const href = x.kind === "kliyan" ? `#/kliyan/${x.ref_id}` : x.kind === "cycle" || x.kind === "potfey" ? `#/cycle/${x.ref_id}` : (() => { const tx = M.txs.get(x.ref_id); return tx ? `#/cycle/${tx.id_compte_epargne}` : "#/epay"; })();
   const ki = x.operasyon === "siprime" ? (x.kind === "tx" ? t("Anile tranzaksyon an") : t("Retire kliyan an nan Grandon")) : `${t("Modifye")}: ${(x.chan || []).map((k) => t(etikètChan(x.kind, k))).join(", ")}`;
   return `<div class="row col modif">
     <div><a href="${href}"><b>${x.kind === "kliyan" ? d(ciblModif(M, x.kind, x.ref_id)) : h(ciblModif(M, x.kind, x.ref_id))}</b></a> <span class="badge ${kl}">${t(et)}</span> ${x._pending ? `<span class="badge pend">${t("Poko voye")}</span>` : ""}
@@ -1566,6 +1567,28 @@ async function viewCycleNew(idPersonne, kontId = null) {
   };
 }
 
+// Manadjè / admin: mete kont lan nan pòtfèy yon lòt ajan (depo yo pa chanje).
+async function chanjeAjanPòtfèy(k, c) {
+  if (!navigator.onLine) return ui.info("Pa gen koneksyon.", "Fòk ou gen entènèt pou chanje ajan pòtfèy la.");
+  const avan = nomAjan(k.created_by) || t("San ajan");
+  const ekip = ((await db.meta("ekip")) || []).filter((a) => a.actif !== false && ["agent", "manager", "admin"].includes(a.role) && a.user_id !== k.created_by)
+    .sort((a, b) => (a.role === "agent" ? 0 : 1) - (b.role === "agent" ? 0 : 1) || a.nom.localeCompare(b.nom, "fr"));
+  if (!ekip.length) return ui.info("Pa gen lòt ajan.", "");
+  const r = await ui.askChoice({ titre: "Chanje ajan pòtfèy", tekst: `${non(c)} · ${k.no_compte || ""} — ${t("Ajan kounye a")}: ${avan}`,
+    options: ekip.map((a) => [a.user_id, `${a.nom}${a.role !== "agent" ? ` (${t(WOL[a.role] || a.role)})` : ""}`]), noteLabel: "Rezon (opsyonèl)", ok: "Kontinye" });
+  if (!r?.valeur) return;
+  const nouvo = ekip.find((a) => a.user_id === r.valeur);
+  if (!(await ui.ask({ titre: "Chanje ajan pòtfèy la?", foto: c.photo_url, ok: "Chanje ajan",
+    tekst: t("Kliyan an ap parèt nan pòtfèy nouvo ajan an (Tablo, Kont, Ekip). Depo ki deja fèt yo pa chanje."),
+    detay: [["Kliyan", non(c)], ["Kont", k.no_compte || "—"], ["Ajan pòtfèy", `${avan} → ${nouvo.nom}`]] }))) return;
+  try {
+    const res = await api.rpc("grandon_kont_chanje_ajan", { p_compte: k.id_compte_epargne, p_agent: nouvo.user_id, p_rezon: r.note || null });
+    await S.pull();
+    toast(res?.chanje === false ? t("Pa gen anyen ki chanje.") : `${t("Pòtfèy")}: ${nouvo.nom} ✓`, res?.chanje === false ? "info" : "ok");
+    viewCycle(k.id_compte_epargne);
+  } catch (e) { toast(t(e.message), "err"); }
+}
+
 // ---------- Fich cycle ----------
 async function viewCycle(id) {
   const M = await S.model();
@@ -1583,6 +1606,8 @@ async function viewCycle(id) {
   };
   $app.innerHTML = `<div id="cycle">${L().parts.cycleTop(ctx)}
   ${man && !k._pending ? `<a class="btn block cycle-mod" href="#/cycle/${h(k.id_compte_epargne)}/modifye">${ICO.modifye || ""}<span>${t("Modifye cycle a")}</span></a>` : ""}
+  ${man && !k._pending ? `<div class="card potfey-k"><div class="grow"><span class="mut sm">${t("Ajan pòtfèy")}</span><b data-brut>${h(nomAjan(k.created_by) || t("San ajan"))}</b></div>
+    <button type="button" class="btn sm" id="chanje-ajan">${t("Chanje ajan")}</button></div>` : ""}
   ${man && !k.frequence_semaine && !k._pending ? `<p class="note warn">${t("Cycle sa a pa gen frekans ni jou peman: kalandriye peman an vid. Peze «Modifye cycle a» pou mete yo.")}</p>` : ""}
   ${seksyonAlet([k], man)}
   ${k._demandes.length ? `<h2>Demann retrè ak viman</h2><div class="list">${k._demandes.map((x) => liDemande(M, x)).join("")}</div>` : ""}
@@ -1593,6 +1618,7 @@ async function viewCycle(id) {
   <p class="mut sm">${t("Peze sou yon tranzaksyon pou mande otorizasyon pou modifye oswa anile l.")}</p>
   <div class="list">${k._txs.map((x) => liTx(M, x, { kliyan: false, bouton: true })).join("") || `<p class="empty">Poko gen tranzaksyon.</p>`}</div></div>`;
   document.getElementById("papeye")?.addEventListener("click", () => paPeye(k, c));
+  document.getElementById("chanje-ajan")?.addEventListener("click", () => chanjeAjanPòtfèy(k, c));
   $app.querySelectorAll("[data-tx]").forEach((b) => (b.onclick = () => aksyonTx(M, b.dataset.tx)));
   brancherAlet(M);
   montreAlet(M, [k]);
@@ -2154,7 +2180,7 @@ async function viewIstorik() {
       <div><span>${t("Refize yo")}</span><b>${kont(["refize"])}</b></div><div><span>${t("Modifikasyon fèt")}</span><b>${kont(["aplike", "dirèk", "dirèk_kes"])}</b></div>
       <div><span>${t("Anilasyon")}</span><b>${kont(["anile", "anile_dirèk"])}</b></div></div>
     <div class="list ist-lis">${ev.map((e) => { const [kl, et] = TIP[e.tip]; const x = e.x;
-      const href = x.kind === "kliyan" ? `#/kliyan/${x.ref_id}` : x.kind === "cycle" ? `#/cycle/${x.ref_id}` : (() => { const tx = M.txs.get(x.ref_id); return tx ? `#/cycle/${tx.id_compte_epargne}` : "#/epay"; })();
+      const href = x.kind === "kliyan" ? `#/kliyan/${x.ref_id}` : x.kind === "cycle" || x.kind === "potfey" ? `#/cycle/${x.ref_id}` : (() => { const tx = M.txs.get(x.ref_id); return tx ? `#/cycle/${tx.id_compte_epargne}` : "#/epay"; })();
       const ki = x.operasyon === "siprime" ? (x.kind === "tx" ? t("Anile tranzaksyon an") : t("Retire kliyan an nan Grandon")) : (x.chan || []).map((k) => t(etikètChan(x.kind, k))).join(", ");
       return `<div class="row col ist">
         <div><b class="mono">${lèKout(e.le)}</b> <span class="badge ${kl}">${t(et)}</span> <a href="${href}">${x.kind === "kliyan" ? d(ciblModif(M, x.kind, x.ref_id)) : h(ciblModif(M, x.kind, x.ref_id))}</a></div>
