@@ -210,6 +210,7 @@ const FR = {
   "Demann modifikasyon fich kliyan yo. Depo, retrè, viman ak modifikasyon tranzaksyon yo ale kay responsab kès la.": "Demandes de modification des fiches clients. Dépôts, retraits, virements et modifications de transactions vont au responsable de caisse.",
   "Peze sou yon tranzaksyon pou mande otorizasyon pou modifye oswa anile l.": "Touchez une transaction pour demander l'autorisation de la modifier ou de l'annuler.",
   "Modifikasyon dirèk responsab kès": "Modification directe du responsable de caisse",
+  "Balans kont": "Le solde du compte", "ta vin negatif": "deviendrait négatif", "Balans disponib": "Solde disponible",
   // Modpas ak aparèy
   "Chanje modpas mwen": "Changer mon mot de passe", "Chwazi pwòp modpas ou": "Choisissez votre mot de passe",
   "Modpas ou resevwa a se yon modpas tanporè. Chwazi yon modpas pa w anvan w kontinye: se ou sèl ki pou konnen l.": "Le mot de passe reçu est temporaire. Choisissez votre propre mot de passe avant de continuer : vous seul devez le connaître.",
