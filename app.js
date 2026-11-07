@@ -29,7 +29,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "4.20";
+const APP_VERSION = "4.21";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
@@ -636,6 +636,127 @@ function seksyonTx(M) {
     </div>
     <div id="tx-kò">${r.html}${r.plis ? `<button type="button" class="btn block" id="tx-plis">${t("Montre plis")}</button>` : ""}</div></section>`;
 }
+// ---------- Lis kont (Epay → Kont): menm prensip — yon sèl kolòn, dènye depo (dat + lè), tri, gwoup ----------
+const KX_TRI = [["priyorite", "Priyorite (jodi a anvan)"], ["kliyan", "Kliyan (A → Z)"], ["dennye", "Dènye depo (pi resan)"], ["ansyen", "Dènye depo (pi ansyen)"],
+  ["reta", "Pi plis pou rekipere"], ["plan", "Plan pi gwo"], ["pwogre", "Pwogrè pi ba"]];
+const kxF = { tri: "priyorite" };
+const dennyeDepo = (k) => k._txs?.find((x) => S.txKind(x) === "depo" && x.validation_status !== "rejected") || null;
+function koleLè(M, x) { // [lè, ti dat] pou kolòn agòch la
+  if (!x) return ["—", t("Pa gen depo")];
+  const j = S.jouTx(x);
+  return [lèKout(x.date_transaction) || "—", j === M.today ? t("jodi a") : j === S.ajouteJou(M.today, -1) ? t("yè") : datKout(j)];
+}
+function rowKont(M, k, swiviJodi) {
+  const c = M.clients.get(k.id_personne) || {}, id = k.id_compte_epargne, plan = Number(k.montant_plan || 0);
+  const ok = k._jodi >= plan, fb = swiviJodi.get(id), dx = dennyeDepo(k), [lèD, jouD] = koleLè(M, dx);
+  const np = k._joursPeye.size, nv = k._prevuTotal;
+  const badj = [k._jodiPeman ? (ok ? `<span class="badge ok">${t("Peye jodi a")}</span>` : `<span class="badge info">${t("Peman jodi a")}</span>`) : "",
+    k._anReta > 0 ? `<span class="badge err">${t("An reta")}</span>` : "", fb && !ok ? `<span class="badge warn">${t("Fidbak anrejistre")} · ${t(MOTIF_KOUT[fb] || "Lòt")}</span>` : "", badgePend(k)].join(" ");
+  const aksyon = k._jodiPeman && !ok
+    ? `<a class="btn sm pri" href="#/tx/nouvo/${h(id)}">Depo</a><button type="button" class="btn sm" data-papeye="${h(id)}">Pa peye</button>`
+    : ok && k._jodiPeman ? `<b class="in">✓ ${gd(k._jodi)}</b><a class="btn sm" href="#/tx/nouvo/${h(id)}">Depo</a>` : `<a class="btn sm pri" href="#/tx/nouvo/${h(id)}">Depo</a>`;
+  return `<div class="row kxr${ok && k._jodiPeman ? " kxr-ok" : ""}" data-kx="${h(id)}">
+    <span class="txr-le" title="${h(t("Dènye depo"))}"><b class="mono">${lèD}</b><small>${jouD}</small></span>
+    <a class="kxr-main lnk" href="#/cycle/${h(id)}">
+      <span class="txr-t"><b>${d(non(c))}</b> ${badj}</span>
+      <span class="mut sm">${d(k.no_compte || t("Cycle poko voye"))} · plan ${gd(plan)}${k.frequence_semaine ? ` · ${k.frequence_semaine}×/sem · ${lisJou(k.jours_paiement)}` : ""}</span>
+      <span class="sm kxr-v"><b>${np}/${nv ?? "?"}</b> ${t("vèsman")}${k._aRekipere > 0 ? ` · <span class="err-t">${F.rekipere(k._aRekipere, k._anReta)}</span>` : ""}${estManager() && k._solde != null ? ` · ${t("Balans")}: <b>${gd(k._solde)}</b>` : ""}</span>
+      ${nv ? `<span class="kxr-bar" aria-hidden="true"><i style="width:${k._pwosan || 0}%"></i></span>` : ""}</a>
+    <span class="kxr-ak">${aksyon}</span></div>`;
+}
+function lisKont(M, aktif, swiviJodi, v) {
+  const l = aktif.filter((k) => (filtKont === "jodi" ? k._jodiPeman : filtKont === "reta" ? k._anReta > 0 : filtKont === "rete" ? k._jodiPeman && k._jodi < Number(k.montant_plan || 0)
+      : filtKont === "peye" ? k._jodiPeman && k._jodi >= Number(k.montant_plan || 0) : true))
+    .filter((k) => !v || non(M.clients.get(k.id_personne)).toLowerCase().includes(v) || String(k.no_compte || "").toLowerCase().includes(v));
+  const nm = (k) => non(M.clients.get(k.id_personne));
+  const dd = (k) => String(dennyeDepo(k)?.date_transaction || "");
+  const CMP = { kliyan: (a, b) => nm(a).localeCompare(nm(b), "fr"), dennye: (a, b) => dd(b).localeCompare(dd(a)) || nm(a).localeCompare(nm(b), "fr"),
+    ansyen: (a, b) => (dd(a) || "~").localeCompare(dd(b) || "~") || nm(a).localeCompare(nm(b), "fr"),
+    reta: (a, b) => (b._aRekipere || 0) - (a._aRekipere || 0) || nm(a).localeCompare(nm(b), "fr"),
+    plan: (a, b) => Number(b.montant_plan || 0) - Number(a.montant_plan || 0) || nm(a).localeCompare(nm(b), "fr"),
+    pwogre: (a, b) => (a._pwosan || 0) - (b._pwosan || 0) || nm(a).localeCompare(nm(b), "fr") };
+  const rann = (xs) => `<div class="list tx-lis">${xs.map((k) => rowKont(M, k, swiviJodi)).join("")}</div>`;
+  let html = "";
+  if (kxF.tri === "priyorite") {
+    const plan = (k) => Number(k.montant_plan || 0);
+    const G = [["rete", "Peman jodi a · poko peye", (k) => k._jodiPeman && k._jodi < plan(k)], ["reta", "An reta", (k) => !k._jodiPeman && k._anReta > 0],
+      ["peye", "Peye jodi a", (k) => k._jodiPeman && k._jodi >= plan(k)], ["lot", "Lòt kont aktif", () => true]];
+    const rest = [...l].sort(CMP.kliyan);
+    for (const [cle, tit, f] of G) {
+      const xs = rest.filter(f); if (!xs.length) continue;
+      xs.forEach((k) => rest.splice(rest.indexOf(k), 1));
+      const som = cle === "rete" ? xs.reduce((a, k) => a + plan(k) - (k._jodi || 0), 0) : cle === "reta" ? xs.reduce((a, k) => a + (k._aRekipere || 0), 0)
+        : cle === "peye" ? xs.reduce((a, k) => a + (k._jodi || 0), 0) : 0;
+      const somTxt = !som ? "" : cle === "peye" ? ` · ${t("kolekte")} <b class="in">${gd(som)}</b>` : ` · <b class="err-t">${gd(som)}</b> ${t(cle === "rete" ? "pou kolekte" : "pou rekipere")}`;
+      html += `<section class="txj kxg-${cle}"><div class="txj-h"><h3>${t(tit)}</h3><span class="mut sm">${xs.length} ${t("kont")}${somTxt}</span></div>${rann(xs)}</section>`;
+    }
+  } else html = rann(l.sort(CMP[kxF.tri] || CMP.kliyan));
+  return { html: html || `<p class="empty">${v || filtKont !== "tout" ? t("Anyen pa koresponn.") : t("Pa gen kont ak cycle aktif.")}</p>`, n: l.length };
+}
+function seksyonKont(M, aktif, swiviJodi, st) {
+  const r = lisKont(M, aktif, swiviJodi, filtEpay.trim().toLowerCase());
+  const nRete = aktif.filter((k) => k._jodiPeman && k._jodi < Number(k.montant_plan || 0)).length;
+  const FILT = [["tout", "Tout", aktif.length], ["jodi", "Peman jodi a", st.pouJodi], ["rete", "Poko peye", nRete], ["peye", "Peye jodi a", st.peye], ["reta", "An reta", st.anReta]];
+  return `<section class="tx-seksyon kx-seksyon"><h2>Kont ak cycle aktif <small id="kx-n">${r.n}</small></h2>
+    <div class="tx-tool kx-tool">
+      <input id="q" type="search" class="search" placeholder="Chèche kliyan oswa nimewo kont…" aria-label="Chèche kont" value="${h(filtEpay)}" autocomplete="off">
+      <label class="tx-sel"><span>Triye pa</span><select id="kx-tri">${KX_TRI.map(([k, l]) => `<option value="${k}" ${k === kxF.tri ? "selected" : ""}>${t(l)}</option>`).join("")}</select></label>
+    </div>
+    <div class="chips filt kx-filt" role="group" aria-label="Filt">${FILT.map(([v, l, n]) => `<button type="button" class="chip ${filtKont === v ? "on" : ""}" data-filt="${v}" aria-pressed="${filtKont === v}">${t(l)}<small>${n}</small></button>`).join("")}</div>
+    <div id="kont">${r.html}</div></section>`;
+}
+
+// ---------- Lis fidbak (Epay → Fidbak): yon sèl kolòn, lè, tri, filt, gwoupe pa jou ----------
+const FB_TRI = [["dat_desc", "Pi resan anvan"], ["dat_asc", "Pi ansyen anvan"], ["kliyan", "Kliyan (A → Z)"]];
+const fbF = { tri: "dat_desc", motif: "", kw: "", q: "" };
+function rowFb(M, x) {
+  const k = M.comptes.get(x.id_compte_epargne), c = k && M.clients.get(k.id_personne), ajan = nomAjan(x.agent_id);
+  const j = S.jouLokal(new Date(x.capture_le));
+  return `<a class="row txr fbr" href="#/cycle/${h(x.id_compte_epargne)}">
+    <span class="txr-le"><b class="mono">${lèKout(x.capture_le) || "—"}</b>${fbF.tri === "kliyan" ? `<small>${j === M.today ? t("jodi a") : datKout(j)}</small>` : ""}</span>
+    <span class="txr-main"><span class="txr-t"><b>${d(non(c))}</b> <span class="badge warn">${t(MOTIF_KOUT[x.motif] || "Lòt")}</span> ${badgePend(x)} ${estManager() ? badjKontwol(x) : ""}</span>
+      <span class="sm rezon">${t(motifLabel(x.motif))}</span>
+      <span class="mut sm txr-d">${d(k?.no_compte || t("Cycle poko voye"))}${ajan ? ` · <span data-brut>${h(ajan)}</span>` : ""}</span>
+      ${x.note ? `<span class="sm nòt">«${d(x.note)}»</span>` : ""}
+      ${x._error ? `<span class="err-msg sm">${d(t(x._error))}</span>` : ""}</span></a>`;
+}
+function lisFb(M, swivis, semenDe) {
+  const jou = (x) => S.jouLokal(new Date(x.capture_le));
+  const v = fbF.q.trim().toLowerCase();
+  const nm = (x) => { const k = M.comptes.get(x.id_compte_epargne); return non(k && M.clients.get(k.id_personne)); };
+  const l = swivis.filter((x) => (filtFidbak === "jodi" ? jou(x) === M.today : filtFidbak === "semen" ? jou(x) >= semenDe : true))
+    .filter((x) => !fbF.motif || (fbF.motif === "lot" ? !MOTIF_KOUT[x.motif] || x.motif === "lot" : x.motif === fbF.motif))
+    .filter((x) => !fbF.kw || (fbF.kw === "sispek" ? S.swiviSispèk(x) : x.kontwol === "ok"))
+    .filter((x) => !v || nm(x).toLowerCase().includes(v) || String(M.comptes.get(x.id_compte_epargne)?.no_compte || "").toLowerCase().includes(v));
+  const dat = (x) => String(x.capture_le || "");
+  l.sort(fbF.tri === "dat_asc" ? (a, b) => dat(a).localeCompare(dat(b)) : fbF.tri === "kliyan" ? (a, b) => nm(a).localeCompare(nm(b), "fr") || dat(b).localeCompare(dat(a)) : (a, b) => dat(b).localeCompare(dat(a)));
+  let html = "";
+  if (fbF.tri !== "kliyan") {
+    const gr = new Map();
+    for (const x of l) { const j = jou(x); if (!gr.has(j)) gr.set(j, []); gr.get(j).push(x); }
+    for (const [j, xs] of gr) {
+      const nSis = estManager() ? xs.filter((x) => S.swiviSispèk(x)).length : 0;
+      html += `<section class="txj"><div class="txj-h"><h3>${jouLabel(M, j)}</h3><span class="mut sm">${xs.length} ${t("fidbak")}${nSis ? ` · <b class="err-t">${nSis} ${t("pa kote kliyan an")}</b>` : ""}</span></div>
+        <div class="list tx-lis">${xs.map((x) => rowFb(M, x)).join("")}</div></section>`;
+    }
+  } else html = `<div class="list tx-lis">${l.map((x) => rowFb(M, x)).join("")}</div>`;
+  const vid = v || fbF.motif || fbF.kw ? t("Anyen pa koresponn.") : t(filtFidbak === "jodi" ? "Pa gen fidbak jodi a." : filtFidbak === "semen" ? "Pa gen fidbak nan 7 dènye jou yo." : "Poko gen fidbak.");
+  return { html: html || `<p class="empty">${vid}</p>`, n: l.length };
+}
+function seksyonFb(M, swivis, semenDe, FF) {
+  const r = lisFb(M, swivis, semenDe);
+  const sel = (id, lbl, L, v) => `<label class="tx-sel"><span>${t(lbl)}</span><select id="${id}">${L.map(([k, l]) => `<option value="${k}" ${k === v ? "selected" : ""}>${t(l)}</option>`).join("")}</select></label>`;
+  return `<section class="tx-seksyon fb-seksyon"><h2>Fidbak yo <small id="fb-n">${r.n}</small></h2>
+    <p class="mut sm sub">Sa kliyan yo di lè yo pa peye (bouton «Pa peye»).</p>
+    <div class="chips filt" role="group" aria-label="Filt fidbak">${FF.map(([v, l, n]) => `<button type="button" class="chip ${filtFidbak === v ? "on" : ""}" data-ffb="${v}" aria-pressed="${filtFidbak === v}">${l}<small>${n}</small></button>`).join("")}</div>
+    <div class="tx-tool${estManager() ? "" : " fb-tool-3"}">
+      <input id="fb-q" type="search" class="search" placeholder="Chèche kliyan oswa nimewo kont…" aria-label="Chèche fidbak" value="${h(fbF.q)}" autocomplete="off">
+      ${sel("fb-tri", "Triye pa", FB_TRI, fbF.tri)}${sel("fb-motif", "Rezon", [["", "Tout rezon"], ...Object.entries(MOTIF_KOUT)], fbF.motif)}
+      ${estManager() ? sel("fb-kw", "Kote", [["", "Tout"], ["sispek", "Pa kote kliyan an"], ["ok", "Kote kliyan an"]], fbF.kw) : ""}
+    </div>
+    <div class="list-fb" id="fidbak-list">${r.html}</div></section>`;
+}
+
 function brancheTx(M) {
   const rann = () => {
     const r = lisTx(M);
@@ -682,10 +803,12 @@ async function viewEpay() {
       .filter((k) => !v || non(M.clients.get(k.id_personne)).toLowerCase().includes(v) || String(k.no_compte || "").toLowerCase().includes(v));
     return l.map((k) => P.kontRow(ctxKontRow(M, k, "aktif", swiviJodi))).join("") || `<p class="empty">${v || filtKont !== "tout" ? t("Anyen pa koresponn.") : t("Pa gen kont ak cycle aktif.")}</p>`;
   };
+  void rowsKont; // ansyen rann pa look (kontRow) — lis komen an (seksyonKont) ranplase l
   const ctx = {
     ...ctxBase(M), isoJou: S.isoJou(M.today), ong: ongEpay, ongs, stats: st, filt: filtKont, q: filtEpay, nJodi: pouJodi.length, nKont: aktif.length, nEnAtant: enAtant.length,
     jodiHtml: pouJodi.map((k) => P.kontRow(ctxKontRow(M, k, "jodi", swiviJodi))).join(""), kontHtml: rowsKont(),
     txHtml: "", demannHtml: "", validHtml: "", fidbakHtml: "", fidbakFilt: "", fidbakVid: "", nFidbak: 0, filtFb: filtFidbak,
+    kontSeksyon: ongEpay === "kont" ? seksyonKont(M, aktif, swiviJodi, st) : "", fidbakSeksyon: "",
   };
   if (ongEpay === "fidbak") {
     const lis = swivis.filter((x) => (filtFidbak === "jodi" ? jouSwivi(x) === M.today : filtFidbak === "semen" ? jouSwivi(x) >= semenDe : true));
@@ -694,6 +817,7 @@ async function viewEpay() {
     ctx.fidbakHtml = lis.map((x) => liSwivi(M, x)).join("");
     ctx.nFidbak = lis.length;
     ctx.fidbakVid = filtFidbak === "jodi" ? "Pa gen fidbak jodi a." : filtFidbak === "semen" ? "Pa gen fidbak nan 7 dènye jou yo." : "Poko gen fidbak.";
+    ctx.fidbakSeksyon = seksyonFb(M, swivis, semenDe, FF);
   }
   if (ongEpay === "tx") {
     const mesDm = [...M.demandes.values()].filter((x) => man || x.agent_id === moi.id || x.agent_id === "moi")
@@ -711,7 +835,12 @@ async function viewEpay() {
   $app.querySelectorAll("[data-filt]").forEach((b) => (b.onclick = () => { filtKont = b.dataset.filt; reRann(`[data-filt="${filtKont}"]`); }));
   $app.querySelectorAll("[data-ffb]").forEach((b) => (b.onclick = () => { filtFidbak = b.dataset.ffb; reRann(`[data-ffb="${filtFidbak}"]`); }));
   const q = document.getElementById("q");
-  if (q) q.oninput = () => { filtEpay = q.value; const box = document.getElementById("kont"); if (box) { box.innerHTML = rowsKont(); brancherKont(); } };
+  const rannKont = () => { const box = document.getElementById("kont"); if (!box) return; const r = lisKont(M, aktif, swiviJodi, filtEpay.trim().toLowerCase()); box.innerHTML = r.html; document.getElementById("kx-n").textContent = r.n; brancherKont(); };
+  if (q) q.oninput = () => { filtEpay = q.value; rannKont(); };
+  const kxTri = document.getElementById("kx-tri"); if (kxTri) kxTri.onchange = () => { kxF.tri = kxTri.value; rannKont(); };
+  const rannFb = () => { const r = lisFb(M, swivis, semenDe); document.getElementById("fidbak-list").innerHTML = r.html; document.getElementById("fb-n").textContent = r.n; };
+  const fbq = document.getElementById("fb-q"); if (fbq) fbq.oninput = () => { fbF.q = fbq.value; rannFb(); };
+  for (const [id, cle] of [["fb-tri", "tri"], ["fb-motif", "motif"], ["fb-kw", "kw"]]) { const e = document.getElementById(id); if (e) e.onchange = () => { fbF[cle] = e.value; rannFb(); }; }
   const brancherKont = () => $app.querySelectorAll("[data-papeye]").forEach((b) => (b.onclick = () => { const k = M.comptes.get(b.dataset.papeye); paPeye(k, M.clients.get(k.id_personne) || {}); }));
   brancherKont();
   brancheTx(M);

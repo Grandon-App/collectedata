@@ -36,22 +36,14 @@ export function kontRow(r) {
 
 export function epay(ctx) {
   const { ong, ongs, stats, filt, q } = ctx;
-  const FILT = [["tout", "Tout", stats.aktif], ["jodi", "Jodi a", stats.pouJodi], ["reta", "An reta", stats.anReta]];
   let body = "";
   if (ong === "kont") {
-    body = `
-    <h2>Peman jodi a <small class="mut">(${stats.peye}/${stats.pouJodi})</small></h2>
-    <div class="list grid-t" id="jodi-list">${ctx.jodiHtml || `<p class="empty">Pa gen peman ki tonbe jodi a.</p>`}</div>
-    <h2>Kont ak cycle aktif <small class="mut">(${stats.aktif})</small></h2>
-    <div class="chips filt" role="group" aria-label="Filt">${FILT.map(([v, l, n]) => `<button type="button" class="chip ${filt === v ? "on" : ""}" data-filt="${v}">${l}<small>${n}</small></button>`).join("")}</div>
-    <input id="q" type="search" class="search" placeholder="Chèche kliyan oswa nimewo kont…" aria-label="Chèche kont" value="${h(q)}">
-    <div class="list grid-t" id="kont">${ctx.kontHtml}</div>`;
+    body = ctx.kontSeksyon;
   } else if (ong === "tx") {
     body = `${ctx.demannHtml ? `<h2>Demann retrè ak viman</h2><div class="list">${ctx.demannHtml}</div>` : ""}
     ${ctx.txHtml}`;
   } else if (ong === "fidbak") {
-    body = `<h2>Fidbak yo <small class="mut">(${ctx.nFidbak})</small></h2><p class="mut sm">Sa kliyan yo di lè yo pa peye (bouton «Pa peye»).</p>
-    ${ctx.fidbakFilt}<div class="list" id="fidbak-list">${ctx.fidbakHtml || `<p class="empty">${ctx.fidbakVid}</p>`}</div>`;
+    body = ctx.fidbakSeksyon;
   } else {
     body = `<p class="mut sm">Retrè ak viman yo bezwen otorizasyon yon manadjè. Lè ou apwouve, ekriti yo pase touswit sou kont yo.</p>
     <div class="list">${ctx.validHtml || `<p class="empty">Pa gen demann an atant.</p>`}</div>`;

@@ -186,6 +186,12 @@ const FR = {
   "Pi resan anvan": "Plus récentes d'abord", "Pi ansyen anvan": "Plus anciennes d'abord", "Montan pi gwo": "Montant le plus élevé", "Montan pi piti": "Montant le plus bas",
   "Kliyan (A → Z)": "Client (A → Z)", "Tout tip": "Tous les types", "Tout eta": "Tous les statuts", "Valide": "Validée", "Triye pa": "Trier par", "Eta": "Statut",
   "Montre plis": "Afficher plus", "Tip": "Type", "tranzaksyon": "transaction(s)", "Yè": "Hier", "Chèche kliyan oswa nimewo kont…": "Rechercher un client ou un numéro de compte…", "Poko gen tranzaksyon.": "Aucune transaction pour l'instant.",
+  "Priyorite (jodi a anvan)": "Priorité (aujourd'hui d'abord)", "Dènye depo (pi resan)": "Dernier dépôt (plus récent)", "Dènye depo (pi ansyen)": "Dernier dépôt (plus ancien)",
+  "Pi plis pou rekipere": "Plus gros retard à récupérer", "Plan pi gwo": "Plan le plus élevé", "Pwogrè pi ba": "Progression la plus faible",
+  "Pa gen depo": "Aucun dépôt", "Dènye depo": "Dernier dépôt", "yè": "hier", "Peman jodi a · poko peye": "Paiement aujourd'hui · pas encore payé",
+  "Lòt kont aktif": "Autres comptes actifs", "pou kolekte": "à collecter", "kont": "compte(s)", "Poko peye": "Pas encore payé",
+  "fidbak": "retour(s)", "pa kote kliyan an": "pas chez le client", "Rezon": "Motif", "Tout rezon": "Tous les motifs", "Kote": "Lieu",
+  "Pa kote kliyan an": "Pas chez le client",
   // Modpas ak aparèy
   "Chanje modpas mwen": "Changer mon mot de passe", "Chwazi pwòp modpas ou": "Choisissez votre mot de passe",
   "Modpas ou resevwa a se yon modpas tanporè. Chwazi yon modpas pa w anvan w kontinye: se ou sèl ki pou konnen l.": "Le mot de passe reçu est temporaire. Choisissez votre propre mot de passe avant de continuer : vous seul devez le connaître.",

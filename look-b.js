@@ -86,35 +86,20 @@ const SR_CNT = { fidbak: "jodi a", valid: "Demann an atant" };
 // Onglè yo: sèl onglè aktif la nan lòd Tab (tabindex 0); flèch yo (app.js) deplase fokis la sou lòt yo (tabindex -1).
 export function epay(ctx) {
   const { ong, ongs, stats, filt, q, moi, today } = ctx;
-  const FILT = [["tout", "Tout", stats.aktif], ["jodi", "Jodi a", stats.pouJodi], ["reta", "An reta", stats.anReta]];
   let body = "";
   if (ong === "kont") {
     body = `
-    <div class="ktool">
-    <input id="q" type="search" class="search" placeholder="Chèche kliyan oswa nimewo kont…" aria-label="Chèche kont" value="${h(q)}" autocomplete="off">
-    <div class="chips filt" role="group" aria-label="Filt">${FILT.map(([v, l, n]) => `<button type="button" class="chip ${filt === v ? "on" : ""}" data-filt="${v}" aria-pressed="${filt === v}">${l}<small>${n}</small></button>`).join("")}</div>
-    </div>
     <div class="tiles3 stat">
       <div class="tile y"><span>Peye</span><b>${stats.peye}<small>/${stats.pouJodi}</small></b></div>
       <div class="tile b"><span>Kolekte</span><b class="amt">${gd(stats.kolekte)}</b></div>
       <div class="tile ${stats.enAtant ? "r" : "n"}"><span>Demann</span><b>${stats.enAtant}</b></div>
     </div>
-    <div class="kont2">
-    <section class="kcol">
-    <h2>Peman jodi a <span class="cnt-h">${stats.peye}/${stats.pouJodi}</span></h2>
-    <div class="list grid-t" id="jodi-list">${ctx.jodiHtml || `<p class="empty">Pa gen peman ki tonbe jodi a.</p>`}</div>
-    </section>
-    <section class="kcol">
-    <h2>Kont ak cycle aktif <span class="cnt-h">${ctx.nKont ?? stats.aktif}</span></h2>
-    <div class="list grid-t" id="kont">${ctx.kontHtml}</div>
-    </section>
-    </div>`;
+    ${ctx.kontSeksyon}`;
   } else if (ong === "tx") {
     body = `${ctx.demannHtml ? `<h2>Demann retrè ak viman</h2><div class="list">${ctx.demannHtml}</div>` : ""}
     ${ctx.txHtml}`;
   } else if (ong === "fidbak") {
-    body = `<h2>Fidbak yo <span class="cnt-h">${ctx.nFidbak}</span></h2><p class="mut sm sub">Sa kliyan yo di lè yo pa peye (bouton «Pa peye»).</p>
-    ${ctx.fidbakFilt}<div class="list grid-t" id="fidbak-list">${ctx.fidbakHtml || `<p class="empty">${ctx.fidbakVid}</p>`}</div>`;
+    body = ctx.fidbakSeksyon;
   } else {
     body = `<p class="note info-note">Retrè ak viman yo bezwen otorizasyon yon manadjè. Lè ou apwouve, ekriti yo pase touswit sou kont yo.</p>
     <div class="list">${ctx.validHtml || `<p class="empty">Pa gen demann an atant.</p>`}</div>`;
