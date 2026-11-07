@@ -29,7 +29,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "4.13";
+const APP_VERSION = "4.14";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
@@ -95,7 +95,7 @@ async function updateBar() {
   $bar.hidden = false;
   $bar.innerHTML = `
     <a href="#/" class="brand"><span class="mark" aria-hidden="true">G</span><span class="brand-t">Grandon</span> ${C.ANVIWONMAN ? `<small>${h(C.ANVIWONMAN)}</small>` : ""}</a>
-    <a href="#/param" class="net ${on ? "on" : "off"}" aria-label="Senkronizasyon: ${on ? "anliy" : "offline"}, ${pend} poko voye, ${err} erè">
+    <a href="#/senk" class="net ${on ? "on" : "off"}" aria-label="Senkronizasyon: ${on ? "anliy" : "offline"}, ${pend} poko voye, ${err} erè">
       <span class="dot"></span>${on ? "Anliy" : "Offline"}
       ${S.isRunning() ? `<span class="spin" aria-hidden="true"></span>` : ""}
       ${pend ? `<span class="cnt">${pend}</span>` : ""}
@@ -107,12 +107,13 @@ async function updateBar() {
 
 // ---------- Ba navigasyon anba ----------
 const $nav = document.getElementById("nav");
-const TABS = [["tablo", "#/", "Tablo"], ["kliyan", "#/kliyan", "Kliyan"], ["epay", "#/epay", "Epay"], ["rapo", "#/rapo", "Rapò"], ["kat", "#/kat", "Kat"], ["param", "#/param", "Paramèt"]];
+const TABS = [["tablo", "#/", "Tablo"], ["kliyan", "#/kliyan", "Kliyan"], ["epay", "#/epay", "Epay"], ["rapo", "#/rapo", "Rapò"], ["kat", "#/kat", "Kat"], ["senk", "#/senk", "Senkronizasyon"], ["param", "#/param", "Paramèt"]];
 function tabActif(r) {
   if (/^#\/(kliyan)/.test(r)) return "kliyan";
   if (/^#\/(epay|cycle|tx|chwazi)/.test(r)) return "epay";
   if (/^#\/rapo/.test(r)) return "rapo";
   if (/^#\/kat/.test(r)) return "kat";
+  if (/^#\/senk/.test(r)) return "senk";
   if (/^#\/(param|ajan|feries)/.test(r)) return "param";
   return "tablo";
 }
@@ -123,7 +124,7 @@ function updateNav() {
   $nav.hidden = false;
   if (!window.L?.map) setTimeout(() => KAT.chajeLeaflet().catch(() => {}), 400); // kat la pare menm si entènèt koupe apre
   document.body.classList.add("has-nav");
-  $nav.innerHTML = TABS.map(([k, href, label]) => `<a href="${href}" class="${k === a ? "on" : ""}" ${k === a ? 'aria-current="page"' : ""}>${ICO[k]}<span>${label}</span></a>`).join("")
+  $nav.innerHTML = TABS.map(([k, href, label]) => `<a href="${href}" class="${k === a ? "on" : ""}${k === "senk" ? " nav-lap" : ""}" ${k === a ? 'aria-current="page"' : ""}>${ICO[k]}<span>${label}</span></a>`).join("")
     + `<div class="nav-foot"><span class="nav-moi" data-brut>${h(moi.nom || "")}</span><span class="nav-wol">${WOL[moi.role] || "Anplwaye"}</span><span class="nav-ver mut">v${h(APP_VERSION)}</span></div>`;
   mezireBar();
 }
@@ -879,7 +880,7 @@ async function viewClient(id) {
   ];
   const ctx = { ...ctxBase(M), c, photo, gpsOk, ks, age: aj, info, hrefModifye: `#/kliyan/${id}/modifye`, hrefNouvoCycle: `#/cycle/nouvo/${c.id_personne}`,
     mapsHref: gpsOk ? `https://maps.google.com/?q=${c.gps_lat},${c.gps_lng}` : null, telHref: c.telephone ? `tel:${String(c.telephone).replace(/\D/g, "")}` : null,
-    errHtml: c._error ? `<p class="note err">${d(t(c._error))} <a href="#/param">Wè</a></p>` : "" };
+    errHtml: c._error ? `<p class="note err">${d(t(c._error))} <a href="#/senk">Wè</a></p>` : "" };
   const ksM = S.comptesDuClient(M, id);
   $app.innerHTML = `<div id="fich">${L().parts.fich(ctx)}${seksyonAlet(ksM, man)}</div>`;
   brancherAlet(M);
@@ -1015,7 +1016,7 @@ async function viewCycle(id) {
     solde: man ? k._solde : null, soldeValide: k.solde_actuel, depoAnAtant: k.depo_an_atant, local: k._local, nDepots: k._nDepots, depots: k._depots,
     prevuTotal: k._prevuTotal, totalPrevu: k._totalPrevu, anReta: k._anReta, aRekipere: k._aRekipere,
     badges: { kont: badgeKont(k), pend: badgePend(k) }, hrefTx: `#/tx/nouvo/${k.id_compte_epargne}`, hrefKliyan: `#/kliyan/${c.id_personne}`,
-    errHtml: k._error ? `<p class="note err">${d(t(k._error))} <a href="#/param">Wè</a></p>` : "",
+    errHtml: k._error ? `<p class="note err">${d(t(k._error))} <a href="#/senk">Wè</a></p>` : "",
   };
   $app.innerHTML = `<div id="cycle">${L().parts.cycleTop(ctx)}
   ${seksyonAlet([k], man)}
@@ -1156,9 +1157,9 @@ function resume(o, M) {
   const k = M.comptes.get(p.compte);
   return `${p.type === "D" ? "Depo" : "Retrè"} ${gd(p.montant)} · ${non(k && M.clients.get(k.id_personne))}`;
 }
-async function viewSync() {
+// ---------- Paramèt: kont mwen, aparans, administrasyon ----------
+async function viewParam() {
   const M = await S.model();
-  const s = api.getSession();
   const pref = prefs();
   $app.innerHTML = `
   <div class="page-head"><h1>Paramèt</h1></div>
@@ -1186,6 +1187,34 @@ async function viewSync() {
       ${[["1", "Wi"], ["0", "Non"]].map(([v, l]) => `<label><input type="radio" name="son" value="${v}" ${(pref.son !== false) === (v === "1") ? "checked" : ""}><span>${l}</span></label>`).join("")}</div></fieldset>
   </div>
   <h2>Senkronizasyon</h2>
+  <a class="row senk-lyen" href="#/senk"><div class="grow"><b>${t("Senkronizasyon")}</b><div class="mut sm">${M.outbox.length ? `${M.outbox.length} ${t("poko voye")}` : t("Tout bagay voye ✓")} · ${t("Dènye senk")} ${lè(await db.meta("last_sync"))}</div></div><span aria-hidden="true">›</span></a>
+  ${estManager() || moi.admin ? `<h2>Administrasyon</h2>` : ""}
+  ${estManager() ? `<a class="btn block" href="#/feries">Jou ferye</a>` : ""}
+  ${moi.admin ? `<a class="btn block" href="#/ajan">Jere ajan yo</a>` : ""}
+  <button class="btn block danger" id="logout">Dekonekte</button>
+  <p class="mut sm center">Grandon · vèsyon ${h(APP_VERSION)}</p>`;
+  $app.querySelectorAll('input[name="lang"]').forEach((r) => (r.onchange = () => { setLang(r.value); location.reload(); }));
+  $app.querySelectorAll('input[name="tem"], input[name="teks"]').forEach((r) => (r.onchange = () => {
+    savePrefs({ tem: $app.querySelector('input[name="tem"]:checked').value, teks: $app.querySelector('input[name="teks"]:checked').value });
+  }));
+  $app.querySelectorAll('input[name="son"]').forEach((r) => (r.onchange = () => { savePrefs({ son: r.value === "1" }); if (r.value === "1") ui.son("info"); }));
+  $app.querySelectorAll('input[name="look"]').forEach((r) => (r.onchange = () => { savePrefs({ look: r.value }); toast(`${looks.LOOKS[r.value].nom} ✓`); render(); }));
+  document.getElementById("logout").onclick = async () => {
+    if (M.outbox.length) return ui.info("Gen operasyon ki poko voye", `${M.outbox.length} · ${t("Senkronize yo anvan w dekonekte.")}`);
+    if (!(await ui.ask({ titre: "Dekonekte?", tekst: "Done yo ap efase sou telefòn nan.", ok: "Dekonekte", danje: true }))) return;
+    await db.wipe();
+    moi = null;
+    await api.clearSession();
+    go("#/login");
+  };
+}
+
+// ---------- Senkronizasyon: eta, bouton senk, operasyon ki poko voye ----------
+async function viewSenk() {
+  const M = await S.model();
+  const s = api.getSession();
+  $app.innerHTML = `
+  <div class="page-head"><h1>Senkronizasyon</h1></div>
   <div class="card">
     <div class="kv"><span>Koneksyon</span><b>${navigator.onLine ? "Anliy" : "Offline"}</b></div>
     <div class="kv"><span>Dènye senk</span><b>${lè(await db.meta("last_sync"))}</b></div>
@@ -1199,18 +1228,7 @@ async function viewSync() {
         <div class="mut sm">${h(resume(o, M))} · ${lè(o.created)}</div>
         ${o.error ? `<div class="${o.attente ? "mut" : "err-msg"} sm">${h(t(o.error))}</div>` : ""}</div>
       ${o.status === "erè" ? `<div class="btns"><button class="btn sm" data-retry="${o.seq}">Eseye ankò</button><button class="btn sm danger" data-drop="${o.seq}">Efase</button></div>` : ""}
-    </div>`).join("") || `<p class="empty">Tout bagay voye ✓</p>`}</div>
-  ${estManager() || moi.admin ? `<h2>Administrasyon</h2>` : ""}
-  ${estManager() ? `<a class="btn block" href="#/feries">Jou ferye</a>` : ""}
-  ${moi.admin ? `<a class="btn block" href="#/ajan">Jere ajan yo</a>` : ""}
-  <button class="btn block danger" id="logout">Dekonekte</button>
-  <p class="mut sm center">Grandon · vèsyon ${h(APP_VERSION)}</p>`;
-  $app.querySelectorAll('input[name="lang"]').forEach((r) => (r.onchange = () => { setLang(r.value); location.reload(); }));
-  $app.querySelectorAll('input[name="tem"], input[name="teks"]').forEach((r) => (r.onchange = () => {
-    savePrefs({ tem: $app.querySelector('input[name="tem"]:checked').value, teks: $app.querySelector('input[name="teks"]:checked').value });
-  }));
-  $app.querySelectorAll('input[name="son"]').forEach((r) => (r.onchange = () => { savePrefs({ son: r.value === "1" }); if (r.value === "1") ui.son("info"); }));
-  $app.querySelectorAll('input[name="look"]').forEach((r) => (r.onchange = () => { savePrefs({ look: r.value }); toast(`${looks.LOOKS[r.value].nom} ✓`); render(); }));
+    </div>`).join("") || `<p class="empty">Tout bagay voye ✓</p>`}</div>`;
   document.getElementById("sync").onclick = async () => {
     const r = await S.run();
     r.notices.forEach((n) => toast(n, "info", 6000));
@@ -1224,14 +1242,6 @@ async function viewSync() {
     toast(`${n} operasyon efase.`);
     render();
   }));
-  document.getElementById("logout").onclick = async () => {
-    if (M.outbox.length) return ui.info("Gen operasyon ki poko voye", `${M.outbox.length} · ${t("Senkronize yo anvan w dekonekte.")}`);
-    if (!(await ui.ask({ titre: "Dekonekte?", tekst: "Done yo ap efase sou telefòn nan.", ok: "Dekonekte", danje: true }))) return;
-    await db.wipe();
-    moi = null;
-    await api.clearSession();
-    go("#/login");
-  };
 }
 
 // ---------- Jesyon ajan (admin, anliy sèlman) ----------
@@ -1312,7 +1322,8 @@ async function render() {
   if ((m = r.match(/^#\/cycle\/nouvo\/([\w-]+)$/))) return viewCycleNew(m[1]);
   if ((m = r.match(/^#\/cycle\/([\w-]+)$/))) return viewCycle(m[1]);
   if ((m = r.match(/^#\/tx\/nouvo\/([\w-]+)$/))) return viewTxNew(m[1]);
-  if (r === "#/param" || r === "#/senk") return viewSync();
+  if (r === "#/param") return viewParam();
+  if (r === "#/senk") return viewSenk();
   if (r === "#/ajan" && moi.admin) return viewAjan();
   if (r === "#/feries") return viewFeries();
   go("#/");

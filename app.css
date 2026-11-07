@@ -409,3 +409,9 @@ button.kat-loc svg { width: 24px; height: 24px; }
 button.kat-loc:focus-visible { outline: 3px solid #2563eb; outline-offset: 2px; }
 button.kat-loc.ap svg { animation: kat-tou 1s linear infinite; color: #2563eb; }
 @keyframes kat-tou { to { transform: rotate(360deg); } }
+
+/* Senkronizasyon: paj apa. Nan ba anba telefòn/tablèt la li pa parèt (6 bouton); pilil «Anliy» la ak Paramèt mennen ladan l. Sou laptop li nan kolòn navigasyon an. */
+.tabbar a.nav-lap { display: none; }
+@media (min-width: 1024px) { html[data-look] .tabbar a.nav-lap { display: flex; } }
+.senk-lyen { display: flex; align-items: center; gap: 10px; text-decoration: none; color: inherit; min-height: 56px; }
+.senk-lyen > span { font-size: 1.4rem; color: var(--mut); }
