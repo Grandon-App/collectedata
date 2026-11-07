@@ -47,7 +47,7 @@ export const avatar = (c, cls = "thumb") => c?.photo_url
 export const badgePend = (o) => (o?._error ? `<span class="badge err">Erè sync</span>` : o?._pending ? `<span class="badge pend">Poko voye</span>` : "");
 export const badgeTx = (x) => x._error ? `<span class="badge err">Erè</span>` : x._pending ? `<span class="badge pend">Poko voye</span>`
   : x.validation_status === "pending" ? `<span class="badge warn">An atant validasyon</span>`
-  : x.validation_status === "rejected" ? `<span class="badge err">Refize</span>` : "";
+  : x.validation_status === "rejected" ? `<span class="badge err">Anile / refize</span>` : "";
 export const badgeKont = (k) => !k._actif ? `<span class="badge mut">Fini</span>`
   : k._jodiPeman ? (k._jodi >= Number(k.montant_plan || 0) ? `<span class="badge ok">Peye jodi a</span>` : `<span class="badge info">Peman jodi a</span>`) : `<span class="badge ok">Aktif</span>`;
 export const badgeDm = (dm) => dm._error ? `<span class="badge err">Erè sync</span>` : dm._pending ? `<span class="badge pend">Poko voye</span>`

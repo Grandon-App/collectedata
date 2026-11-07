@@ -1,6 +1,6 @@
 // Ti wrapper IndexedDB: tout done ajan an kenbe sou telefòn nan.
 const DB_NAME = "grandon-ajan";
-const VER = 3; // v2: demandes, suivis, feries · v3: alet
+const VER = 4; // v2: demandes, suivis, feries · v3: alet · v4: modif
 const STORES = {
   meta: { keyPath: "k" },
   clients: { keyPath: "id_personne" },
@@ -11,6 +11,7 @@ const STORES = {
   suivis: { keyPath: "id" },
   feries: { keyPath: "jour" },
   alet: { keyPath: "id" },
+  modif: { keyPath: "id" },
   outbox: { keyPath: "seq", autoIncrement: true },
   photos: { keyPath: "id" },
 };

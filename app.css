@@ -415,3 +415,14 @@ button.kat-loc.ap svg { animation: kat-tou 1s linear infinite; color: #2563eb; }
 @media (min-width: 1024px) { html[data-look] .tabbar a.nav-lap { display: flex; } }
 .senk-lyen { display: flex; align-items: center; gap: 10px; text-decoration: none; color: inherit; min-height: 56px; }
 .senk-lyen > span { font-size: 1.4rem; color: var(--mut); }
+
+/* ---------- Otorizasyon modifikasyon ---------- */
+button.row.tx-btn { width: 100%; font: inherit; color: inherit; text-align: left; cursor: pointer; border: 0; background: transparent; }
+html[data-look] button.row.tx-btn:focus-visible { outline: 3px solid var(--info); outline-offset: 2px; }
+.form label.bloke { opacity: .55; }
+.form label.bloke input, .form label.bloke select { cursor: not-allowed; }
+.modif-form .chk { display: flex; align-items: center; gap: 10px; min-height: 44px; }
+.modif-form .chk input { width: 20px; height: 20px; flex: none; }
+.modif-form .modif-chan { display: grid; grid-template-columns: 1fr 1fr; gap: 0 10px; }
+@media (max-width: 400px) { .modif-form .modif-chan { grid-template-columns: 1fr; } }
+.row.modif .btns { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }

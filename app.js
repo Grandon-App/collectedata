@@ -29,7 +29,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "4.15";
+const APP_VERSION = "4.16";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
@@ -399,7 +399,7 @@ async function montreKontwol(M) {
   kontwolOuvè = false;
 }
 
-function liTx(M, tx, { kliyan = true } = {}) {
+function liTx(M, tx, { kliyan = true, bouton = false } = {}) {
   const k = M.comptes.get(tx.id_compte_epargne); const c = k && M.clients.get(k.id_personne);
   const kind = S.txKind(tx);
   const detay = [
@@ -408,12 +408,107 @@ function liTx(M, tx, { kliyan = true } = {}) {
     tx.solde_avant_declare != null && tx.solde_avant_declare !== "" ? `${t("kanè avan")} ${gd(tx.solde_avant_declare)}` : "",
     tx.solde_declare != null && tx.solde_declare !== "" ? `${t("kanè apre")} ${gd(tx.solde_declare)}` : "",
   ].filter(Boolean).join(" · ");
-  return `<a class="row" href="#/cycle/${tx.id_compte_epargne}">
+  return `${bouton ? `<button type="button" class="row tx-btn" data-tx="${h(tx.id_transaction_epargne)}" aria-label="${h(t("Tranzaksyon"))}: ${h(t(LABEL_TX[kind]))} ${h(gd(tx.montant))}">` : `<a class="row" href="#/cycle/${tx.id_compte_epargne}">`}
     <div class="grow"><b>${t(LABEL_TX[kind])}</b>${kliyan ? ` · ${d(non(c))}` : ""} ${badgeTx(tx)}
       <div class="mut sm">${kliyan ? `${d(k?.no_compte || t("Cycle poko voye"))} · ` : ""}${jourTx(tx)}</div>
       ${detay ? `<div class="mut sm">${detay}</div>` : ""}
       ${tx._error ? `<div class="err-msg sm">${d(t(tx._error))}</div>` : ""}</div>
-    <div class="right"><b class="${KLAS(kind)}">${SIY(kind)}${gd(tx.montant)}</b></div></a>`;
+    <div class="right"><b class="${KLAS(kind)}">${SIY(kind)}${gd(tx.montant)}</b></div>${bouton ? "</button>" : "</a>"}`;
+}
+
+// ---------- Otorizasyon modifikasyon / siprime (migrasyon 29) ----------
+// Yon ajan pa modifye dirèkteman: li mande (chan egzak + rezon), manadjè a apwouve, ajan an pote modifikasyon an yon sèl fwa.
+const CHAN_KLIYAN = [["prenom", "Prenon"], ["nom", "Non"], ["telephone", "Telefòn"], ["pseudo", "Pseudo"], ["date_naissance", "Dat nesans"],
+  ["piece", "Tip pyès"], ["numero_piece", "Nimewo pyès"], ["adresse", "Adrès"], ["lieu_de_travail", "Kote biznis la"], ["secteur", "Sektè"],
+  ["activite", "Aktivite"], ["point_de_vente", "Pwen de vant"], ["capacite_distribution", "Kapasite distribisyon"], ["gps", "Pozisyon GPS"]];
+const CHAN_TX = [["montant", "Montan"], ["solde_avant_declare", "Balans kanè avan"], ["solde_declare", "Balans kanè apre"], ["type_frais", "Tip frè"], ["note", "Nòt"]];
+const etikètChan = (kind, k) => ((kind === "kliyan" ? CHAN_KLIYAN : CHAN_TX).find(([x]) => x === k) || [k, k])[1];
+const mwenSe = (id) => id === moi?.id || id === "moi";
+const otorizasyon = (M, kind, ref) => [...M.modif.values()].find((x) => x.kind === kind && x.ref_id === ref && x.operasyon === "modifye" && x.statut === "apwouve" && mwenSe(x.agent_id));
+const demannModif = (M, kind, ref) => [...M.modif.values()].find((x) => x.kind === kind && x.ref_id === ref && x.statut === "an_atant");
+function ciblModif(M, kind, ref) {
+  if (kind === "kliyan") return non(M.clients.get(ref));
+  const tx = M.txs.get(ref); const k = tx && M.comptes.get(tx.id_compte_epargne);
+  return tx ? `${t(LABEL_TX[S.txKind(tx)])} ${gd(tx.montant)} · ${non(k && M.clients.get(k.id_personne))}` : t("Tranzaksyon");
+}
+function chanTx(tx) {
+  const kind = S.txKind(tx);
+  return CHAN_TX.filter(([k]) => (k === "type_frais" ? kind === "fre" : k === "montant" ? !kind.startsWith("viman") : k.startsWith("solde") ? kind === "depo" || kind === "retre" : true));
+}
+function liModif(M, x, { decide = false } = {}) {
+  const ETA = { an_atant: ["warn", "An atant"], apwouve: ["ok", "Apwouve: ou ka modifye"], refize: ["err", "Refize"], itilize: ["mut", "Fèt"], fini: ["mut", "Fèt"] };
+  const [kl, et] = ETA[x.statut] || ["mut", x.statut];
+  const href = x.kind === "kliyan" ? `#/kliyan/${x.ref_id}` : (() => { const tx = M.txs.get(x.ref_id); return tx ? `#/cycle/${tx.id_compte_epargne}` : "#/epay"; })();
+  const ki = x.operasyon === "siprime" ? (x.kind === "tx" ? t("Anile tranzaksyon an") : t("Retire kliyan an nan Grandon")) : `${t("Modifye")}: ${(x.chan || []).map((k) => t(etikètChan(x.kind, k))).join(", ")}`;
+  return `<div class="row col modif">
+    <div><a href="${href}"><b>${x.kind === "kliyan" ? d(ciblModif(M, x.kind, x.ref_id)) : h(ciblModif(M, x.kind, x.ref_id))}</b></a> <span class="badge ${kl}">${t(et)}</span> ${x._pending ? `<span class="badge pend">${t("Poko voye")}</span>` : ""}
+      <div class="sm">${ki}</div>
+      <div class="mut sm">${t("Rezon")}: ${d(x.rezon || "")} · ${lè(x.kreye_le)}${nomAjan(x.agent_id) ? ` · ${d(nomAjan(x.agent_id))}` : ""}</div>
+      ${x.statut === "refize" && x.motif_refi ? `<div class="err-msg sm">${t("Rezon refi a")}: ${d(x.motif_refi)}</div>` : ""}</div>
+    ${decide && x.statut === "an_atant" ? `<div class="btns"><button class="btn sm pri" data-mok="${h(x.id)}">${t("Apwouve")}</button><button class="btn sm danger" data-mnon="${h(x.id)}">${t("Refize")}</button></div>` : ""}
+  </div>`;
+}
+async function mandeModif(M, kind, ref, { tekst, chan, siprime, deps = [] }) {
+  const r = await ui.askModif({ titre: "Mande otorizasyon", tekst, chan, siprime });
+  if (!r) return;
+  await S.enqueue("modif_demann", { id: S.uuid(), kind, ref, operasyon: r.operasyon, chan: r.chan, rezon: r.rezon, kreye_le: new Date().toISOString() }, deps);
+  toast(t("Demann lan voye bay manadjè a."));
+  render();
+}
+async function decideModif(M, id, ok) {
+  if (!navigator.onLine) return ui.info("Pa gen koneksyon.", "Fòk ou gen entènèt pou otorize yon demann.");
+  const x = M.modif.get(id);
+  let motif = null;
+  if (ok) {
+    if (!(await ui.ask({ titre: x.operasyon === "siprime" ? (x.kind === "tx" ? "Anile tranzaksyon sa a?" : "Retire kliyan sa a nan Grandon?") : "Bay otorizasyon pou modifye?",
+      ok: "Apwouve", danje: x.operasyon === "siprime", detay: [["Sa", ciblModif(M, x.kind, x.ref_id)], ...(x.chan ? [["Chan yo", x.chan.map((k) => t(etikètChan(x.kind, k))).join(", ")]] : []), ["Rezon", x.rezon]] }))) return;
+  } else {
+    motif = await ui.askText({ titre: "Refize demann sa a?", label: "Rezon refi a", min: 3 });
+    if (!motif) return;
+  }
+  try {
+    await api.rpc("grandon_modif_deside", { p_id: id, p_ok: ok, p_motif: motif });
+    toast(ok ? (x.operasyon === "siprime" ? "Fèt." : "Otorizasyon an bay.") : "Demann lan refize.");
+    await S.pull();
+  } catch (e) { return ui.info("Erè", e.message); }
+  render();
+}
+// Peze sou yon tranzaksyon (paj cycle): manadjè modifye/anile dirèkteman; ajan mande oswa itilize otorizasyon li.
+async function aksyonTx(M, id) {
+  const tx = M.txs.get(id);
+  if (!tx) return;
+  if (tx.validation_status === "rejected") return ui.info("Tranzaksyon sa a anile.", "");
+  if (tx._pending) return ui.info("Tranzaksyon sa a poko voye.", "Tann li rive sou sèvè a anvan w mande pou modifye l.");
+  const chan = chanTx(tx);
+  const valè = { montant: tx.montant, solde_avant_declare: tx.solde_avant_declare, solde_declare: tx.solde_declare, type_frais: tx.type_frais, note: tx.note };
+  const fòm = (lis) => lis.map(([k, l]) => ({ k, label: l, type: k === "type_frais" ? "select" : k === "note" ? "text" : "number", value: valè[k] ?? "", options: TYPES_FRE }));
+  const voye = async (otorizasyon, lis, v) => {
+    await S.enqueue("modif_aplike", { id: S.uuid(), otorizasyon, kind: "tx", ref: id, chan: lis, vale: v });
+    toast("Modifikasyon an anrejistre."); render();
+  };
+  if (estManager()) {
+    const r = await ui.askChoice({ titre: ciblModif(M, "tx", id), options: [["modifye", "Modifye"], ["anile", "Anile tranzaksyon an"]], noteLabel: "Rezon (obligatwa pou anile)", noteObligatwaPou: ["anile"], ok: "Kontinye" });
+    if (!r) return;
+    if (r.valeur === "anile") {
+      if (!navigator.onLine) return ui.info("Pa gen koneksyon.", "Fòk ou gen entènèt pou anile yon tranzaksyon.");
+      try { await api.rpc("grandon_modif_siprime_direk", { p_kind: "tx", p_ref: id, p_rezon: r.note }); toast("Tranzaksyon an anile."); await S.pull(); }
+      catch (e) { return ui.info("Erè", e.message); }
+      return render();
+    }
+    const v = await ui.askChan({ titre: "Modifye tranzaksyon an", chan: fòm(chan) });
+    if (!v) return;
+    const lis = chan.map(([k]) => k).filter((k) => String(v[k] ?? "") !== String(valè[k] ?? ""));
+    if (!lis.length) return toast("Pa gen anyen ki chanje.", "info");
+    return voye(null, lis, Object.fromEntries(lis.map((k) => [k, v[k]])));
+  }
+  const oto = otorizasyon(M, "tx", id);
+  if (oto) {
+    const v = await ui.askChan({ titre: "Modifye tranzaksyon an", tekst: "Otorizasyon an valab yon sèl fwa, pou chan sa yo sèlman.", chan: fòm(chan.filter(([k]) => oto.chan.includes(k))) });
+    if (!v) return;
+    return voye(oto.id, oto.chan, Object.fromEntries(oto.chan.map((k) => [k, v[k] ?? ""])));
+  }
+  if (demannModif(M, "tx", id)) return ui.info("Demann ou an atant.", "Yon manadjè poko reponn demann ou an pou tranzaksyon sa a.");
+  return mandeModif(M, "tx", id, { tekst: ciblModif(M, "tx", id), chan, siprime: "Anile tranzaksyon an" });
 }
 
 function liDemande(M, dm, { decide = false } = {}) {
@@ -480,7 +575,8 @@ async function viewEpay() {
   const jouSwivi = (x) => S.jouLokal(new Date(x.capture_le));
   const semenDe = S.ajouteJou(M.today, -6);
   const nFbJodi = swivis.filter((x) => jouSwivi(x) === M.today).length, nFbSemen = swivis.filter((x) => jouSwivi(x) >= semenDe).length;
-  const ongs = [["kont", "Kont", null], ["tx", "Tranzaksyon", null], ["fidbak", "Fidbak", nFbJodi || null], ...(man ? [["valid", "Validasyon", enAtant.length || null]] : [])];
+  const modifAtant = [...M.modif.values()].filter((x) => x.statut === "an_atant").sort((a, b) => String(a.kreye_le).localeCompare(String(b.kreye_le)));
+  const ongs = [["kont", "Kont", null], ["tx", "Tranzaksyon", null], ["fidbak", "Fidbak", nFbJodi || null], ...(man ? [["valid", "Validasyon", (enAtant.length + modifAtant.length) || null]] : [])];
   const st = statsEpay(M);
   const swiviJodi = new Map([...M.suivis.values()].filter((x) => S.jouLokal(new Date(x.capture_le)) === M.today).map((x) => [x.id_compte_epargne, x.motif]));
   const pouJodi = [...M.comptes.values()].filter((k) => k._jodiPeman).sort((a, b) => (a._jodi >= a.montant_plan) - (b._jodi >= b.montant_plan));
@@ -510,10 +606,12 @@ async function viewEpay() {
     const mesDm = [...M.demandes.values()].filter((x) => man || x.agent_id === moi.id || x.agent_id === "moi")
       .sort((a, b) => String(b.capture_le).localeCompare(String(a.capture_le))).slice(0, 20);
     const txs = [...M.txs.values()].sort((a, b) => String(b.date_transaction).localeCompare(String(a.date_transaction))).slice(0, 60);
-    ctx.demannHtml = mesDm.map((x) => liDemande(M, x)).join("");
+    const mesModif = [...M.modif.values()].filter((x) => man || mwenSe(x.agent_id)).sort((a, b) => String(b.kreye_le).localeCompare(String(a.kreye_le))).slice(0, 20);
+    ctx.demannHtml = mesDm.map((x) => liDemande(M, x)).join("") + mesModif.map((x) => liModif(M, x)).join("");
     ctx.txHtml = txs.map((x) => liTx(M, x)).join("");
   }
-  if (ongEpay === "valid") ctx.validHtml = enAtant.map((x) => liDemande(M, x, { decide: true })).join("");
+  if (ongEpay === "valid") ctx.validHtml = enAtant.map((x) => liDemande(M, x, { decide: true })).join("")
+    + (modifAtant.length ? `<h2>${t("Demann modifikasyon")}</h2>${modifAtant.map((x) => liModif(M, x, { decide: true })).join("")}` : "");
   $app.innerHTML = `<div id="epay">${P.epay(ctx)}</div>`;
   // Apre yon klik sou onglè/filt, paj la re-rann: remete fokis la sou menm bouton an (klavye / lektè ekran).
   const reRann = (sel) => viewEpay().then(() => requestAnimationFrame(() => $app.querySelector(sel)?.focus({ preventScroll: true })));
@@ -526,6 +624,8 @@ async function viewEpay() {
   brancherKont();
   $app.querySelectorAll("[data-ok]").forEach((b) => (b.onclick = () => decider(M, b.dataset.ok, true)));
   $app.querySelectorAll("[data-non]").forEach((b) => (b.onclick = () => decider(M, b.dataset.non, false)));
+  $app.querySelectorAll("[data-mok]").forEach((b) => (b.onclick = () => decideModif(M, b.dataset.mok, true)));
+  $app.querySelectorAll("[data-mnon]").forEach((b) => (b.onclick = () => decideModif(M, b.dataset.mnon, false)));
 }
 
 // ---------- 4. Rapò ajan an (3 dènye jou) ----------
@@ -752,14 +852,42 @@ async function viewClientNew() {
 }
 
 // ---------- Modifye fich kliyan an ----------
+function banyèModif(M, id) {
+  if (estManager()) return "";
+  const oto = otorizasyon(M, "kliyan", id), dm = demannModif(M, "kliyan", id);
+  if (oto) return `<p class="note info-note">${t("Otorizasyon apwouve pou modifye")}: ${oto.chan.map((c) => t(etikètChan("kliyan", c))).join(", ")}. <a href="#/kliyan/${h(id)}/modifye">${t("Modifye kounye a")}</a></p>`;
+  if (dm) return `<p class="note warn">${t("Demann modifikasyon ou an an atant otorizasyon manadjè a.")}</p>`;
+  return "";
+}
+
 async function viewClientEdit(id) {
   const M = await S.model();
   const c = M.clients.get(id);
   if (!c) return go("#/kliyan");
+  const man = estManager();
+  const oto = man ? null : otorizasyon(M, "kliyan", id);
+  // Ajan san otorizasyon: li mande (chan egzak + rezon). Manadjè a deside nan Epay → Validasyon.
+  if (!man && !oto) {
+    const dm = demannModif(M, "kliyan", id);
+    const dènye = [...M.modif.values()].filter((x) => x.kind === "kliyan" && x.ref_id === id && mwenSe(x.agent_id)).sort((a, b) => String(b.kreye_le).localeCompare(String(a.kreye_le)))[0];
+    $app.innerHTML = `
+    <a href="#/kliyan/${id}" class="back">‹ ${d(non(c))}</a>
+    <h1>Modifye enfòmasyon yo</h1>
+    <div class="card">
+      <p>${t("Pou modifye fich yon kliyan, ou bezwen otorizasyon yon manadjè. Di egzakteman ki chan ou bezwen chanje (telefòn, adrès…) ak poukisa.")}</p>
+      ${dm ? `<p class="note warn">${t("Demann ou an an atant. Ou ap ka modifye lè manadjè a apwouve l.")}</p>` : `<button type="button" class="btn pri block" id="mande">${t("Mande otorizasyon")}</button>`}
+    </div>
+    ${dènye ? `<h2>${t("Dènye demann")}</h2><div class="list">${liModif(M, dènye)}</div>` : ""}`;
+    document.getElementById("mande")?.addEventListener("click", () => mandeModif(M, "kliyan", id, { tekst: non(c), chan: CHAN_KLIYAN, siprime: "Retire kliyan an nan Grandon", deps: c._pending ? [id] : [] }));
+    return;
+  }
   $app.innerHTML = `
   <a href="#/kliyan/${id}" class="back">‹ ${d(non(c))}</a>
   <h1>Modifye enfòmasyon yo</h1>
+  ${oto ? `<p class="note info-note">${t("Otorizasyon an valab yon sèl fwa, pou chan sa yo sèlman")}: <b>${oto.chan.map((k) => t(etikètChan("kliyan", k))).join(", ")}</b>.</p>` : ""}
   <form id="f" class="card form" novalidate>
+    <div class="grid2"><label>Prenon *<input name="prenom" value="${h(c.prenom || "")}" autocomplete="off"></label><label>Non *<input name="nom" value="${h(c.nom || "")}" autocomplete="off"></label></div>
+    <label>Telefòn * <small class="mut">(8 chif)</small><input name="telephone" inputmode="tel" value="${h(F.telFmt(c.telephone || ""))}" autocomplete="off"></label>
     ${champPseudo(c)}
     ${champsIdentite(c)}
     ${champsOccupation(c)}
@@ -772,12 +900,28 @@ async function viewClientEdit(id) {
   brancherIdentite(f);
   brancherOccupation(f);
   brancherGps(document.getElementById("gps"), (g) => (gps = g));
+  if (oto) { // ajan: sèlman chan ki otorize yo ka chanje
+    f.querySelectorAll("input, select, textarea").forEach((el) => { if (el.name && !oto.chan.includes(el.name)) { el.disabled = true; el.closest("label")?.classList.add("bloke"); } });
+    if (!oto.chan.includes("gps")) { const b = document.querySelector("#gps button"); b.disabled = true; }
+  }
   f.onsubmit = async (e) => {
     e.preventDefault();
-    if (!okObligatwa(f, document.getElementById("err"))) return;
-    if (!(await okIdentite(f, document.getElementById("err")))) return;
-    const v = valeursOccupation(Object.fromEntries(new FormData(f)));
-    await S.enqueue("maj", { id, ...v, gps, capture_le: new Date().toISOString() }, c._pending ? [id] : []);
+    const err = document.getElementById("err"); err.textContent = "";
+    if (!(await okIdentite(f, err))) return;
+    const v = Object.fromEntries(new FormData(f));
+    const avan = { ...c, telephone: String(c.telephone || "").replace(/\D/g, "").slice(-8) };
+    const chanje = (k) => k === "gps" ? !!gps : String(k === "telephone" ? String(v[k] || "").replace(/\D/g, "") : (v[k] ?? "")).trim() !== String(avan[k] ?? "").trim();
+    const lis = oto ? oto.chan : CHAN_KLIYAN.map(([k]) => k).filter((k) => (k === "gps" || k in v) && chanje(k));
+    if (!lis.length) return (err.textContent = t("Pa gen anyen ki chanje."));
+    if (lis.includes("gps") && !gps) return (err.textContent = t("Peze «Pran pozisyon kounye a» pou GPS la."));
+    if ((lis.includes("prenom") && !String(v.prenom || "").trim()) || (lis.includes("nom") && !String(v.nom || "").trim())) return (err.textContent = t("Prenon ak non pa ka vid."));
+    if (lis.includes("telephone") && String(v.telephone || "").replace(/\D/g, "").length < 8) return (err.textContent = t("Nimewo telefòn nan dwe gen 8 chif."));
+    const vale = {};
+    for (const k of lis) {
+      if (k === "gps") Object.assign(vale, { gps_lat: gps.lat, gps_lng: gps.lng, gps_precision: gps.acc });
+      else vale[k] = String(v[k] ?? "").trim();
+    }
+    await S.enqueue("modif_aplike", { id: S.uuid(), otorizasyon: oto?.id || null, kind: "kliyan", ref: id, chan: lis, vale }, c._pending ? [id] : []);
     toast("Enfòmasyon yo anrejistre.");
     go(`#/kliyan/${id}`);
   };
@@ -880,7 +1024,7 @@ async function viewClient(id) {
   ];
   const ctx = { ...ctxBase(M), c, photo, gpsOk, ks, age: aj, info, hrefModifye: `#/kliyan/${id}/modifye`, hrefNouvoCycle: `#/cycle/nouvo/${c.id_personne}`,
     mapsHref: gpsOk ? `https://maps.google.com/?q=${c.gps_lat},${c.gps_lng}` : null, telHref: c.telephone ? `tel:${String(c.telephone).replace(/\D/g, "")}` : null,
-    errHtml: c._error ? `<p class="note err">${d(t(c._error))} <a href="#/senk">Wè</a></p>` : "" };
+    errHtml: (c._error ? `<p class="note err">${d(t(c._error))} <a href="#/senk">Wè</a></p>` : "") + banyèModif(M, id) };
   const ksM = S.comptesDuClient(M, id);
   $app.innerHTML = `<div id="fich">${L().parts.fich(ctx)}${seksyonAlet(ksM, man)}</div>`;
   brancherAlet(M);
@@ -1023,8 +1167,12 @@ async function viewCycle(id) {
   ${k._demandes.length ? `<h2>Demann retrè ak viman</h2><div class="list">${k._demandes.map((x) => liDemande(M, x, { decide: man })).join("")}</div>` : ""}
   ${k._suivis.length ? `<h2>Fidbak</h2><div class="list">${k._suivis.map((x) => liSwivi(M, x, { kliyan: false })).join("")}</div>` : ""}
   <h2>Tranzaksyon</h2>
-  <div class="list">${k._txs.map((x) => liTx(M, x, { kliyan: false })).join("") || `<p class="empty">Poko gen tranzaksyon.</p>`}</div></div>`;
+  ${(() => { const otos = k._txs.map((x) => otorizasyon(M, "tx", x.id_transaction_epargne)).filter(Boolean);
+    return otos.length ? `<p class="note info-note">${t("Otorizasyon apwouve: peze sou tranzaksyon an pou modifye l")} (${otos.map((o) => o.chan.map((c) => t(etikètChan("tx", c))).join(", ")).join(" · ")}).</p>` : ""; })()}
+  <p class="mut sm">${t(estManager() ? "Peze sou yon tranzaksyon pou modifye oswa anile l." : "Peze sou yon tranzaksyon pou mande otorizasyon pou modifye oswa anile l.")}</p>
+  <div class="list">${k._txs.map((x) => liTx(M, x, { kliyan: false, bouton: true })).join("") || `<p class="empty">Poko gen tranzaksyon.</p>`}</div></div>`;
   document.getElementById("papeye")?.addEventListener("click", () => paPeye(k, c));
+  $app.querySelectorAll("[data-tx]").forEach((b) => (b.onclick = () => aksyonTx(M, b.dataset.tx)));
   brancherAlet(M);
   montreAlet(M, [k]);
   $app.querySelectorAll("[data-ok]").forEach((b) => (b.onclick = () => decider(M, b.dataset.ok, true)));
@@ -1145,7 +1293,7 @@ async function viewFeries() {
 }
 
 // ---------- Senkronizasyon ----------
-const KIND = { client: "Kliyan", adopte: "Kliyan (ajoute)", maj: "Enfòmasyon kliyan an", cycle: "Cycle", tx: "Tranzaksyon", demande: "Demann", suivi: "Fidbak" };
+const KIND = { client: "Kliyan", adopte: "Kliyan (ajoute)", maj: "Enfòmasyon kliyan an", cycle: "Cycle", tx: "Tranzaksyon", demande: "Demann", suivi: "Fidbak", modif_demann: "Demann modifikasyon", modif_aplike: "Modifikasyon", alet: "Alèt", alet_fermen: "Alèt (fèmen)" };
 function resume(o, M) {
   const p = o.payload;
   if (o.kind === "client") return `${p.prenom} ${p.nom} · ${p.telephone}`;
@@ -1154,6 +1302,8 @@ function resume(o, M) {
   if (o.kind === "suivi") { const k = M.comptes.get(p.compte); return `${t(motifLabel(p.motif))} · ${non(k && M.clients.get(k.id_personne))}`; }
   if (o.kind === "demande") { const k = M.comptes.get(p.compte); return `${p.type === "V" ? t("Viman") : t("Retrè")} ${gd(p.montant)} · ${non(k && M.clients.get(k.id_personne))}`; }
   if (o.kind === "cycle") return `${non(M.clients.get(p.id_personne))} · ${p.duree} mwa · ${p.frequence}×/sem · ${gd(p.montant)}`;
+  if (o.kind === "modif_demann" || o.kind === "modif_aplike") return `${ciblModif(M, p.kind, p.ref)} · ${(p.chan || []).map((k) => t(etikètChan(p.kind, k))).join(", ") || t("Siprime")}`;
+  if (o.kind === "alet" || o.kind === "alet_fermen") return p.tit || "";
   const k = M.comptes.get(p.compte);
   return `${p.type === "D" ? "Depo" : "Retrè"} ${gd(p.montant)} · ${non(k && M.clients.get(k.id_personne))}`;
 }

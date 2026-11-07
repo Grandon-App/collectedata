@@ -156,6 +156,21 @@ const EXEC = {
       note: p.note || null, agent_id: api.getSession()?.user?.id, capture_le: p.capture_le, statut: r.statut });
   },
 
+  // Demann pou modifye/siprime (ajan) ak modifikasyon apre otorizasyon (migrasyon 29).
+  async modif_demann(p) {
+    const r = await api.rpc("grandon_modif_demann", { p_id: p.id, p_kind: p.kind, p_operasyon: p.operasyon, p_ref: p.ref, p_chan: p.chan || null,
+      p_rezon: p.rezon, p_kreye_le: p.kreye_le });
+    await db.put("modif", { id: p.id, kind: p.kind, operasyon: p.operasyon, ref_id: p.ref, chan: p.chan || null, rezon: p.rezon,
+      agent_id: api.getSession()?.user?.id, kreye_le: p.kreye_le, statut: r.statut || "an_atant" });
+  },
+
+  async modif_aplike(p) {
+    await api.rpc("grandon_modif_aplike", { p_otorizasyon: p.otorizasyon || null, p_kind: p.kind, p_ref: p.ref, p_chan: p.chan, p_vale: p.vale });
+    if (p.otorizasyon) { const m = await db.get("modif", p.otorizasyon); if (m) { m.statut = "itilize"; m.vale_apre = p.vale; await db.put("modif", m); } }
+    if (p.kind === "kliyan") { const c = await db.get("clients", p.ref); if (c) { aplikeKliyan(c, p.chan, p.vale); await db.put("clients", c); } }
+    else { const t = await db.get("transactions", p.ref); if (t) { aplikeTx(t, p.chan, p.vale); await db.put("transactions", t); } }
+  },
+
   async alet(p) {
     await api.rpc("grandon_alet_kreye", { p_id: p.id, p_compte: p.compte, p_tit: p.tit, p_mesaj: p.mesaj || null, p_nivo: p.nivo,
       p_fen: p.fen, p_fen_dat: p.fen === "dat" ? p.fen_dat : null, p_kreye_le: p.kreye_le });
@@ -287,11 +302,12 @@ export async function pull() {
     api.selectAll(`grandon_v_transactions?date_transaction=gte.${depi}&select=id_transaction_epargne,id_compte_epargne,type_transaction,montant,date_transaction,validation_status,solde_apres_transactions,created_by,solde_declare,solde_avant_declare,type_frais,virement_from,virement_to&order=date_transaction`),
   ]);
   const depi2 = ajouteJou(jodi(), -90);
-  const [feries, suivis, demandes, alet] = await Promise.all([
+  const [feries, suivis, demandes, alet, modif] = await Promise.all([
     api.selectAll("grandon_jours_feries?select=jour,libelle&order=jour"),
     api.selectAll(`grandon_suivis?capture_le=gte.${depi2}&select=id,id_compte_epargne,motif,note,agent_id,capture_le,gps_lat,gps_lng,gps_precision_m,distans_m,kontwol&order=capture_le.desc`),
     api.selectAll(`grandon_demandes?or=${encodeURIComponent(`(statut.eq.en_attente,created_at.gte.${depi2})`)}&select=*&order=created_at.desc`),
     api.selectAll(`grandon_alet?or=${encodeURIComponent(`(fermen_le.is.null,fermen_le.gte.${depi2})`)}&select=*&order=kreye_le.desc`).catch(() => null),
+    api.selectAll(`grandon_modif?or=${encodeURIComponent(`(statut.in.(an_atant,apwouve),created_at.gte.${depi2})`)}&select=*&order=kreye_le.desc`).catch(() => null),
   ]);
   try { // non ajan yo (manadjè yo wè tout moun; yon ajan wè sèlman pa l)
     const aj = await api.select("grandon_ajan?select=user_id,nom");
@@ -301,6 +317,7 @@ export async function pull() {
   await db.replaceAll("suivis", suivis);
   await db.replaceAll("demandes", demandes);
   if (alet) await db.replaceAll("alet", alet); // null: tab la poko la sou sèvè a
+  if (modif) await db.replaceAll("modif", modif);
   await db.replaceAll("clients", clients);
   await db.replaceAll("comptes", comptes);
   await db.replaceAll("plans", plans);
@@ -312,8 +329,8 @@ export async function pull() {
 export const jouTx = (t) => (t._pending || t._local_date ? jouLokal(new Date(t.date_transaction)) : String(t.date_transaction).slice(0, 10));
 
 export async function model() {
-  const [clients, comptes, txs, outbox, plans, feries, suivis, demandes, alet] = await Promise.all(
-    ["clients", "comptes", "transactions", "outbox", "plans", "feries", "suivis", "demandes", "alet"].map((s) => db.all(s)));
+  const [clients, comptes, txs, outbox, plans, feries, suivis, demandes, alet, modif] = await Promise.all(
+    ["clients", "comptes", "transactions", "outbox", "plans", "feries", "suivis", "demandes", "alet", "modif"].map((s) => db.all(s)));
   const M = {
     clients: new Map(clients.map((c) => [c.id_personne, { ...c }])),
     comptes: new Map(comptes.map((k) => [k.id_compte_epargne, { ...k }])),
@@ -323,6 +340,7 @@ export async function model() {
     suivis: new Map(suivis.map((x) => [x.id, { ...x }])),
     demandes: new Map(demandes.map((x) => [x.id, { ...x }])),
     alet: new Map(alet.map((x) => [x.id, { ...x }])),
+    modif: new Map(modif.map((x) => [x.id, { ...x }])),
     outbox: outbox.sort((a, b) => a.seq - b.seq),
   };
   for (const o of M.outbox) {
@@ -347,6 +365,14 @@ export async function model() {
     if (o.kind === "demande")
       M.demandes.set(p.id, { id: p.id, type: p.type, id_compte_epargne: p.compte, id_compte_dest: p.compte_dest || null, montant: p.montant,
         note: p.note, agent_id: "moi", capture_le: p.capture_le, statut: "en_attente", ...pend });
+    if (o.kind === "modif_demann")
+      M.modif.set(p.id, { id: p.id, kind: p.kind, operasyon: p.operasyon, ref_id: p.ref, chan: p.chan || null, rezon: p.rezon, agent_id: "moi",
+        kreye_le: p.kreye_le, statut: "an_atant", ...pend });
+    if (o.kind === "modif_aplike") {
+      if (p.otorizasyon && M.modif.has(p.otorizasyon)) Object.assign(M.modif.get(p.otorizasyon), { statut: "itilize", _aplikePending: true });
+      if (p.kind === "kliyan" && M.clients.has(p.ref)) Object.assign(aplikeKliyan(M.clients.get(p.ref), p.chan, p.vale), { _majPending: true });
+      if (p.kind === "tx" && M.txs.has(p.ref)) aplikeTx(M.txs.get(p.ref), p.chan, p.vale);
+    }
     if (o.kind === "alet")
       M.alet.set(p.id, { id: p.id, id_compte_epargne: p.compte, tit: p.tit, mesaj: p.mesaj, nivo: p.nivo, fen_kondisyon: p.fen,
         fen_dat: p.fen === "dat" ? p.fen_dat : null, kreye_pa: "moi", kreye_le: p.kreye_le, fermen_le: null, ...pend });
@@ -526,3 +552,16 @@ const azò = (n) => { const b = new Uint8Array(n); crypto.getRandomValues(b); re
 const inisyalKod = (s) => (String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().match(/[A-Z]/) || ["X"])[0];
 export const kodKliyan = (prenom, nom) => `${inisyalKod(prenom)}${inisyalKod(nom)}-${azò(5)}`;
 export const noKont = (kod) => (kod ? `${String(kod).toUpperCase()}-${azò(3)}` : null);
+
+// Mete valè yon modifikasyon otorize sou kopi lokal la (anvan sèvè a voye nouvo done yo).
+export function aplikeKliyan(c, chan, v) {
+  for (const k of chan) {
+    if (k === "gps") { if (v.gps_lat != null) { c.gps_lat = v.gps_lat; c.gps_lng = v.gps_lng; } }
+    else c[k] = v[k] ?? null;
+  }
+  return c;
+}
+export function aplikeTx(t, chan, v) {
+  for (const k of chan) t[k] = k === "montant" || k.startsWith("solde") ? (v[k] === "" || v[k] == null ? null : Number(v[k])) : (v[k] ?? null);
+  return t;
+}

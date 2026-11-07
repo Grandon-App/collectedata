@@ -202,3 +202,61 @@ export function askAlet({ titre = "Nouvo alèt", tekst = "", jodi = "" }) {
     </form>
     <div class="modal-b"><button class="btn" data-v="no">${h(t("Anile"))}</button><button class="btn pri" data-v="ok">${h(t("Kreye alèt la"))}</button></div>`, opts);
 }
+
+// ---------- Demann modifikasyon / siprime ----------
+// chan: [[kle, etikèt]]. Retounen { operasyon: "modifye"|"siprime", chan: [...], rezon } oswa null.
+export function askModif({ titre, tekst = "", chan, siprime = "Siprime" }) {
+  let form;
+  const opts = {
+    onOpen: (w) => {
+      form = w.querySelector("form");
+      const okb = w.querySelector("[data-v=ok]");
+      const chk = () => {
+        const op = form.op.value;
+        w.querySelector(".modif-chan").hidden = op !== "modifye";
+        const n = form.querySelectorAll("input[name=chan]:checked").length;
+        okb.disabled = form.rezon.value.trim().length < 3 || (op === "modifye" && !n);
+      };
+      form.oninput = chk; form.onchange = chk; chk();
+      form.onsubmit = (e) => { e.preventDefault(); if (!okb.disabled) okb.click(); };
+    },
+  };
+  opts.onOpen.valeur = () => ({ operasyon: form.op.value, chan: form.op.value === "modifye" ? [...form.querySelectorAll("input[name=chan]:checked")].map((x) => x.value) : null, rezon: form.rezon.value.trim() });
+  return ouvrir(`
+    <div class="modal-h"><span class="modal-ico" aria-hidden="true">✎</span><h2 id="modal-t">${h(t(titre))}</h2></div>
+    ${tekst ? `<p class="modal-p" data-brut>${h(tekst)}</p>` : ""}
+    <form class="modal-choix modif-form">
+      <fieldset><legend>${h(t("Kisa ou bezwen?"))}</legend>
+        <label><input type="radio" name="op" value="modifye" checked autofocus><span>${h(t("Modifye"))}</span></label>
+        <label><input type="radio" name="op" value="siprime"><span>${h(t(siprime))}</span></label></fieldset>
+      <fieldset class="modif-chan"><legend>${h(t("Ki chan ou bezwen modifye?"))}</legend>
+        ${chan.map(([k, l]) => `<label class="chk"><input type="checkbox" name="chan" value="${h(k)}"><span>${h(t(l))}</span></label>`).join("")}</fieldset>
+      <label class="modal-l">${h(t("Rezon (obligatwa)"))}<textarea name="rezon" rows="2" maxlength="500"></textarea></label>
+    </form>
+    <div class="modal-b"><button class="btn" data-v="no">${h(t("Anile"))}</button><button class="btn pri" data-v="ok">${h(t("Voye demann lan"))}</button></div>`, opts);
+}
+
+// Fòm modifikasyon: chan [{ k, label, type: "text"|"number"|"select", value, options }]. Retounen { k: valè } oswa null.
+export function askChan({ titre, tekst = "", chan, ok = "Anrejistre", rezon = false }) {
+  let form;
+  const opts = {
+    onOpen: (w) => {
+      form = w.querySelector("form");
+      const okb = w.querySelector("[data-v=ok]");
+      const chk = () => { okb.disabled = rezon && form.rezon.value.trim().length < 3; };
+      form.oninput = chk; chk();
+      form.onsubmit = (e) => { e.preventDefault(); if (!okb.disabled) okb.click(); };
+    },
+  };
+  opts.onOpen.valeur = () => Object.fromEntries([...new FormData(form)].map(([k, v]) => [k, String(v).trim()]));
+  return ouvrir(`
+    <div class="modal-h"><span class="modal-ico" aria-hidden="true">✎</span><h2 id="modal-t">${h(t(titre))}</h2></div>
+    ${tekst ? `<p class="modal-p">${h(t(tekst))}</p>` : ""}
+    <form class="modal-choix modif-form">
+      ${chan.map((c, i) => c.type === "select"
+        ? `<label class="modal-l">${h(t(c.label))}<select name="${h(c.k)}" ${i === 0 ? "autofocus" : ""}>${c.options.map((o) => `<option ${o === c.value ? "selected" : ""}>${h(o)}</option>`).join("")}</select></label>`
+        : `<label class="modal-l">${h(t(c.label))}<input name="${h(c.k)}" type="${c.type === "number" ? "number" : "text"}" ${c.type === "number" ? 'inputmode="numeric" min="0" step="1"' : ""} value="${h(c.value ?? "")}" ${i === 0 ? "autofocus" : ""}></label>`).join("")}
+      ${rezon ? `<label class="modal-l">${h(t("Rezon (obligatwa)"))}<textarea name="rezon" rows="2" maxlength="500"></textarea></label>` : ""}
+    </form>
+    <div class="modal-b"><button class="btn" data-v="no">${h(t("Anile"))}</button><button class="btn pri" data-v="ok">${h(t(ok))}</button></div>`, opts);
+}
