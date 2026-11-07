@@ -29,7 +29,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "4.10";
+const APP_VERSION = "4.11";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
@@ -225,8 +225,10 @@ async function viewTablo() {
     mwaDwe: som((k) => k._mwaDwe), mwaKolekte: som((k) => k._kolekMwa), nDwe: ks.filter((k) => k._mwaDwe > 0).length,
     nonMwa: new Date(M.today + "T12:00:00Z").toLocaleDateString(getLang() === "fr" ? "fr-FR" : "fr-FR", { month: "long", year: "numeric", timeZone: "UTC" }) });
   st.mwaPwosan = st.mwaPrevu ? Math.round((st.mwaPlan / st.mwaPrevu) * 100) : 0;
-  $app.innerHTML = `<div id="tablo">${L().parts.tablo({ ...ctxBase(M), stats: st, isoJou: S.isoJou(M.today) })}</div>`;
+  const man = estManager();
+  $app.innerHTML = `<div id="tablo">${L().parts.tablo({ ...ctxBase(M), stats: st, isoJou: S.isoJou(M.today) })}${man ? seksyonKontwol(M) : ""}</div>`;
   $app.querySelector("[data-mwa-reta]")?.addEventListener("click", () => { ongEpay = "kont"; filtKont = "reta"; });
+  if (man) { ajans = (await db.meta("ajans")) || {}; montreKontwol(M); }
 }
 
 // Chif komen pou Epay/Tablo
@@ -326,12 +328,46 @@ let ajans = {};
 function liSwivi(M, x, { kliyan = true } = {}) {
   const k = M.comptes.get(x.id_compte_epargne); const c = k && M.clients.get(k.id_personne);
   const ajan = nomAjan(x.agent_id);
-  const kò = `<div class="grow">${kliyan ? `<b>${d(non(c))}</b> <span class="badge warn">${t(MOTIF_KOUT[x.motif] || "Lòt")}</span>` : `<b>${t(motifLabel(x.motif))}</b>`} ${badgePend(x)}
+  const kò = `<div class="grow">${kliyan ? `<b>${d(non(c))}</b> <span class="badge warn">${t(MOTIF_KOUT[x.motif] || "Lòt")}</span>` : `<b>${t(motifLabel(x.motif))}</b>`} ${badgePend(x)} ${estManager() ? badjKontwol(x) : ""}
       ${kliyan ? `<div class="sm rezon">${t(motifLabel(x.motif))}</div>` : ""}
       <div class="mut sm">${kliyan ? `${d(k?.no_compte || t("Cycle poko voye"))} · ` : ""}${lè(x.capture_le)}${ajan ? ` · ${d(ajan)}` : ""}</div>
       ${x.note ? `<div class="sm nòt">${d(x.note)}</div>` : ""}
       ${x._error ? `<div class="err-msg sm">${d(t(x._error))}</div>` : ""}</div>`;
   return kliyan ? `<a class="row swivi" href="#/cycle/${x.id_compte_epargne}">${kò}</a>` : `<div class="row swivi">${kò}</div>`;
+}
+
+// Kontwòl kote fidbak la fèt (manadjè sèlman): distans ak GPS kliyan an.
+const distTxt = (m) => (m < 1000 ? `${m} m` : `${(m / 1000).toFixed(1).replace(".", ",")} km`);
+function badjKontwol(x) {
+  if (x.kontwol === "lwen") return `<span class="badge err kontwol">${distTxt(x.distans_m)} ${t("lwen kliyan an")}</span>`;
+  if (x.kontwol === "san_gps_ajan") return `<span class="badge err kontwol">${t("San GPS ajan")}</span>`;
+  if (x.kontwol === "pa_presi") return `<span class="badge warn kontwol">${t("GPS pa presi")}</span>`;
+  if (x.kontwol === "san_gps_kliyan") return `<span class="badge mut kontwol">${t("Kliyan an pa gen GPS")}</span>`;
+  if (x.kontwol === "ok") return `<span class="badge ok kontwol">${t("Kote kliyan an")}${x.distans_m != null ? ` · ${distTxt(x.distans_m)}` : ""}</span>`;
+  return "";
+}
+// Fidbak ki pa fèt kote kliyan an (7 dènye jou): seksyon sou Tablo + popup ak son pou sa manadjè a poko wè.
+function fidbakSispèk(M) {
+  const de = S.ajouteJou(M.today, -6);
+  return [...M.suivis.values()].filter((x) => S.swiviSispèk(x) && S.jouLokal(new Date(x.capture_le)) >= de)
+    .sort((a, b) => String(b.capture_le).localeCompare(String(a.capture_le)));
+}
+function seksyonKontwol(M) {
+  const l = fidbakSispèk(M);
+  return `<section class="kontwol-sek" id="kontwol"><h2>Fidbak pou verifye <small class="mut">(${l.length})</small></h2>
+    <p class="mut sm">${t("Fidbak ki pa t fèt kote kliyan an (plis pase 300 m), oswa san GPS · 7 dènye jou.")}</p>
+    <div class="list">${l.map((x) => liSwivi(M, x)).join("") || `<p class="empty">${t("Tout fidbak yo te fèt kote kliyan yo.")}</p>`}</div></section>`;
+}
+const KONTWOL_VU = "grandon-kontwol-vu";
+async function montreKontwol(M) {
+  const l = fidbakSispèk(M);
+  let vu = []; try { vu = JSON.parse(localStorage.getItem(KONTWOL_VU) || "[]"); } catch { /* */ }
+  const nouvo = l.filter((x) => !vu.includes(x.id));
+  if (!nouvo.length) return;
+  if (prefs().son !== false) ui.son("ijan");
+  await ui.aletPopup({ titre: nouvo.length > 1 ? `${nouvo.length} ${t("fidbak pa fèt kote kliyan an")}` : t("Yon fidbak pa fèt kote kliyan an"), nivo: "ijan",
+    soutit: t("Ajan an te anrejistre «Pa peye» lwen biznis kliyan an, oswa san GPS."), html: `<div class="list">${nouvo.map((x) => liSwivi(M, x)).join("")}</div>` });
+  try { localStorage.setItem(KONTWOL_VU, JSON.stringify([...new Set([...vu, ...nouvo.map((x) => x.id)])].slice(-500))); } catch { /* */ }
 }
 
 function liTx(M, tx, { kliyan = true } = {}) {
@@ -388,7 +424,7 @@ async function paPeye(k, c) {
   const r = await ui.askChoice({ titre: "Kliyan an pa peye", tekst: `${non(c)} · ${k.no_compte || ""}`, options: MOTIFS,
     noteLabel: "Nòt (opsyonèl)", noteObligatwaPou: ["lot"] });
   if (!r) return;
-  await S.enqueue("suivi", { id: S.uuid(), compte: k.id_compte_epargne, motif: r.valeur, note: r.note, gps: await getGps(4000), capture_le: new Date().toISOString() },
+  await S.enqueue("suivi", { id: S.uuid(), compte: k.id_compte_epargne, motif: r.valeur, note: r.note, gps: await getGps(8000, { fre: true }), capture_le: new Date().toISOString() },
     k._pending ? [k.id_compte_epargne] : []);
   toast("Fidbak la anrejistre.");
   render();

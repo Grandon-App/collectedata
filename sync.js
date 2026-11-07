@@ -167,7 +167,8 @@ const EXEC = {
 
   async suivi(p) {
     await api.rpc("grandon_suivi", { p_id: p.id, p_compte: p.compte, p_motif: p.motif, p_note: p.note || null, ...gpsArgs(p.gps), p_capture_le: p.capture_le });
-    await db.put("suivis", { id: p.id, id_compte_epargne: p.compte, motif: p.motif, note: p.note || null, agent_id: api.getSession()?.user?.id, capture_le: p.capture_le });
+    await db.put("suivis", { id: p.id, id_compte_epargne: p.compte, motif: p.motif, note: p.note || null, agent_id: api.getSession()?.user?.id, capture_le: p.capture_le,
+      gps_lat: p.gps?.lat ?? null, gps_lng: p.gps?.lng ?? null, gps_precision_m: p.gps?.acc ?? null });
   },
 
   async cycle(p) {
@@ -283,7 +284,7 @@ export async function pull() {
   const depi2 = ajouteJou(jodi(), -90);
   const [feries, suivis, demandes, alet] = await Promise.all([
     api.selectAll("grandon_jours_feries?select=jour,libelle&order=jour"),
-    api.selectAll(`grandon_suivis?capture_le=gte.${depi2}&select=id,id_compte_epargne,motif,note,agent_id,capture_le&order=capture_le.desc`),
+    api.selectAll(`grandon_suivis?capture_le=gte.${depi2}&select=id,id_compte_epargne,motif,note,agent_id,capture_le,gps_lat,gps_lng,gps_precision_m,distans_m,kontwol&order=capture_le.desc`),
     api.selectAll(`grandon_demandes?or=${encodeURIComponent(`(statut.eq.en_attente,created_at.gte.${depi2})`)}&select=*&order=created_at.desc`),
     api.selectAll(`grandon_alet?or=${encodeURIComponent(`(fermen_le.is.null,fermen_le.gte.${depi2})`)}&select=*&order=kreye_le.desc`).catch(() => null),
   ]);
@@ -346,7 +347,8 @@ export async function model() {
         fen_dat: p.fen === "dat" ? p.fen_dat : null, kreye_pa: "moi", kreye_le: p.kreye_le, fermen_le: null, ...pend });
     if (o.kind === "alet_fermen" && M.alet.has(p.id)) Object.assign(M.alet.get(p.id), { fermen_le: p.le, fermen_pa: "moi", _fermenPending: true });
     if (o.kind === "suivi")
-      M.suivis.set(p.id, { id: p.id, id_compte_epargne: p.compte, motif: p.motif, note: p.note, agent_id: "moi", capture_le: p.capture_le, ...pend });
+      M.suivis.set(p.id, { id: p.id, id_compte_epargne: p.compte, motif: p.motif, note: p.note, agent_id: "moi", capture_le: p.capture_le,
+        gps_lat: p.gps?.lat ?? null, gps_lng: p.gps?.lng ?? null, gps_precision_m: p.gps?.acc ?? null, ...pend });
     if (o.kind === "tx")
       M.txs.set(p.id, {
         id_transaction_epargne: p.id, id_compte_epargne: p.compte, type_transaction: p.type, montant: p.montant,
@@ -369,7 +371,11 @@ export async function model() {
       if (j.slice(0, 7) === today.slice(0, 7) && j <= today) k._kolekMwa += Number(t.montant);
     }
   }
-  for (const x of M.suivis.values()) M.comptes.get(x.id_compte_epargne)?._suivis.push(x);
+  for (const x of M.suivis.values()) {
+    M.comptes.get(x.id_compte_epargne)?._suivis.push(x);
+    // Kontwòl kote fidbak la fèt (sèvè a kalkile l; isit se pou fidbak ki poko rive sou sèvè a): menm règ ak migrasyon 27.
+    if (!x.kontwol) Object.assign(x, kontwolSwivi(x, M.clients.get(M.comptes.get(x.id_compte_epargne)?.id_personne)));
+  }
   for (const x of M.demandes.values()) M.comptes.get(x.id_compte_epargne)?._demandes.push(x);
   for (const a of M.alet.values()) M.comptes.get(a.id_compte_epargne)?._alet.push(a);
   for (const k of M.comptes.values()) {
@@ -494,3 +500,15 @@ export function txKind(t) {
 
 export const comptesDuClient = (M, id) =>
   [...M.comptes.values()].filter((k) => k.id_personne === id).sort((a, b) => String(b.date_debut).localeCompare(String(a.date_debut)));
+
+// Distans ant kote ajan an te anrejistre fidbak la ak GPS kliyan an. Lim 300 m (menm jan ak sèvè a).
+export const LIM_KONTWOL_M = 300;
+export function kontwolSwivi(x, c) {
+  if (x.gps_lat == null || x.gps_lng == null) return { kontwol: "san_gps_ajan", distans_m: null };
+  if (c?.gps_lat == null || c?.gps_lng == null) return { kontwol: "san_gps_kliyan", distans_m: null };
+  const R = 6371000, r = (v) => (v * Math.PI) / 180;
+  const a = Math.sin(r(c.gps_lat - x.gps_lat) / 2) ** 2 + Math.cos(r(x.gps_lat)) * Math.cos(r(c.gps_lat)) * Math.sin(r(c.gps_lng - x.gps_lng) / 2) ** 2;
+  const d = Math.round(2 * R * Math.asin(Math.sqrt(a))), prec = Number(x.gps_precision_m || 0);
+  return { distans_m: d, kontwol: d - prec > LIM_KONTWOL_M ? "lwen" : prec > LIM_KONTWOL_M ? "pa_presi" : "ok" };
+}
+export const swiviSispèk = (x) => x.kontwol === "lwen" || x.kontwol === "san_gps_ajan";
