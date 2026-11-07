@@ -225,6 +225,12 @@ const FR = {
   "Dat kòmansman an pa bon.": "La date de début n'est pas valide.", "Fòk ou gen entènèt pou modifye yon cycle.": "Il faut Internet pour modifier un cycle.",
   "Cycle la modifye ✓": "Cycle modifié ✓", "Pa gen anyen ki chanje.": "Rien n'a changé.", "Dat kòmansman": "Date de début", "Dire": "Durée", "semèn": "semaine",
   "Se manadjè oswa admin sèlman ki ka modifye yon cycle.": "Seul un manager ou un admin peut modifier un cycle.",
+  "Ekip": "Équipe", "Ekip la · jodi a": "L'équipe · aujourd'hui", "Wè tout": "Tout voir", "San ajan": "Sans agent", "Done ajan sa a sèlman": "Données de cet agent uniquement",
+  "Kont ajan an": "Comptes de l'agent", "peye": "payé(s)", "Chif jodi a pou chak ajan. Peze sou yon ajan pou wè Tablo li ak kont li yo sèlman.": "Chiffres du jour pour chaque agent. Touchez un agent pour voir son tableau de bord et ses comptes uniquement.",
+  "Pou kolekte jodi a": "À collecter aujourd'hui", "Kolekte sou plan yo": "Collecté sur les plans", "Total kolekte": "Total collecté", "ajan": "agent(s)", "objektif la": "de l'objectif",
+  "depo an atant validasyon": "dépôt(s) en attente de validation", "Kont ki pa atache ak okenn ajan": "Comptes rattachés à aucun agent", "Pa gen depo jodi a": "Aucun dépôt aujourd'hui",
+  "Pou kolekte": "À collecter", "Kolekte (plan)": "Collecté (plans)", "Rete": "Reste", "Kliyan peye": "Clients payés", "Poko wè": "Pas encore vus", "Depo an atant": "Dépôts en attente",
+  "Mwa a: dwe": "Mois : dû", "Pa gen ajan teren.": "Aucun agent de terrain.",
   // Modpas ak aparèy
   "Chanje modpas mwen": "Changer mon mot de passe", "Chwazi pwòp modpas ou": "Choisissez votre mot de passe",
   "Modpas ou resevwa a se yon modpas tanporè. Chwazi yon modpas pa w anvan w kontinye: se ou sèl ki pou konnen l.": "Le mot de passe reçu est temporaire. Choisissez votre propre mot de passe avant de continuer : vous seul devez le connaître.",

@@ -576,3 +576,35 @@ html[data-look] .login h1.wordmark::after { content: ""; position: absolute; lef
 /* Bouton «Modifye cycle a» (manadjè / admin) */
 .btn.cycle-mod { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 10px 0 12px; }
 .btn.cycle-mod svg { width: 18px; height: 18px; flex: none; }
+
+/* Ekip (manadjè / admin) */
+.ekip-av { width: 40px; height: 40px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; flex: none;
+  background: color-mix(in srgb, var(--acc) 22%, var(--card)); color: var(--ink); font-weight: 800; font-size: .9rem; letter-spacing: .02em; }
+.ekip-bar { display: block; height: 6px; border-radius: 6px; background: color-mix(in srgb, var(--mut) 22%, transparent); overflow: hidden; }
+.ekip-bar i { display: block; height: 100%; background: var(--ok); border-radius: 6px; }
+.ekip-sek { margin-top: 18px; }
+.ekip-sek-h { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.ekip-sek-h h2 { margin: 0 0 8px; }
+.row.ekip-r { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; gap: 12px; align-items: center; text-decoration: none; color: inherit; }
+.ekip-m { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.ekip-p { display: flex; flex-direction: column; align-items: flex-end; text-align: right; }
+.ekip-p b { font-size: 1.15rem; }
+.ekip-p small { color: var(--mut); font-size: .72rem; white-space: nowrap; }
+.ekip-g { display: grid; grid-template-columns: 1fr; gap: 12px; margin-top: 12px; }
+.card.ekip-k { display: flex; flex-direction: column; gap: 10px; padding: 14px; text-decoration: none; color: inherit; }
+.ekip-k-h { display: flex; align-items: center; gap: 12px; }
+.ekip-k-h .grow { display: flex; flex-direction: column; min-width: 0; }
+.ekip-k-h small { font-size: .78rem; }
+.ekip-pc { font-size: 1.4rem; font-weight: 800; }
+.ekip-dl { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 14px; margin: 0; }
+.ekip-dl div { display: flex; justify-content: space-between; gap: 8px; border-bottom: 1px dashed var(--line); padding-bottom: 4px; min-width: 0; }
+.ekip-dl dt { color: var(--mut); font-size: .8rem; }
+.ekip-dl dd { margin: 0; font-weight: 700; font-size: .85rem; text-align: right; white-space: nowrap; }
+.warn-t { color: var(--warn); }
+.ekip-tet { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 6px; }
+.ekip-non { display: flex; align-items: center; gap: 10px; }
+.ekip-non div { display: flex; flex-direction: column; }
+.ekip-non small { color: var(--mut); font-size: .75rem; }
+.ekip-kont { margin-top: 18px; }
+@media (min-width: 720px) { .ekip-g { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 1440px) { .ekip-g { grid-template-columns: repeat(3, minmax(0, 1fr)); } }

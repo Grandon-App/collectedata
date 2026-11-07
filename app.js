@@ -29,7 +29,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "4.27";
+const APP_VERSION = "4.28";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin", kesye: "Responsab kès" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
@@ -110,9 +110,11 @@ const $nav = document.getElementById("nav");
 const TABS = [["tablo", "#/", "Tablo"], ["kliyan", "#/kliyan", "Kliyan"], ["epay", "#/epay", "Epay"], ["rapo", "#/rapo", "Rapò"], ["kat", "#/kat", "Kat"], ["senk", "#/senk", "Senkronizasyon"], ["param", "#/param", "Paramèt"]];
 // Responsab kès: pa gen Tablo, Kliyan, Epay ni Kat. Li gen Kès (validasyon) ak Rapò.
 const TABS_KES = [["kes", "#/kes", "Kès"], ["rapo", "#/rapo", "Rapò"], ["senk", "#/senk", "Senkronizasyon"], ["param", "#/param", "Paramèt"]];
-const tabs = () => (estKesye() ? TABS_KES : TABS);
+const TABS_MAN = [TABS[0], ["ekip", "#/ekip", "Ekip"], ...TABS.slice(1)];
+const tabs = () => (estKesye() ? TABS_KES : estManager() ? TABS_MAN : TABS);
 function tabActif(r) {
   if (/^#\/kes/.test(r)) return "kes";
+  if (/^#\/ekip/.test(r)) return "ekip";
   if (/^#\/(kliyan)/.test(r)) return "kliyan";
   if (/^#\/(epay|cycle|tx|chwazi)/.test(r)) return "epay";
   if (/^#\/rapo/.test(r)) return "rapo";
@@ -128,7 +130,7 @@ function updateNav() {
   $nav.hidden = false;
   if (!window.L?.map) setTimeout(() => KAT.chajeLeaflet().catch(() => {}), 400); // kat la pare menm si entènèt koupe apre
   document.body.classList.add("has-nav");
-  $nav.innerHTML = tabs().map(([k, href, label]) => `<a href="${href}" class="${k === a ? "on" : ""}${k === "senk" ? " nav-lap" : ""}" ${k === a ? 'aria-current="page"' : ""}>${ICO[k]}<span>${label}</span></a>`).join("")
+  $nav.innerHTML = tabs().map(([k, href, label]) => `<a href="${href}" class="${k === a ? "on" : ""}${k === "senk" || k === "ekip" ? " nav-lap" : ""}" ${k === a ? 'aria-current="page"' : ""}>${ICO[k]}<span>${label}</span></a>`).join("")
     + `<div class="nav-foot"><span class="nav-moi" data-brut>${h(moi.nom || "")}</span><span class="nav-wol">${WOL[moi.role] || "Anplwaye"}</span><span class="nav-ver mut">v${h(APP_VERSION)}</span></div>`;
   mezireBar();
 }
@@ -227,8 +229,8 @@ function liKliyan(M, c, href) {
 }
 
 // ---------- 1. Tablo de bò ----------
-async function viewTablo() {
-  const M = await S.model();
+// Chif Tablo a pou yon modèl (tout ajan yo, oswa yon sèl ajan: gade modèlAjan).
+function statsTablo(M) {
   const st = statsEpay(M);
   st.rete = Math.max(0, st.prevuJodi - st.kolekPlan);
   st.anplis = Math.max(0, st.kolekte - st.kolekPlan);
@@ -240,11 +242,110 @@ async function viewTablo() {
     mwaDwe: som((k) => k._mwaDwe), mwaKolekte: som((k) => k._kolekMwa), nDwe: ks.filter((k) => k._mwaDwe > 0).length,
     nonMwa: new Date(M.today + "T12:00:00Z").toLocaleDateString(getLang() === "fr" ? "fr-FR" : "fr-FR", { month: "long", year: "numeric", timeZone: "UTC" }) });
   st.mwaPwosan = st.mwaPrevu ? Math.round((st.mwaPlan / st.mwaPrevu) * 100) : 0;
-  const man = estManager();
-  $app.innerHTML = `<div id="tablo">${L().parts.tablo({ ...ctxBase(M), stats: st, isoJou: S.isoJou(M.today) })}${man ? `${seksyonKontwol(M)}<section class="doublon-sek" id="doublon" hidden></section>` : ""}</div>`;
-  $app.querySelector("[data-mwa-reta]")?.addEventListener("click", () => { ongEpay = "kont"; filtKont = "reta"; });
-  if (man) { ajans = (await db.meta("ajans")) || {}; montreKontwol(M); chajeDoublon(); }
+  return st;
 }
+// Modèl yon sèl ajan: kont li yo (created_by, ak lyen ansyen kont Bwat Sekrem yo), kliyan, tranzaksyon, demann, fidbak ak alèt kont sa yo.
+const SAN_AJAN = "-";
+function modèlAjan(M, ajanId, ekipIds) {
+  const pa = (k) => (ajanId === SAN_AJAN ? !ekipIds.has(k.created_by) : k.created_by === ajanId);
+  const comptes = new Map([...M.comptes].filter(([, k]) => pa(k)));
+  const nanKont = (x) => comptes.has(x.id_compte_epargne);
+  const moun = new Set([...comptes.values()].map((k) => k.id_personne));
+  return { ...M, comptes, clients: new Map([...M.clients].filter(([id]) => moun.has(id))), txs: new Map([...M.txs].filter(([, x]) => nanKont(x))),
+    demandes: new Map([...M.demandes].filter(([, x]) => nanKont(x))), suivis: new Map([...M.suivis].filter(([, x]) => nanKont(x))),
+    alet: new Map([...M.alet].filter(([, x]) => nanKont(x))) };
+}
+// Ajan teren yo (+ «San ajan» si gen kont ki pa atache ak okenn ajan).
+async function ekipAjan(M) {
+  const ekip = ((await db.meta("ekip")) || []).filter((x) => x.role === "agent");
+  const ids = new Set(ekip.map((x) => x.user_id));
+  const lis = ekip.filter((x) => x.actif !== false || [...M.comptes.values()].some((k) => k.created_by === x.user_id)).sort((a, b) => a.nom.localeCompare(b.nom, "fr"));
+  if ([...M.comptes.values()].some((k) => k._actif && !ids.has(k.created_by))) lis.push({ user_id: SAN_AJAN, nom: t("San ajan"), role: "agent", actif: true });
+  return { lis, ids };
+}
+async function viewTablo(ajanId = null) {
+  let M = await S.model();
+  const man = estManager();
+  let ajan = null;
+  if (ajanId && man) {
+    ajans = (await db.meta("ajans")) || {};
+    const { lis, ids } = await ekipAjan(M);
+    ajan = lis.find((x) => x.user_id === ajanId) || { user_id: ajanId, nom: ajans[ajanId] || t("Lòt ajan") };
+    M = modèlAjan(M, ajanId, ids);
+  }
+  const st = statsTablo(M);
+  const tèt = ajan ? `<div class="ekip-tet"><a href="#/ekip" class="back">‹ ${t("Ekip")}</a><div class="ekip-non"><span class="ekip-av" aria-hidden="true">${h(inisyalNon(ajan.nom))}</span><div><b data-brut>${h(ajan.nom)}</b><small>${t("Done ajan sa a sèlman")}</small></div></div></div>` : "";
+  $app.innerHTML = `<div id="tablo"${ajan ? ' class="tablo-ajan"' : ""}>${tèt}${L().parts.tablo({ ...ctxBase(M), stats: st, isoJou: S.isoJou(M.today) })}${man && !ajan ? `${await seksyonEkip(M)}${seksyonKontwol(M)}<section class="doublon-sek" id="doublon" hidden></section>` : ""}${ajan ? lisKontAjan(M) : ""}</div>`;
+  $app.querySelector("[data-mwa-reta]")?.addEventListener("click", () => { ongEpay = "kont"; filtKont = "reta"; });
+  if (man && !ajan) { ajans = (await db.meta("ajans")) || {}; montreKontwol(M); chajeDoublon(); }
+  if (ajan) $app.querySelectorAll("[data-papeye]").forEach((b) => (b.onclick = () => { const k = M.comptes.get(b.dataset.papeye); paPeye(k, M.clients.get(k.id_personne) || {}); }));
+}
+const inisyalNon = (n) => String(n || "?").split(/\s+/).filter(Boolean).slice(0, 2).map((x) => x[0]).join("").toUpperCase();
+// Kont yon ajan (sou paj ajan an): peman jodi a anvan, apre an reta, apre lòt yo.
+function lisKontAjan(M) {
+  const swiviJodi = new Map([...M.suivis.values()].filter((x) => S.jouLokal(new Date(x.capture_le)) === M.today).map((x) => [x.id_compte_epargne, x.motif]));
+  const aktif = [...M.comptes.values()].filter((k) => k._actif);
+  const filt0 = filtKont, tri0 = kxF.tri; filtKont = "tout"; kxF.tri = "priyorite";
+  const r = lisKont(M, aktif, swiviJodi, "");
+  filtKont = filt0; kxF.tri = tri0;
+  return `<section class="tx-seksyon ekip-kont"><h2>${t("Kont ajan an")} <small>${aktif.length}</small></h2><div>${r.html}</div></section>`;
+}
+// Seksyon «Ekip la» sou Tablo manadjè a: yon liy pa ajan, klike pou wè Tablo li.
+async function seksyonEkip(M) {
+  const { lis, ids } = await ekipAjan(M);
+  if (!lis.length) return "";
+  const rows = lis.map((a) => chifAjan(M, a, ids));
+  return `<section class="ekip-sek"><div class="ekip-sek-h"><h2>${t("Ekip la · jodi a")}</h2><a href="#/ekip" class="sm">${t("Wè tout")} ›</a></div>
+    <div class="list ekip-mini">${rows.map(({ a, st }) => { const p = st.prevuJodi ? Math.round((st.kolekPlan / st.prevuJodi) * 100) : 0;
+      return `<a class="row ekip-r" href="#/ekip/${h(a.user_id)}"><span class="ekip-av" aria-hidden="true">${h(inisyalNon(a.nom))}</span>
+        <span class="ekip-m"><b data-brut>${h(a.nom)}</b><span class="mut sm">${st.peye}/${st.pouJodi} ${t("peye")} · ${gd(st.kolekte)} ${t("kolekte")}</span>
+        <span class="ekip-bar" aria-hidden="true"><i style="width:${Math.min(100, p)}%"></i></span></span>
+        <span class="ekip-p"><b>${p}%</b><small>${gd(st.kolekPlan)} / ${gd(st.prevuJodi)}</small></span></a>`; }).join("")}</div></section>`;
+}
+// Onglè Ekip (manadjè / admin): yon kat pa ajan ak chif jodi a; klike = Tablo ajan an sèlman.
+async function viewEkip() {
+  if (!estManager()) return go("#/");
+  const M = await S.model();
+  ajans = (await db.meta("ajans")) || {};
+  const { lis, ids } = await ekipAjan(M);
+  const rows = lis.map((a) => chifAjan(M, a, ids));
+  const tot = rows.reduce((o, { st, depoAtant }) => ({ prevu: o.prevu + st.prevuJodi, plan: o.plan + st.kolekPlan, kol: o.kol + st.kolekte, dep: o.dep + depoAtant }), { prevu: 0, plan: 0, kol: 0, dep: 0 });
+  $app.innerHTML = `<div id="ekip"><div class="page-head"><h1>${t("Ekip")}</h1></div>
+    <p class="mut sm">${t("Chif jodi a pou chak ajan. Peze sou yon ajan pou wè Tablo li ak kont li yo sèlman.")}</p>
+    <div class="kes-sum ekip-sum">
+      <div class="card kes-k"><span>${t("Pou kolekte jodi a")}</span><b>${gd(tot.prevu)}</b><small>${rows.length} ${t("ajan")}</small></div>
+      <div class="card kes-k"><span>${t("Kolekte sou plan yo")}</span><b class="in">${gd(tot.plan)}</b><small>${tot.prevu ? Math.round((tot.plan / tot.prevu) * 100) : 0}% ${t("objektif la")}</small></div>
+      <div class="card kes-k"><span>${t("Total kolekte")}</span><b>${gd(tot.kol)}</b><small>${tot.dep} ${t("depo an atant validasyon")}</small></div>
+    </div>
+    <div class="ekip-g">${rows.map(({ a, st, depoAtant, depoAtantSom, pokoWe, dènye }) => {
+      const p = st.prevuJodi ? Math.round((st.kolekPlan / st.prevuJodi) * 100) : 0;
+      const rete = Math.max(0, st.prevuJodi - st.kolekPlan);
+      return `<a class="card ekip-k" href="#/ekip/${h(a.user_id)}">
+        <div class="ekip-k-h"><span class="ekip-av" aria-hidden="true">${h(inisyalNon(a.nom))}</span><div class="grow"><b data-brut>${h(a.nom)}</b>
+          <small class="mut">${a.user_id === SAN_AJAN ? t("Kont ki pa atache ak okenn ajan") : dènye ? `${t("Dènye depo")} ${lèKout(dènye)}` : t("Pa gen depo jodi a")}</small></div><span class="ekip-pc">${p}%</span></div>
+        <span class="ekip-bar" aria-hidden="true"><i style="width:${Math.min(100, p)}%"></i></span>
+        <dl class="ekip-dl">
+          <div><dt>${t("Pou kolekte")}</dt><dd>${gd(st.prevuJodi)}</dd></div>
+          <div><dt>${t("Kolekte (plan)")}</dt><dd class="in">${gd(st.kolekPlan)}</dd></div>
+          <div><dt>${t("Rete")}</dt><dd class="${rete ? "err-t" : ""}">${gd(rete)}</dd></div>
+          <div><dt>${t("Kliyan peye")}</dt><dd>${st.peye}/${st.pouJodi}</dd></div>
+          <div><dt>${t("Poko wè")}</dt><dd class="${pokoWe ? "warn-t" : ""}">${pokoWe}</dd></div>
+          <div><dt>${t("An reta")}</dt><dd class="${st.anReta ? "err-t" : ""}">${st.anReta}/${st.aktif}</dd></div>
+          <div><dt>${t("Depo an atant")}</dt><dd>${depoAtant}${depoAtant ? ` · ${gd(depoAtantSom)}` : ""}</dd></div>
+          <div><dt>${t("Mwa a: dwe")}</dt><dd>${gd(st.mwaDwe)}</dd></div>
+        </dl></a>`; }).join("") || `<p class="empty">${t("Pa gen ajan teren.")}</p>`}</div></div>`;
+}
+function chifAjan(M, a, ids) {
+  const Ma = modèlAjan(M, a.user_id, ids);
+  const st = statsTablo(Ma);
+  const depoAtant = [...Ma.txs.values()].filter((x) => x.type_transaction === "D" && x.validation_status === "pending");
+  const swiviJodi = new Set([...Ma.suivis.values()].filter((x) => S.jouLokal(new Date(x.capture_le)) === M.today).map((x) => x.id_compte_epargne));
+  const pouJodi = [...Ma.comptes.values()].filter((k) => k._jodiPeman);
+  const pokoWe = pouJodi.filter((k) => k._jodi < Number(k.montant_plan || 0) && !swiviJodi.has(k.id_compte_epargne)).length;
+  const dènye = [...Ma.txs.values()].filter((x) => S.jouTx(x) === M.today && x.created_by === a.user_id).map((x) => String(x.date_transaction)).sort().pop();
+  return { a, st, depoAtant: depoAtant.length, depoAtantSom: depoAtant.reduce((s, x) => s + Number(x.montant || 0), 0), pokoWe, dènye };
+}
+
 
 // Chif komen pou Epay/Tablo
 function statsEpay(M) {
@@ -2095,6 +2196,8 @@ async function render() {
   if (r === "#/kes") return estKesye() ? viewKes() : go("#/");
   let m;
   if (r === "#/" || r === "#") return viewTablo();
+  if (r === "#/ekip") return estManager() ? viewEkip() : go("#/");
+  if ((m = r.match(/^#\/ekip\/([\w-]+)$/))) return estManager() ? viewTablo(m[1]) : go("#/");
   if (r === "#/kliyan") return viewKliyan();
   if (r === "#/epay") return viewEpay();
   if (r === "#/rapo") return viewRapo();
