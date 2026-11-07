@@ -7,6 +7,7 @@ import { t, setLang, getLang, demarrerTraduction } from "./i18n.js";
 import * as F from "./fmt.js";
 import * as looks from "./looks.js";
 import * as KAT from "./kat.js";
+import { PWOBLEM, pwoblemPa, genPwoblem } from "./pwoblem.js";
 
 const $app = document.getElementById("app");
 // Klavye sou onglè yo (role=tab nan yon role=tablist): flèch, Home, End deplase fokis la epi chwazi onglè a.
@@ -29,7 +30,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "4.34";
+const APP_VERSION = "4.35";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin", kesye: "Responsab kès" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
@@ -110,11 +111,12 @@ const $nav = document.getElementById("nav");
 const TABS = [["tablo", "#/", "Tablo"], ["kliyan", "#/kliyan", "Kliyan"], ["epay", "#/epay", "Epay"], ["rapo", "#/rapo", "Rapò"], ["kat", "#/kat", "Kat"], ["senk", "#/senk", "Senkronizasyon"], ["param", "#/param", "Paramèt"]];
 // Responsab kès: pa gen Tablo, Kliyan, Epay ni Kat. Li gen Kès (validasyon) ak Rapò.
 const TABS_KES = [["kes", "#/kes", "Kès"], ["rapo", "#/rapo", "Rapò"], ["senk", "#/senk", "Senkronizasyon"], ["param", "#/param", "Paramèt"]];
-const TABS_MAN = [TABS[0], ["ekip", "#/ekip", "Ekip"], ...TABS.slice(1)];
+const TABS_MAN = [TABS[0], ["ekip", "#/ekip", "Ekip"], ["alet", "#/alet", "Alèt"], ...TABS.slice(1)];
 const tabs = () => (estKesye() ? TABS_KES : estManager() ? TABS_MAN : TABS);
 function tabActif(r) {
   if (/^#\/kes/.test(r)) return "kes";
   if (/^#\/ekip/.test(r)) return "ekip";
+  if (/^#\/alet/.test(r)) return "alet";
   if (/^#\/(kliyan)/.test(r)) return "kliyan";
   if (/^#\/(epay|cycle|tx|chwazi)/.test(r)) return "epay";
   if (/^#\/rapo/.test(r)) return "rapo";
@@ -130,7 +132,7 @@ function updateNav() {
   $nav.hidden = false;
   if (!window.L?.map) setTimeout(() => KAT.chajeLeaflet().catch(() => {}), 400); // kat la pare menm si entènèt koupe apre
   document.body.classList.add("has-nav");
-  $nav.innerHTML = tabs().map(([k, href, label]) => `<a href="${href}" class="${k === a ? "on" : ""}${k === "senk" || k === "ekip" ? " nav-lap" : ""}" ${k === a ? 'aria-current="page"' : ""}>${ICO[k]}<span>${label}</span></a>`).join("")
+  $nav.innerHTML = tabs().map(([k, href, label]) => `<a href="${href}" class="${k === a ? "on" : ""}${k === "senk" || k === "ekip" || k === "alet" ? " nav-lap" : ""}" ${k === a ? 'aria-current="page"' : ""}>${ICO[k]}<span>${label}</span></a>`).join("")
     + `<div class="nav-foot"><span class="nav-moi" data-brut>${h(moi.nom || "")}</span><span class="nav-wol">${WOL[moi.role] || "Anplwaye"}</span><span class="nav-ver mut">v${h(APP_VERSION)}</span></div>`;
   mezireBar();
 }
@@ -244,7 +246,7 @@ function statsTablo(M) {
   st.mwaPwosan = st.mwaPrevu ? Math.round((st.mwaPlan / st.mwaPrevu) * 100) : 0;
   return st;
 }
-// Modèl yon sèl ajan: kont li yo (created_by, ak lyen ansyen kont Bwat Sekrem yo), kliyan, tranzaksyon, demann, fidbak ak alèt kont sa yo.
+// Modèl yon sèl ajan: kont li yo (created_by, ak lyen ansyen kont yo), kliyan, tranzaksyon, demann, fidbak ak alèt kont sa yo.
 const SAN_AJAN = "-";
 function modèlAjan(M, ajanId, ekipIds) {
   const pa = (k) => (ajanId === SAN_AJAN ? !ekipIds.has(k.created_by) : k.created_by === ajanId);
@@ -284,6 +286,160 @@ function touchJodi(M) {
   const lòt = xs.filter((x) => !mwenSe(M.comptes.get(x.id_compte_epargne)?.created_by));
   return { tout: som(xs), n: xs.length, lòt: som(lòt), nLòt: lòt.length };
 }
+// Alèt ak rapèl aktif sou Tablo a: kont pòtfèy la (oswa tout kont yo) + rapèl moun nan kreye sou nenpòt kliyan.
+function aletAktif(M, M0) {
+  const wè = new Set(), l = [];
+  const mete = (a, k) => { if (!wè.has(a.id) && a._eta === "aktif") { wè.add(a.id); l.push({ ...a, k }); } };
+  for (const k of M.comptes.values()) for (const a of k._alet) mete(a, k);
+  for (const k of M0.comptes.values()) for (const a of k._alet) if (a.tip === "rapel" && mwenSe(a.kreye_pa)) mete(a, k);
+  const NV = ["ijan", "enpotan", "info"];
+  return l.sort((a, b) => b._anReta - a._anReta || String(a.dele || "9999").localeCompare(String(b.dele || "9999")) || NV.indexOf(a.nivo) - NV.indexOf(b.nivo));
+}
+function seksyonAletTablo(M, M0) {
+  if (estKesye()) return "";
+  const l = aletAktif(M, M0);
+  if (!l.length) return "";
+  const nReta = l.filter((a) => a._anReta).length;
+  const rann = (a) => `<div class="alet-tr">${liAlet(a, { man: estManager() }).replace('<div class="grow">', `<div class="grow"><a class="alet-kl" href="#/cycle/${h(a.k.id_compte_epargne)}">${d(non(M0.clients.get(a.k.id_personne)))} · ${d(a.k.no_compte || "")}</a><br>`)}</div>`;
+  const prem = l.slice(0, 6), rès = l.slice(6);
+  return `<section class="alet-tablo" id="alet-tablo"><div class="txj-h"><h2>${t("Alèt ak rapèl")} <small>${l.length}</small></h2>${nReta ? `<span class="badge err">${nReta} ${t("an reta")}</span>` : ""}</div>
+    <div class="list">${prem.map(rann).join("")}</div>
+    ${rès.length ? `<details class="alet-plis"><summary>${t("Wè")} ${rès.length} ${t("lòt")}</summary><div class="list">${rès.map(rann).join("")}</div></details>` : ""}</section>`;
+}
+// Nouvo alèt nan pòtfèy la (kanpay, alèt manadjè, alèt ki depase dèlè): popup + son + vibrasyon + notifikasyon telefòn, yon sèl fwa.
+const ALET_VU = "grandon-alet-vu";
+let avètiOuvè = false;
+async function avètiAlet() {
+  if (avètiOuvè || !moi || estKesye() || FORM.test(location.hash) || location.hash === "#/login" || document.querySelector(".modal-wrap")) return;
+  const M = await S.model();
+  const l = [];
+  for (const k of M.comptes.values()) {
+    if (!mwenSe(k.created_by)) continue;
+    for (const a of k._alet) if (a._eta === "aktif" && !mwenSe(a.kreye_pa) && !a._pending) l.push({ ...a, k, cle: a._anReta ? `${a.id}:reta` : a.id });
+  }
+  let vu = []; try { vu = JSON.parse(localStorage.getItem(ALET_VU) || "[]"); } catch { /* */ }
+  const nouvo = l.filter((a) => !vu.includes(a.cle));
+  if (!nouvo.length) return;
+  avètiOuvè = true;
+  const gr = new Map();
+  for (const a of nouvo) { const c = `${a.tit}|${a.dele || ""}|${a._anReta ? 1 : 0}`; if (!gr.has(c)) gr.set(c, { a, n: 0, kl: [] }); const g = gr.get(c); g.n++; g.kl.push(a); }
+  const nivo = nouvo.some((a) => a.nivo === "ijan" || a._anReta) ? "ijan" : nouvo.some((a) => a.nivo === "enpotan") ? "enpotan" : "info";
+  const titre = nouvo.length > 1 ? `${nouvo.length} ${t("nouvo alèt nan pòtfèy ou")}` : t("Nouvo alèt nan pòtfèy ou");
+  const tekst = [...gr.values()].map(({ a, n }) => `${a._anReta ? `${t("An reta")}: ` : ""}${a.tit} (${n})${a.dele ? ` · ${t("dèlè")} ${datFr(a.dele)}` : ""}`).join(" · ");
+  if (prefs().son !== false) ui.son(nivo);
+  ui.notifye({ titre, tekst, tag: "grandon-alet", nivo, url: "#/" });
+  const M0 = M;
+  await ui.aletPopup({ titre, nivo, soutit: t("Swivi sa yo nan dèlè a. Peze sou yon kliyan pou wè l."),
+    html: [...gr.values()].map(({ a, n, kl }) => `<div class="row alet ${h(a.nivo)}"><div class="grow"><b>${d(a.tit)}</b> <span class="badge ${a._anReta ? "err" : "mut"}">${n} ${t("kliyan")}</span>
+      ${a.dele ? `<span class="badge ${a._anReta ? "err" : "warn"}">${t("Dèlè")} ${datFr(a.dele)}${a._anReta ? ` · ${t("an reta")}` : ""}</span>` : ""}
+      ${a.mesaj ? `<div class="sm alet-m">${d(a.mesaj)}</div>` : ""}
+      <div class="sm">${kl.slice(0, 8).map((x) => `<a href="#/cycle/${h(x.k.id_compte_epargne)}">${d(non(M0.clients.get(x.k.id_personne)))}</a>`).join(" · ")}${kl.length > 8 ? ` · +${kl.length - 8}` : ""}</div></div></div>`).join("") });
+  try { localStorage.setItem(ALET_VU, JSON.stringify([...new Set([...vu, ...nouvo.map((a) => a.cle)])].slice(-3000))); } catch { /* */ }
+  avètiOuvè = false;
+}
+
+// ---------- Jesyon alèt (manadjè / admin): pwoblèm nan dosye yo, kanpay ak swivi ----------
+const aletF = { ajan: "", lis: "" };
+async function viewAlet() {
+  const M = await S.model();
+  ajans = (await db.meta("ajans")) || {};
+  const { lis, ids } = await ekipAjan(M);
+  const ajanK = (k) => (ids.has(k.created_by) ? k.created_by : SAN_AJAN);
+  const nonA = (id) => lis.find((a) => a.user_id === id)?.nom || t("San ajan");
+  const nanF = (k) => !aletF.ajan || ajanK(k) === aletF.ajan;
+  const aktif = [...M.comptes.values()].filter((k) => k._actif && !k._pending);
+  const parKliyan = new Map(); // yon kont pa kliyan pou pwoblèm fich kliyan an (kont ki pi resan an)
+  for (const k of [...aktif].sort((a, b) => String(b.date_debut).localeCompare(String(a.date_debut)))) if (!parKliyan.has(k.id_personne)) parKliyan.set(k.id_personne, k);
+  const alets = [...M.comptes.values()].flatMap((k) => k._alet.map((a) => ({ ...a, k })));
+  const aAktif = alets.filter((a) => a._eta === "aktif");
+  const kontPw = (p) => p.oto ? (p.k === "kal" ? aktif : [...parKliyan.values()]).filter((k) => genPwoblem(p.k, M.clients.get(k.id_personne), k))
+    : [...new Map(aAktif.filter((a) => a.pwoblem === p.k).map((a) => [a.k.id_compte_epargne, a.k])).values()];
+  const pw = PWOBLEM.map((p) => {
+    const tout = kontPw(p), kont = tout.filter(nanF);
+    const al = aAktif.filter((a) => a.pwoblem === p.k && nanF(a.k));
+    const parA = new Map(); for (const k of kont) parA.set(ajanK(k), (parA.get(ajanK(k)) || 0) + 1);
+    return { p, tout, kont, nAlet: al.length, nReta: al.filter((a) => a._anReta).length, parA };
+  });
+  // Kanpay yo: alèt ki gen menm kanpay_id
+  const kp = new Map();
+  for (const a of alets.filter((x) => x.kanpay_id && nanF(x.k))) {
+    if (!kp.has(a.kanpay_id)) kp.set(a.kanpay_id, { id: a.kanpay_id, a, l: [] });
+    kp.get(a.kanpay_id).l.push(a);
+  }
+  const kanpay = [...kp.values()].map((g) => ({ ...g, n: g.l.length, regle: g.l.filter((x) => x._eta !== "aktif").length, reta: g.l.filter((x) => x._anReta).length }))
+    .filter((g) => g.n - g.regle > 0 || g.l.some((x) => S.jouLokal(new Date(x.fermen_le || x.kreye_le)) >= S.ajouteJou(M.today, -14)))
+    .sort((a, b) => String(b.a.kreye_le).localeCompare(String(a.a.kreye_le)));
+  const lòt = aAktif.filter((a) => !a.kanpay_id && nanF(a.k) && (!aletF.lis || (aletF.lis === "reta" ? a._anReta : a.tip === aletF.lis)))
+    .sort((a, b) => b._anReta - a._anReta || String(a.dele || "9999").localeCompare(String(b.dele || "9999")));
+  const nReta = aAktif.filter((a) => nanF(a.k) && a._anReta).length;
+  const kart = ({ p, kont, nAlet, nReta, parA }) => `<div class="card alet-pw${kont.length ? "" : " zewo"}" data-pw="${h(p.k)}">
+    <div class="alet-pw-h"><span>${t(p.l)}</span><b>${kont.length}</b></div>
+    <small class="mut">${t(p.oto ? (p.k === "kal" ? "kont" : "kliyan") : "kliyan make")}${nAlet ? ` · ${nAlet} ${t("alèt aktif")}` : ""}${nReta ? ` · <span class="err-t">${nReta} ${t("an reta")}</span>` : ""}</small>
+    ${parA.size && !aletF.ajan ? `<div class="alet-pw-a">${[...parA].sort((a, b) => b[1] - a[1]).map(([id, n]) => `<span class="chip-s" data-brut>${h(nonA(id).split(" ")[0])} ${n}</span>`).join("")}</div>` : ""}
+    <div class="btns">${kont.length ? `<button type="button" class="btn sm" data-pw-wè="${h(p.k)}">${t("Wè yo")}</button>` : ""}
+      ${p.oto && kont.length ? `<button type="button" class="btn sm pri" data-pw-lanse="${h(p.k)}">${t("Lanse alèt")}</button>` : ""}</div>
+    ${p.oto ? "" : `<p class="mut sm">${t("Make yon kliyan sou paj kont li (＋ Alèt → Pwoblèm).")}</p>`}
+    <div class="alet-pw-lis" hidden></div></div>`;
+  $app.innerHTML = `<div id="alet"><div class="page-head"><h1>${t("Alèt")}</h1></div>
+    <p class="mut sm">${t("Kantite kliyan ki gen yon pwoblèm nan dosye yo, alèt ki aktif yo ak swivi ajan yo.")}</p>
+    <label class="tx-sel alet-ajan"><span>${t("Pòtfèy")}</span><select id="alet-ajan"><option value="">${t("Tout ajan yo")}</option>${lis.map((a) => `<option value="${h(a.user_id)}" ${aletF.ajan === a.user_id ? "selected" : ""}>${h(a.nom)}</option>`).join("")}</select></label>
+    <div class="kes-sum">
+      <div class="card kes-k"><span>${t("Alèt aktif")}</span><b>${aAktif.filter((a) => nanF(a.k)).length}</b><small>${t("sou kont yo")}</small></div>
+      <div class="card kes-k"><span>${t("An reta")}</span><b class="${nReta ? "err-t" : ""}">${nReta}</b><small>${t("dèlè a depase")}</small></div>
+      <div class="card kes-k"><span>${t("Rapèl ajan yo")}</span><b>${aAktif.filter((a) => nanF(a.k) && a.tip === "rapel").length}</b><small>${t("aktif")}</small></div>
+    </div>
+    <h2>${t("Pwoblèm nan dosye yo")}</h2>
+    <div class="alet-pw-g">${pw.map(kart).join("")}</div>
+    <h2>${t("Kanpay alèt yo")}</h2>
+    <div class="list">${kanpay.map((g) => { const pc = g.n ? Math.round((g.regle / g.n) * 100) : 0; const parA = new Map();
+      for (const x of g.l) { const id = ajanK(x.k); const o = parA.get(id) || { n: 0, r: 0 }; o.n++; if (x._eta !== "aktif") o.r++; parA.set(id, o); }
+      return `<div class="row col alet-kp"><div><b>${d(g.a.tit)}</b> ${g.a.pwoblem ? `<span class="badge mut">${t(pwoblemPa(g.a.pwoblem)?.l || g.a.pwoblem)}</span>` : ""}
+        ${g.a.dele ? `<span class="badge ${g.reta ? "err" : "warn"}">${t("Dèlè")} ${datFr(g.a.dele)}${g.reta ? ` · ${g.reta} ${t("an reta")}` : ""}</span>` : ""}</div>
+        <div class="sm">${g.regle}/${g.n} ${t("regle")} (${pc}%) · ${t("lanse")} ${lè(g.a.kreye_le)}${nomAjan(g.a.kreye_pa) ? ` · ${d(nomAjan(g.a.kreye_pa))}` : ""}</div>
+        <span class="ekip-bar" aria-hidden="true"><i style="width:${pc}%"></i></span>
+        <div class="alet-pw-a">${[...parA].map(([id, o]) => `<span class="chip-s" data-brut>${h(nonA(id))} ${o.r}/${o.n}</span>`).join("")}</div>
+        ${g.n - g.regle ? `<div class="btns"><button type="button" class="btn sm" data-kp-fermen="${h(g.id)}">${t("Fèmen kanpay la")}</button></div>` : ""}</div>`; }).join("") || `<p class="empty">${t("Poko gen kanpay.")}</p>`}</div>
+    <h2>${t("Lòt alèt ak rapèl aktif")} <small>${lòt.length}</small></h2>
+    <div class="chips filt" role="group">${[["", "Tout"], ["reta", "An reta"], ["manyel", "Manadjè"], ["rapel", "Rapèl ajan"]].map(([v, l]) => `<button type="button" class="chip ${aletF.lis === v ? "on" : ""}" data-alis="${v}" aria-pressed="${aletF.lis === v}">${t(l)}</button>`).join("")}</div>
+    <div class="list alet-tablo">${lòt.map((a) => `<div class="alet-tr">${liAlet(a, { man: true }).replace('<div class="grow">', `<div class="grow"><a class="alet-kl" href="#/cycle/${h(a.k.id_compte_epargne)}">${d(non(M.clients.get(a.k.id_personne)))} · ${d(a.k.no_compte || "")}</a> <span class="mut sm" data-brut>${h(nonA(ajanK(a.k)))}</span><br>`)}</div>`).join("") || `<p class="empty">${t("Pa gen lòt alèt aktif.")}</p>`}</div></div>`;
+  document.getElementById("alet-ajan").onchange = (e) => { aletF.ajan = e.target.value; viewAlet(); };
+  $app.querySelectorAll("[data-alis]").forEach((b) => (b.onclick = () => { aletF.lis = b.dataset.alis; viewAlet(); }));
+  brancherAlet(M);
+  $app.querySelectorAll("[data-pw-wè]").forEach((b) => (b.onclick = () => {
+    const box = b.closest(".alet-pw").querySelector(".alet-pw-lis"), r = pw.find((x) => x.p.k === b.dataset.pwWè);
+    box.hidden = !box.hidden;
+    if (!box.hidden) box.innerHTML = `<div class="list">${r.kont.map((k) => { const a = aAktif.find((x) => x.pwoblem === r.p.k && x.k.id_compte_epargne === k.id_compte_epargne);
+      return `<a class="row" href="#/cycle/${h(k.id_compte_epargne)}"><div class="grow"><b>${d(non(M.clients.get(k.id_personne)))}</b><div class="mut sm">${d(k.no_compte || "")} · <span data-brut>${h(nonA(ajanK(k)))}</span></div></div>
+        ${a ? `<span class="badge ${a._anReta ? "err" : "warn"}">${t("Alèt")}${a.dele ? ` · ${datFr(a.dele)}` : ""}</span>` : ""}</a>`; }).join("")}</div>`;
+  }));
+  $app.querySelectorAll("[data-pw-lanse]").forEach((b) => (b.onclick = async () => {
+    if (!navigator.onLine) return ui.info("Pa gen koneksyon.", "Fòk ou gen entènèt pou lanse yon kanpay alèt.");
+    const r = pw.find((x) => x.p.k === b.dataset.pwLanse);
+    const dejaAlet = new Set(aAktif.filter((a) => a.pwoblem === r.p.k).map((a) => a.k.id_compte_epargne));
+    const sib = r.tout.filter((k) => !dejaAlet.has(k.id_compte_epargne));
+    if (!sib.length) return ui.info("Tout kont sa yo gen yon alèt aktif deja.", "");
+    const parA = new Map(); for (const k of sib) parA.set(ajanK(k), (parA.get(ajanK(k)) || 0) + 1);
+    const opsyon = lis.filter((a) => parA.get(a.user_id)).map((a) => [a.user_id, a.nom, parA.get(a.user_id)]);
+    const v = await ui.askKanpay({ titre: "Lanse yon alèt", pwoblem: r.p.l, ajan: opsyon, jodi: M.today, tit: r.p.l, dele: S.ajouteJou(M.today, 3), ajanDefo: aletF.ajan || null });
+    if (!v) return;
+    const kont = sib.filter((k) => v.ajan.includes(ajanK(k)));
+    if (!(await ui.ask({ titre: "Lanse alèt la?", ok: "Lanse alèt la", detay: [["Pwoblèm", t(r.p.l)], ["Pòtfèy", v.ajan.map(nonA).join(", ")], ["Kont", String(kont.length)], ["Dèlè", datFr(v.dele)]] }))) return;
+    try {
+      const res = await api.rpc("grandon_alet_kanpay", { p_kanpay: S.uuid(), p_pwoblem: r.p.k, p_tit: v.tit, p_mesaj: v.mesaj || null, p_nivo: v.nivo, p_dele: v.dele,
+        p_kont: kont.map((k) => k.id_compte_epargne), p_regle: true });
+      await S.pull();
+      toast(`${res?.n ?? kont.length} ${t("alèt voye bay ajan yo")} ✓`, "ok");
+      viewAlet();
+    } catch (e) { toast(t(e.message), "err"); }
+  }));
+  $app.querySelectorAll("[data-kp-fermen]").forEach((b) => (b.onclick = async () => {
+    if (!navigator.onLine) return ui.info("Pa gen koneksyon.", "");
+    if (!(await ui.ask({ titre: "Fèmen kanpay la?", tekst: t("Tout alèt kanpay sa a ki toujou aktif ap fèmen. Ajan yo p ap wè yo ankò."), ok: "Fèmen kanpay la" }))) return;
+    try { const res = await api.rpc("grandon_alet_kanpay_fermen", { p_kanpay: b.dataset.kpFermen }); await S.pull(); toast(`${res?.n ?? 0} ${t("alèt fèmen")}`); viewAlet(); }
+    catch (e) { toast(t(e.message), "err"); }
+  }));
+}
+
 // Ajan teren yo (+ «San ajan» si gen kont ki pa atache ak okenn ajan).
 async function ekipAjan(M) {
   const genKont = new Set([...M.comptes.values()].map((k) => k.created_by));
@@ -312,9 +468,10 @@ async function viewTablo(ajanId = null) {
     ? t("Chif yo se pou kliyan ki nan pòtfèy ou sèlman, ak tout depo yo, kèlkeswa ajan ki touche kòb la.")
     : t("Chif yo se pou tout kliyan Grandon yo (tout pòtfèy).")}${tc && tc.n ? ` ${t("Jodi a ou touche")} <b>${gd(tc.tout)}</b>${tc.nLòt ? ` · ${t("ladan l")} <b>${gd(tc.lòt)}</b> ${t("pou kliyan lòt ajan")} (${tc.nLòt})` : ""}.` : ""}</p>`;
   const tèt = ajan ? `<div class="ekip-tet"><a href="#/ekip" class="back">‹ ${t("Ekip")}</a><div class="ekip-non"><span class="ekip-av" aria-hidden="true">${h(inisyalNon(ajan.nom))}</span><div><b data-brut>${h(ajan.nom)}</b><small>${t("Done ajan sa a sèlman")}</small></div></div></div>` : "";
-  $app.innerHTML = `<div id="tablo"${ajan ? ' class="tablo-ajan"' : ""}>${tèt}${tètSk}${L().parts.tablo({ ...ctxBase(M), stats: st, isoJou: S.isoJou(M.today) })}${man && !ajan ? `${await seksyonEkip(M0)}${seksyonKontwol(M0)}<section class="doublon-sek" id="doublon" hidden></section>` : ""}${ajan ? lisKontAjan(M) : ""}</div>`;
+  $app.innerHTML = `<div id="tablo"${ajan ? ' class="tablo-ajan"' : ""}>${tèt}${tètSk}${L().parts.tablo({ ...ctxBase(M), stats: st, isoJou: S.isoJou(M.today) })}${man && !ajan ? `${await seksyonEkip(M0)}${seksyonKontwol(M0)}<section class="doublon-sek" id="doublon" hidden></section>` : ""}${ajan ? lisKontAjan(M) : seksyonAletTablo(M, M0)}</div>`;
   $app.querySelector("[data-mwa-reta]")?.addEventListener("click", () => { ongEpay = "kont"; filtKont = "reta"; });
   if (man && !ajan) { ajans = (await db.meta("ajans")) || {}; montreKontwol(M0); chajeDoublon(); }
+  if (!ajan) brancherAlet(M0);
   $app.querySelectorAll("[data-potfey]").forEach((b) => (b.onclick = () => { pòtfèy = b.dataset.potfey; viewTablo(); }));
   if (ajan) $app.querySelectorAll("[data-papeye]").forEach((b) => (b.onclick = () => { const k = M.comptes.get(b.dataset.papeye); paPeye(k, M.clients.get(k.id_personne) || {}); }));
 }
@@ -1327,7 +1484,7 @@ async function viewClientEdit(id) {
 // Alèt sistèm (rekouvreman) + alèt manadjè ki toujou aktif. Yo parèt nan yon popup chak fwa ajan an antre
 // sou paj kliyan an, cycle li oswa depo li, jiskaske pwoblèm lan rezoud.
 const NIVO_ALET = { info: ["Enfòmasyon", "info"], enpotan: ["Enpòtan", "warn"], ijan: ["Ijan", "err"] };
-const FEN_ALET = { manyel: "Fèmen pa yon manadjè", pa_reta: "Fèmen lè kliyan an pa an reta ankò", depo: "Fèmen lè kliyan an fè yon depo", dat: "Fèmen nan dat" };
+const FEN_ALET = { manyel: "Fèmen pa yon manadjè", regle: "Fèmen lè pwoblèm lan regle", pa_reta: "Fèmen lè kliyan an pa an reta ankò", depo: "Fèmen lè kliyan an fè yon depo", dat: "Fèmen nan dat" };
 function aletYo(k, { tout = false } = {}) {
   const l = [];
   if (k._actif && k._aRekipere > 0)
@@ -1339,40 +1496,60 @@ function aletYo(k, { tout = false } = {}) {
 function liAlet(a, { man = false, kont = false } = {}) {
   const [nl, kl] = NIVO_ALET[a.nivo] || NIVO_ALET.enpotan;
   const eta = a._eta === "fermen" ? `<span class="badge mut">${t("Fèmen")}</span>` : a._eta === "oto" ? `<span class="badge ok">${t("Rezoud otomatik")}</span>` : "";
+  const rapel = a.tip === "rapel";
   const sous = a.sistem ? t("Alèt sistèm · li disparèt lè kliyan an peye sa l dwe a")
+    : rapel ? `${t("Rapèl")} · ${nomAjan(a.kreye_pa) || t("Ajan")} · ${lè(a.kreye_le)}`
     : `${nomAjan(a.kreye_pa) || t("Manadjè")} · ${lè(a.kreye_le)} · ${t(FEN_ALET[a.fen_kondisyon] || "")}${a.fen_kondisyon === "dat" && a.fen_dat ? ` ${datFr(a.fen_dat)}` : ""}`;
-  return `<div class="row alet ${h(a.nivo)} ${a._eta !== "aktif" ? "fini" : ""}" data-alet="${h(a.id)}">
-    <div class="grow"><b>${a.sistem ? t(a.tit) : d(a.tit)}</b> <span class="badge ${kl}">${t(nl)}</span> ${eta} ${a._pending || a._fermenPending ? `<span class="badge pend">${t("Poko voye")}</span>` : ""}
+  const pw = a.pwoblem ? pwoblemPa(a.pwoblem) : null;
+  const dele = a.dele ? `<span class="badge ${a._anReta ? "err" : "mut"}">${t(rapel ? "Pou" : "Dèlè")} ${datFr(a.dele)}${a._anReta ? ` · ${t("an reta")}` : ""}</span>` : "";
+  const kaFèmen = !a.sistem && a._eta === "aktif" && (man || (rapel && mwenSe(a.kreye_pa)));
+  return `<div class="row alet ${h(a.nivo)} ${rapel ? "rapel" : ""} ${a._eta !== "aktif" ? "fini" : ""}" data-alet="${h(a.id)}">
+    <div class="grow"><b>${a.sistem ? t(a.tit) : d(a.tit)}</b> ${rapel ? `<span class="badge info">⏰ ${t("Rapèl")}</span>` : `<span class="badge ${kl}">${t(nl)}</span>`} ${dele} ${eta} ${a._pending || a._fermenPending ? `<span class="badge pend">${t("Poko voye")}</span>` : ""}
+      ${pw && d(a.tit) !== d(t(pw.l)) ? `<div class="mut sm">${t("Pwoblèm")}: ${t(pw.l)}</div>` : ""}
       ${kont ? `<div class="mut sm">${d(a.k.no_compte || t("Cycle poko voye"))}</div>` : ""}
       ${a.mesaj ? `<div class="sm alet-m">${a.sistem ? a.mesaj : d(a.mesaj)}</div>` : ""}
       <div class="mut sm">${sous}</div></div>
-    ${man && !a.sistem && a._eta === "aktif" ? `<button type="button" class="btn sm" data-fermen="${h(a.id)}">${t("Fèmen l")}</button>` : ""}</div>`;
+    ${kaFèmen ? `<button type="button" class="btn sm" data-fermen="${h(a.id)}" data-rapel="${rapel ? 1 : ""}">${t(rapel ? "Dezaktive" : "Fèmen l")}</button>` : ""}</div>`;
 }
 // Seksyon «Alèt» sou paj cycle/fich: manadjè wè tout (ak bouton), ajan wè sa ki aktif.
 function seksyonAlet(ks, man) {
   const l = ks.flatMap((k) => aletYo(k, { tout: man }));
   const kAktif = ks.find((k) => k._actif) || ks[0];
-  if (!l.length && !man) return "";
-  return `<section class="alet-sek" id="alet-sek"><div class="alet-tit"><h2>Alèt</h2>${man && kAktif ? `<button type="button" class="btn sm" data-alet-nouvo="${h(kAktif.id_compte_epargne)}">＋ ${t("Alèt")}</button>` : ""}</div>
+  if (!kAktif || estKesye()) return "";
+  return `<section class="alet-sek" id="alet-sek"><div class="alet-tit"><h2>${t("Alèt ak rapèl")}</h2><div class="btns">
+    <button type="button" class="btn sm" data-rapel-nouvo="${h(kAktif.id_compte_epargne)}">＋ ${t("Rapèl")}</button>
+    ${man ? `<button type="button" class="btn sm" data-alet-nouvo="${h(kAktif.id_compte_epargne)}">＋ ${t("Alèt")}</button>` : ""}</div></div>
     <div class="list">${l.map((a) => liAlet(a, { man, kont: ks.length > 1 })).join("") || `<p class="empty">${t("Pa gen alèt sou kliyan sa a.")}</p>`}</div></section>`;
 }
 async function kreyeAlet(M, k) {
   const c = M.clients.get(k.id_personne) || {};
-  const r = await ui.askAlet({ tekst: `${non(c)} · ${k.no_compte || ""}`, jodi: M.today });
+  const r = await ui.askAlet({ tekst: `${non(c)} · ${k.no_compte || ""}`, jodi: M.today, pwoblem: PWOBLEM });
   if (!r) return;
-  await S.enqueue("alet", { id: S.uuid(), compte: k.id_compte_epargne, ...r, kreye_le: new Date().toISOString() }, k._pending ? [k.id_compte_epargne] : []);
+  await S.enqueue("alet", { id: S.uuid(), compte: k.id_compte_epargne, ...r, tip: "manyel", kreye_le: new Date().toISOString() }, k._pending ? [k.id_compte_epargne] : []);
   toast("Alèt la kreye.");
   aletDenye = ""; render();
 }
-async function fermenAlet(id) {
-  if (!(await ui.ask({ titre: "Fèmen alèt la?", tekst: t("Ajan yo p ap wè l ankò."), ok: "Fèmen l" }))) return;
+// Rapèl: nenpòt ajan ka kreye youn sou yon kliyan pou swivi l; se li sèlman (oswa yon manadjè) ki ka dezaktive l.
+async function kreyeRapel(M, k) {
+  const c = M.clients.get(k.id_personne) || {};
+  const r = await ui.askRapel({ tekst: `${non(c)} · ${k.no_compte || ""}`, jodi: M.today });
+  if (!r) return;
+  await S.enqueue("alet", { id: S.uuid(), compte: k.id_compte_epargne, tit: r.tit, mesaj: null, nivo: "info", fen: "manyel", fen_dat: null, tip: "rapel", dele: r.dele,
+    kreye_le: new Date().toISOString() }, k._pending ? [k.id_compte_epargne] : []);
+  toast(t("Rapèl la kreye."));
+  aletDenye = location.hash; render();
+}
+async function fermenAlet(id, rapel = false) {
+  if (!(await ui.ask(rapel ? { titre: "Dezaktive rapèl la?", tekst: t("Li p ap parèt ankò sou kliyan sa a."), ok: "Dezaktive" }
+    : { titre: "Fèmen alèt la?", tekst: t("Ajan yo p ap wè l ankò."), ok: "Fèmen l" }))) return;
   await S.enqueue("alet_fermen", { id, le: new Date().toISOString() });
-  toast("Alèt la fèmen.");
+  toast(t(rapel ? "Rapèl la dezaktive." : "Alèt la fèmen."));
   aletDenye = location.hash; render();
 }
 function brancherAlet(M) {
   $app.querySelectorAll("[data-alet-nouvo]").forEach((b) => (b.onclick = () => kreyeAlet(M, M.comptes.get(b.dataset.aletNouvo))));
-  $app.querySelectorAll("#alet-sek [data-fermen]").forEach((b) => (b.onclick = () => fermenAlet(b.dataset.fermen)));
+  $app.querySelectorAll("[data-rapel-nouvo]").forEach((b) => (b.onclick = () => kreyeRapel(M, M.comptes.get(b.dataset.rapelNouvo))));
+  $app.querySelectorAll("#alet-sek [data-fermen], .alet-tablo [data-fermen]").forEach((b) => (b.onclick = () => fermenAlet(b.dataset.fermen, !!b.dataset.rapel)));
 }
 // Popup la: yon fwa chak fwa ajan an antre sou paj la (pa lè paj la re-rann pou menm wout la).
 let aletDenye = "";
@@ -1388,7 +1565,7 @@ async function montreAlet(M, ks) {
   const c = M.clients.get(ks[0].id_personne) || {};
   const r = await ui.aletPopup({ titre: l.length > 1 ? `${l.length} ${t("alèt sou kliyan sa a")}` : t("Alèt sou kliyan sa a"), soutit: non(c), nivo,
     html: l.map((a) => liAlet(a, { man, kont: ks.length > 1 })).join(""), nouvo: man });
-  if (r?.fermen) await fermenAlet(r.fermen);
+  if (r?.fermen) await fermenAlet(r.fermen, M.alet.get(r.fermen)?.tip === "rapel");
   else if (r?.nouvo) await kreyeAlet(M, ks.find((k) => k._actif) || ks[0]);
 }
 addEventListener("hashchange", () => { if (!/^#\/(kliyan|cycle|tx\/nouvo)\//.test(location.hash)) aletDenye = ""; });
@@ -1796,10 +1973,15 @@ async function viewParam() {
       ${[["n", "Nòmal"], ["l", "Gwo"], ["xl", "Pi gwo"]].map(([v, l]) => `<label><input type="radio" name="teks" value="${v}" ${pref.teks === v ? "checked" : ""}><span>${l}</span></label>`).join("")}</div></fieldset>
     <fieldset class="field"><legend>Son alèt yo</legend><div class="seg s2">
       ${[["1", "Wi"], ["0", "Non"]].map(([v, l]) => `<label><input type="radio" name="son" value="${v}" ${(pref.son !== false) === (v === "1") ? "checked" : ""}><span>${l}</span></label>`).join("")}</div></fieldset>
+    <div class="field notif-p"><b>${t("Notifikasyon telefòn")}</b>
+      <p class="mut sm" id="notif-eta">${!("Notification" in window) ? t("Telefòn sa a pa kite aplikasyon an voye notifikasyon.") : Notification.permission === "granted" ? t("Aktive ✓ · Alèt yo sonnen, vibre epi parèt nan ba notifikasyon an.") : Notification.permission === "denied" ? t("Bloke: louvri paramèt navigatè a pou pèmèt notifikasyon pou sit sa a.") : t("Poko aktive.")}</p>
+      <div class="btns">${"Notification" in window && Notification.permission === "default" ? `<button type="button" class="btn sm pri" id="notif-on">${t("Aktive notifikasyon")}</button>` : ""}
+        <button type="button" class="btn sm" id="notif-tes">${t("Teste alèt la")}</button></div></div>
   </div>
   <h2>Senkronizasyon</h2>
   <a class="row senk-lyen" href="#/senk"><div class="grow"><b>${t("Senkronizasyon")}</b><div class="mut sm">${M.outbox.length ? `${M.outbox.length} ${t("poko voye")}` : t("Tout bagay voye ✓")} · ${t("Dènye senk")} ${lè(await db.meta("last_sync"))}</div></div><span aria-hidden="true">›</span></a>
   ${estManager() || moi.admin ? `<h2>Administrasyon</h2>` : ""}
+  ${estManager() ? `<a class="btn block" href="#/alet">${t("Jesyon alèt yo")}</a>` : ""}
   ${estManager() ? `<a class="btn block" href="#/istorik">Istorik modifikasyon</a>` : ""}
   ${estManager() ? `<a class="btn block" href="#/aparey">Aparèy ajan yo</a>` : ""}
   ${estManager() ? `<a class="btn block" href="#/feries">Jou ferye</a>` : ""}
@@ -1811,6 +1993,11 @@ async function viewParam() {
     savePrefs({ tem: $app.querySelector('input[name="tem"]:checked').value, teks: $app.querySelector('input[name="teks"]:checked').value });
   }));
   $app.querySelectorAll('input[name="son"]').forEach((r) => (r.onchange = () => { savePrefs({ son: r.value === "1" }); if (r.value === "1") ui.son("info"); }));
+  document.getElementById("notif-on")?.addEventListener("click", async () => { try { await Notification.requestPermission(); } catch { /* */ } viewParam(); });
+  document.getElementById("notif-tes").onclick = async () => {
+    if (prefs().son !== false) ui.son("ijan"); else try { navigator.vibrate?.(ui.VIBRE.ijan); } catch { /* */ }
+    await ui.notifye({ titre: "Grandon · Tès alèt", tekst: t("Si w wè mesaj sa a, notifikasyon yo mache."), nivo: "ijan", tag: "grandon-tes", url: "#/param" });
+  };
   $app.querySelectorAll('input[name="look"]').forEach((r) => (r.onchange = () => { savePrefs({ look: r.value }); toast(`${looks.LOOKS[r.value].nom} ✓`); render(); }));
   document.getElementById("logout").onclick = async () => {
     if (M.outbox.length) return ui.info("Gen operasyon ki poko voye", `${M.outbox.length} · ${t("Senkronize yo anvan w dekonekte.")}`);
@@ -2295,6 +2482,7 @@ async function render() {
   let m;
   if (r === "#/" || r === "#") return viewTablo();
   if (r === "#/ekip") return estManager() ? viewEkip() : go("#/");
+  if (r === "#/alet") return estManager() ? viewAlet() : go("#/");
   if ((m = r.match(/^#\/ekip\/([\w-]+)$/))) return estManager() ? viewTablo(m[1]) : go("#/");
   if (r === "#/kliyan") return viewKliyan();
   if (r === "#/epay") return viewEpay();
@@ -2326,7 +2514,7 @@ S.onChange(() => {
   clearTimeout(pendingRender);
   pendingRender = setTimeout(() => {
     const tape = document.activeElement?.matches?.("input, textarea, select");
-    if (!FORM.test(location.hash) && location.hash !== "#/login" && !tape) render();
+    if (!FORM.test(location.hash) && location.hash !== "#/login" && !tape) render().then(() => setTimeout(avètiAlet, 600));
   }, 150);
 });
 
@@ -2346,12 +2534,13 @@ async function boot() {
   }, true);
   await api.loadSession();
   moi = (await db.meta("moi")) || null;
-  addEventListener("hashchange", () => { clearTimeout(pendingRender); render(); scrollTo(0, 0); });
+  addEventListener("hashchange", () => { clearTimeout(pendingRender); render().then(() => setTimeout(avètiAlet, 800)); scrollTo(0, 0); });
   addEventListener("online", () => { updateBar(); S.run().then((r) => r.notices.forEach((n) => toast(n, "info", 6000))); });
   addEventListener("offline", updateBar);
   document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") S.run(); });
   setInterval(() => S.run(), 60000);
   await render();
+  setTimeout(avètiAlet, 1500);
   if (moi) S.run();
 
   if ("serviceWorker" in navigator) {

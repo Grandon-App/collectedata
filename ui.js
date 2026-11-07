@@ -142,19 +142,43 @@ function remetFokis(prev, ankò = true) {
 // ---------- Alèt kliyan (popup + son) ----------
 // Son: pwodui nan aplikasyon an (Web Audio), kidonk li mache san entènèt. Vibrasyon sou Android.
 let ac = null;
+// Vibrasyon: pi long pou alèt ijan. (iPhone pa kite sit entènèt vibre: se sèlman son an ki mache la.)
+export const VIBRE = { ijan: [500, 150, 500, 150, 500, 150, 900], enpotan: [400, 150, 400, 150, 400], info: [250, 100, 250] };
 export function son(nivo = "enpotan") {
   try {
     ac ||= new (window.AudioContext || window.webkitAudioContext)();
     ac.resume?.();
-    const notes = nivo === "ijan" ? [880, 660, 880, 660] : nivo === "info" ? [660, 880] : [784, 988];
-    notes.forEach((f, i) => {
-      const o = ac.createOscillator(), g = ac.createGain(), t0 = ac.currentTime + i * 0.18;
-      o.type = "sine"; o.frequency.value = f;
-      g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(0.3, t0 + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.16);
-      o.connect(g).connect(ac.destination); o.start(t0); o.stop(t0 + 0.17);
-    });
+    // Son fò: onn kare + konpresè (volim maksimòm san distòsyon), motif la repete 3 fwa (1 fwa pou «info»).
+    const kp = ac.createDynamicsCompressor();
+    kp.threshold.value = -12; kp.knee.value = 6; kp.ratio.value = 6; kp.attack.value = 0.002; kp.release.value = 0.1;
+    kp.connect(ac.destination);
+    const motif = nivo === "ijan" ? [988, 740, 988, 740, 988, 740] : nivo === "info" ? [784, 1047] : [880, 1175, 880, 1175];
+    const fwa = nivo === "info" ? 1 : 3, dt = 0.17;
+    let i = 0;
+    for (let r = 0; r < fwa; r++, i += 2) for (const f of motif) {
+      const t0 = ac.currentTime + 0.02 + i++ * dt;
+      for (const [tip, vol] of [["square", 0.55], ["sine", 0.9]]) {
+        const o = ac.createOscillator(), g = ac.createGain();
+        o.type = tip; o.frequency.value = f;
+        g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(vol, t0 + 0.015); g.gain.setValueAtTime(vol, t0 + dt - 0.04); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dt - 0.01);
+        o.connect(g).connect(kp); o.start(t0); o.stop(t0 + dt);
+      }
+    }
   } catch { /* navigatè san Web Audio */ }
-  try { navigator.vibrate?.(nivo === "ijan" ? [220, 100, 220, 100, 220] : [150, 80, 150]); } catch { /* */ }
+  try { navigator.vibrate?.(VIBRE[nivo] || VIBRE.enpotan); } catch { /* */ }
+}
+// Notifikasyon telefòn (ba notifikasyon an), ak vibrasyon. Sèlman si ajan an te bay pèmisyon an (Paramèt).
+export const notifOk = () => "Notification" in window && Notification.permission === "granted";
+export async function notifye({ titre, tekst = "", tag = "grandon", nivo = "enpotan", url = "" }) {
+  if (!notifOk()) return false;
+  try {
+    const reg = await navigator.serviceWorker?.ready;
+    const baz = window.GRANDON_CONFIG?.BAZ || "";
+    const opt = { body: tekst, tag, renotify: true, vibrate: VIBRE[nivo] || VIBRE.enpotan, requireInteraction: nivo === "ijan",
+      icon: `${baz}icons/icon-192.png`, badge: `${baz}icons/icon-192.png`, data: { url } };
+    if (reg?.showNotification) await reg.showNotification(t(titre), opt); else new Notification(t(titre), opt);
+    return true;
+  } catch { return false; }
 }
 
 // Popup alèt yo pou yon kliyan. html: liy alèt yo (app.js bati yo). Retounen { fermen: id } | { nouvo: true } | null.
@@ -167,40 +191,102 @@ export function aletPopup({ titre, soutit = "", html, nivo = "enpotan", nouvo = 
   { onOpen: (w, fin) => {
     w.querySelectorAll("[data-fermen]").forEach((b) => (b.onclick = () => fin({ fermen: b.dataset.fermen })));
     w.querySelector("[data-nouvo]")?.addEventListener("click", () => fin({ nouvo: true }));
+    w.querySelectorAll(".alet-lis a[href]").forEach((x) => x.addEventListener("click", () => fin(null)));
   } }).then((v) => (v === true ? null : v));
 }
 
 // Fòm pou yon manadjè kreye yon alèt.
-export function askAlet({ titre = "Nouvo alèt", tekst = "", jodi = "" }) {
+export function askAlet({ titre = "Nouvo alèt", tekst = "", jodi = "", pwoblem = [] }) {
   let form;
   const opts = {
     onOpen: (w) => {
       form = w.querySelector("form");
       const okb = w.querySelector("[data-v=ok]");
       const chk = () => {
-        const fen = form.fen.value;
+        const fen = form.fen.value, pw = pwoblem.find((x) => x.k === form.pwoblem.value);
+        if (pw && !form.tit.value.trim()) form.tit.value = t(pw.l);
         w.querySelector(".alet-dat").hidden = fen !== "dat";
-        okb.disabled = !form.tit.value.trim() || (fen === "dat" && !form.dat.value);
+        okb.disabled = !form.tit.value.trim() || (fen === "dat" && !form.dat.value) || (fen === "regle" && !pw?.oto);
+        w.querySelector(".alet-regle").hidden = !(fen === "regle" && !pw?.oto);
       };
       form.oninput = chk; form.onchange = chk; chk();
       form.onsubmit = (e) => { e.preventDefault(); if (!okb.disabled) okb.click(); };
     },
   };
-  opts.onOpen.valeur = () => ({ tit: form.tit.value.trim(), mesaj: form.mesaj.value.trim(), nivo: form.nivo.value, fen: form.fen.value, fen_dat: form.dat.value || null });
+  opts.onOpen.valeur = () => ({ tit: form.tit.value.trim(), mesaj: form.mesaj.value.trim(), nivo: form.nivo.value, fen: form.fen.value, fen_dat: form.dat.value || null,
+    pwoblem: form.pwoblem.value || null, dele: form.dele.value || null });
   const NIVO = [["info", "Enfòmasyon"], ["enpotan", "Enpòtan"], ["ijan", "Ijan"]];
-  const FEN = [["manyel", "Lè yon manadjè fèmen l"], ["pa_reta", "Lè kliyan an pa an reta ankò"], ["depo", "Lè kliyan an fè yon depo"], ["dat", "Nan yon dat"]];
+  const FEN = [["manyel", "Lè yon manadjè fèmen l"], ["regle", "Lè pwoblèm lan regle"], ["pa_reta", "Lè kliyan an pa an reta ankò"], ["depo", "Lè kliyan an fè yon depo"], ["dat", "Nan yon dat"]];
   return ouvrir(`
     <div class="modal-h"><span class="modal-ico" aria-hidden="true">!</span><h2 id="modal-t">${h(t(titre))}</h2></div>
     ${tekst ? `<p class="modal-p" data-brut>${h(tekst)}</p>` : ""}
     <form class="modal-choix alet-form">
+      <label class="modal-l">${h(t("Pwoblèm"))} <small>(${h(t("opsyonèl"))})</small><select name="pwoblem"><option value="">${h(t("Okenn"))}</option>${pwoblem.map((x) => `<option value="${h(x.k)}">${h(t(x.l))}</option>`).join("")}</select></label>
       <label class="modal-l">${h(t("Tit"))} *<input name="tit" maxlength="120" required autofocus></label>
       <label class="modal-l">${h(t("Mesaj pou ajan an"))}<textarea name="mesaj" rows="3" maxlength="1000"></textarea></label>
+      <label class="modal-l">${h(t("Dèlè pou swivi a"))} <small>(${h(t("opsyonèl"))})</small><input type="date" name="dele" min="${h(jodi)}"></label>
       <fieldset><legend>${h(t("Nivo"))}</legend>
       ${NIVO.map(([v, l]) => `<label><input type="radio" name="nivo" value="${v}" ${v === "enpotan" ? "checked" : ""}><span>${h(t(l))}</span></label>`).join("")}</fieldset>
       <label class="modal-l">${h(t("Alèt la fèmen poukont li"))}<select name="fen">${FEN.map(([v, l]) => `<option value="${v}">${h(t(l))}</option>`).join("")}</select></label>
       <label class="modal-l alet-dat" hidden>${h(t("Dat"))}<input type="date" name="dat" min="${h(jodi)}"></label>
+      <p class="err-msg sm alet-regle" hidden>${h(t("Chwazi yon pwoblèm aplikasyon an ka verifye (pa egzanp «Pa gen foto»), oswa yon lòt fason pou alèt la fèmen."))}</p>
     </form>
     <div class="modal-b"><button class="btn" data-v="no">${h(t("Anile"))}</button><button class="btn pri" data-v="ok">${h(t("Kreye alèt la"))}</button></div>`, opts);
+}
+
+// Rapèl swivi yon ajan kreye pou tèt li (pa egzanp «Mande dokiman dosye kredi yo»). Retounen { tit, dele } oswa null.
+export function askRapel({ tekst = "", jodi = "" }) {
+  let form;
+  const opts = { onOpen: (w) => {
+    form = w.querySelector("form");
+    const okb = w.querySelector("[data-v=ok]");
+    const chk = () => (okb.disabled = form.tit.value.trim().length < 3);
+    form.oninput = chk; chk();
+    form.onsubmit = (e) => { e.preventDefault(); if (!okb.disabled) okb.click(); };
+  } };
+  opts.onOpen.valeur = () => ({ tit: form.tit.value.trim(), dele: form.dele.value || null });
+  return ouvrir(`
+    <div class="modal-h"><span class="modal-ico" aria-hidden="true">⏰</span><h2 id="modal-t">${h(t("Nouvo rapèl"))}</h2></div>
+    ${tekst ? `<p class="modal-p" data-brut>${h(tekst)}</p>` : ""}
+    <form class="modal-choix alet-form">
+      <label class="modal-l">${h(t("Kisa pou w pa bliye?"))} *<input name="tit" maxlength="120" required autofocus placeholder="${h(t("Egz.: Mande dokiman dosye kredi yo"))}"></label>
+      <label class="modal-l">${h(t("Pou ki dat"))} <small>(${h(t("opsyonèl"))})</small><input type="date" name="dele" min="${h(jodi)}"></label>
+      <p class="mut sm">${h(t("Rapèl la parèt chak fwa ou louvri kliyan sa a, jiskaske ou dezaktive l."))}</p>
+    </form>
+    <div class="modal-b"><button class="btn" data-v="no">${h(t("Anile"))}</button><button class="btn pri" data-v="ok">${h(t("Kreye rapèl la"))}</button></div>`, opts);
+}
+
+// Kanpay alèt (manadjè): ajan = [[id, non, kantite kont]]. Retounen { tit, mesaj, nivo, dele, ajan: [id] } oswa null.
+export function askKanpay({ titre, pwoblem, ajan, jodi, tit = "", dele = "", ajanDefo = null }) {
+  let form;
+  const opts = { onOpen: (w) => {
+    form = w.querySelector("form");
+    const okb = w.querySelector("[data-v=ok]");
+    const chk = () => {
+      const n = [...form.querySelectorAll("input[name=ajan]:checked")].reduce((a, x) => a + Number(x.dataset.n || 0), 0);
+      w.querySelector(".kp-n").textContent = String(n);
+      okb.disabled = !form.tit.value.trim() || !n || !form.dele.value;
+    };
+    form.oninput = chk; form.onchange = chk; chk();
+    form.onsubmit = (e) => { e.preventDefault(); if (!okb.disabled) okb.click(); };
+  } };
+  opts.onOpen.valeur = () => ({ tit: form.tit.value.trim(), mesaj: form.mesaj.value.trim(), nivo: form.nivo.value, dele: form.dele.value,
+    ajan: [...form.querySelectorAll("input[name=ajan]:checked")].map((x) => x.value) });
+  const NIVO = [["info", "Enfòmasyon"], ["enpotan", "Enpòtan"], ["ijan", "Ijan"]];
+  return ouvrir(`
+    <div class="modal-h"><span class="modal-ico" aria-hidden="true">!</span><h2 id="modal-t">${h(t(titre))}</h2></div>
+    <p class="modal-p">${h(t("Pwoblèm"))}: <b>${h(t(pwoblem))}</b></p>
+    <form class="modal-choix alet-form">
+      <fieldset><legend>${h(t("Sou pòtfèy ki ajan"))}</legend>
+        ${ajan.map(([id, nom, n]) => `<label class="chk"><input type="checkbox" name="ajan" value="${h(id)}" data-n="${n}" ${!ajanDefo || ajanDefo === id ? "checked" : ""}><span data-brut>${h(nom)} <small>· ${n} ${h(t("kont"))}</small></span></label>`).join("")}</fieldset>
+      <label class="modal-l">${h(t("Tit"))} *<input name="tit" maxlength="120" value="${h(t(tit))}" required></label>
+      <label class="modal-l">${h(t("Mesaj pou ajan yo"))}<textarea name="mesaj" rows="2" maxlength="1000"></textarea></label>
+      <label class="modal-l">${h(t("Dèlè pou swivi a fèt"))} *<input type="date" name="dele" min="${h(jodi)}" value="${h(dele)}" required></label>
+      <fieldset><legend>${h(t("Nivo"))}</legend>
+      ${NIVO.map(([v, l]) => `<label><input type="radio" name="nivo" value="${v}" ${v === "enpotan" ? "checked" : ""}><span>${h(t(l))}</span></label>`).join("")}</fieldset>
+      <p class="mut sm">${h(t("Alèt la parèt kòm notifikasyon pou ajan an epi chak fwa l louvri kliyan an. Li fèmen poukont li lè pwoblèm lan regle."))}</p>
+    </form>
+    <div class="modal-b"><button class="btn" data-v="no">${h(t("Anile"))}</button><button class="btn pri" data-v="ok">${h(t("Lanse alèt la"))} (<span class="kp-n">0</span>)</button></div>`, opts);
 }
 
 // ---------- Demann modifikasyon / siprime ----------

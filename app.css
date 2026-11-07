@@ -613,3 +613,27 @@ html[data-look] .login h1.wordmark::after { content: ""; position: absolute; lef
 .potfey-not { margin: 0 0 12px; }
 .potfey-k { display: flex; align-items: center; gap: 12px; padding: 10px 14px; margin: 8px 0; }
 .potfey-k .grow { display: flex; flex-direction: column; min-width: 0; }
+/* Alèt: jesyon manadjè, Tablo, rapèl */
+.alet-pw-g { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; margin-bottom: 8px; }
+.alet-pw { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; }
+.alet-pw.zewo { opacity: .6; }
+.alet-pw-h { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-weight: 600; }
+.alet-pw-h b { font-size: 1.6rem; font-variant-numeric: tabular-nums; }
+.alet-pw-a { display: flex; flex-wrap: wrap; gap: 4px; }
+.chip-s { font-size: .75rem; padding: 1px 8px; border-radius: 99px; background: var(--track, rgba(127,127,127,.15)); }
+.alet-pw-lis .list { max-height: 320px; overflow: auto; }
+.alet-ajan { max-width: 360px; margin: 6px 0 10px; }
+.alet-tablo { margin: 14px 0; }
+.alet-tr .alet-kl { font-weight: 600; }
+.alet-plis summary { cursor: pointer; padding: 8px 2px; }
+.row.alet.rapel { border-left-style: dashed; }
+.alet-tit .btns { display: flex; gap: 6px; flex-wrap: wrap; }
+.notif-p { display: flex; flex-direction: column; gap: 4px; }
+.alet-kp { gap: 6px; }
+.alet-pw-g { grid-template-columns: repeat(auto-fill, minmax(min(100%, 160px), 1fr)); }
+.alet-pw.zewo { padding: 8px 12px; gap: 2px; }
+.alet-pw.zewo p, .alet-pw.zewo small { display: none; }
+.alet-pw .btns { display: flex; flex-wrap: wrap; gap: 6px; }
+.alet-pw .btns .btn { flex: 1 1 auto; }
+.alet-pw-h span { font-size: .92rem; }
+.alet-pw .btns .btn { white-space: nowrap; padding-inline: 10px; }

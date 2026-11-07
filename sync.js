@@ -3,6 +3,7 @@
 // menm ID voye de fwa = menm rezilta, pa janm doublon.
 import * as db from "./db.js";
 import * as api from "./api.js";
+import { genPwoblem } from "./pwoblem.js";
 
 const C = window.GRANDON_CONFIG;
 const listeners = new Set();
@@ -172,10 +173,13 @@ const EXEC = {
   },
 
   async alet(p) {
+    const tip = p.tip || "manyel";
     await api.rpc("grandon_alet_kreye", { p_id: p.id, p_compte: p.compte, p_tit: p.tit, p_mesaj: p.mesaj || null, p_nivo: p.nivo,
-      p_fen: p.fen, p_fen_dat: p.fen === "dat" ? p.fen_dat : null, p_kreye_le: p.kreye_le });
-    await db.put("alet", { id: p.id, id_compte_epargne: p.compte, tit: p.tit, mesaj: p.mesaj || null, nivo: p.nivo, fen_kondisyon: p.fen,
-      fen_dat: p.fen === "dat" ? p.fen_dat : null, kreye_pa: api.getSession()?.user?.id, kreye_le: p.kreye_le, fermen_le: null });
+      p_fen: p.fen, p_fen_dat: p.fen === "dat" ? p.fen_dat : null, p_kreye_le: p.kreye_le,
+      ...(tip !== "manyel" || p.pwoblem || p.dele ? { p_tip: tip, p_pwoblem: p.pwoblem || null, p_dele: p.dele || null } : {}) });
+    await db.put("alet", { id: p.id, id_compte_epargne: p.compte, tit: p.tit, mesaj: p.mesaj || null, nivo: p.nivo, fen_kondisyon: tip === "rapel" ? "manyel" : p.fen,
+      fen_dat: p.fen === "dat" ? p.fen_dat : null, kreye_pa: api.getSession()?.user?.id, kreye_le: p.kreye_le, fermen_le: null,
+      tip, pwoblem: p.pwoblem || null, dele: p.dele || null });
   },
 
   async alet_fermen(p) {
@@ -398,8 +402,9 @@ export async function model() {
       if (p.kind === "tx" && M.txs.has(p.ref)) aplikeTx(M.txs.get(p.ref), p.chan, p.vale);
     }
     if (o.kind === "alet")
-      M.alet.set(p.id, { id: p.id, id_compte_epargne: p.compte, tit: p.tit, mesaj: p.mesaj, nivo: p.nivo, fen_kondisyon: p.fen,
-        fen_dat: p.fen === "dat" ? p.fen_dat : null, kreye_pa: "moi", kreye_le: p.kreye_le, fermen_le: null, ...pend });
+      M.alet.set(p.id, { id: p.id, id_compte_epargne: p.compte, tit: p.tit, mesaj: p.mesaj, nivo: p.nivo, fen_kondisyon: p.tip === "rapel" ? "manyel" : p.fen,
+        fen_dat: p.fen === "dat" ? p.fen_dat : null, kreye_pa: "moi", kreye_le: p.kreye_le, fermen_le: null,
+        tip: p.tip || "manyel", pwoblem: p.pwoblem || null, dele: p.dele || null, ...pend });
     if (o.kind === "alet_fermen" && M.alet.has(p.id)) Object.assign(M.alet.get(p.id), { fermen_le: p.le, fermen_pa: "moi", _fermenPending: true });
     if (o.kind === "suivi")
       M.suivis.set(p.id, { id: p.id, id_compte_epargne: p.compte, motif: p.motif, note: p.note, agent_id: "moi", capture_le: p.capture_le,
@@ -465,8 +470,11 @@ export async function model() {
     for (const a of k._alet) {
       const depoApre = k._txs.some((t) => txKind(t) === "depo" && t.validation_status !== "rejected" && new Date(t.date_transaction) >= new Date(a.kreye_le));
       a._eta = a.fermen_le ? "fermen"
-        : (a.fen_kondisyon === "pa_reta" && k._aRekipere === 0) || (a.fen_kondisyon === "depo" && depoApre) || (a.fen_kondisyon === "dat" && a.fen_dat && today > a.fen_dat) ? "oto"
+        : (a.fen_kondisyon === "pa_reta" && k._aRekipere === 0) || (a.fen_kondisyon === "depo" && depoApre) || (a.fen_kondisyon === "dat" && a.fen_dat && today > a.fen_dat)
+          || (a.fen_kondisyon === "regle" && genPwoblem(a.pwoblem, M.clients.get(k.id_personne), k) === false) ? "oto"
         : "aktif";
+      a.tip ||= "manyel";
+      a._anReta = a._eta === "aktif" && !!a.dele && today > a.dele; // dèlè swivi a depase
     }
     k._heat = heatmap13(k, M.feries, today);
   }

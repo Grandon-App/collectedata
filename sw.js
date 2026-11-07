@@ -1,11 +1,11 @@
 // Service worker: kenbe aplikasyon an sou telefòn nan pou l louvri san entènèt.
 // Chanje VERSION chak fwa ou pibliye yon nouvo vèsyon.
 const CFG = self.GRANDON_SW || { baz: "", lokal: null, non: "prod" };
-const VERSION = `grandon-ajan-v45-${CFG.non}`;
+const VERSION = `grandon-ajan-v46-${CFG.non}`;
 const SHELL_BAZ = [
   "./", "index.html", "app.css", "look-a.css", "look-b.css", "look-c.css",
   "app.js", "db.js", "api.js", "sync.js", "config.js", "ui.js", "i18n.js", "taxonomy.js", "fmt.js",
-  "looks.js", "look-base.js", "look-a.js", "look-b.js", "look-c.js", "kat.js",
+  "looks.js", "pwoblem.js", "look-base.js", "look-a.js", "look-b.js", "look-c.js", "kat.js",
   "vendor/leaflet/leaflet.js", "vendor/leaflet/leaflet.css", "vendor/leaflet/images/layers.png", "vendor/leaflet/images/layers-2x.png",
   "vendor/leaflet/images/marker-icon.png", "vendor/leaflet/images/marker-icon-2x.png", "vendor/leaflet/images/marker-shadow.png",
   "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png", "icons/icon-maskable-512.png",
@@ -35,6 +35,18 @@ self.addEventListener("activate", (e) => {
 });
 
 self.addEventListener("message", (e) => { if (e.data === "skipWaiting") self.skipWaiting(); });
+
+// Klike sou yon notifikasyon: louvri aplikasyon an (oswa mete l devan) sou paj alèt la.
+self.addEventListener("notificationclick", (e) => {
+  e.notification.close();
+  const url = new URL(e.notification.data?.url || "", self.registration.scope).href;
+  e.waitUntil((async () => {
+    const tout = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+    const w = tout.find((c) => c.url.startsWith(self.registration.scope));
+    if (w) { await w.focus(); if (e.notification.data?.url) w.navigate?.(url).catch(() => {}); return; }
+    await self.clients.openWindow(url);
+  })());
+});
 
 // Cache dabò; si pa gen anyen, rezo a; kenbe repons lan pou pwochen fwa.
 async function cacheDabò(req, nom) {
