@@ -426,3 +426,15 @@ html[data-look] button.row.tx-btn:focus-visible { outline: 3px solid var(--info)
 .modif-form .modif-chan { display: grid; grid-template-columns: 1fr 1fr; gap: 0 10px; }
 @media (max-width: 400px) { .modif-form .modif-chan { grid-template-columns: 1fr; } }
 .row.modif .btns { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+
+/* ---------- Istorik modifikasyon (manadjè) ---------- */
+.ist-jou { display: flex; align-items: center; gap: 8px; margin: 8px 0 12px; }
+.ist-jou .btn { min-width: 44px; min-height: 44px; font-size: 1.2rem; }
+.ist-jou input { min-height: 44px; flex: 1; max-width: 220px; }
+.ist-stats { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; margin-bottom: 12px; }
+.ist-stats > div { display: flex; flex-direction: column; padding: 8px; border: 1px solid var(--line); border-radius: 10px; min-width: 0; }
+.ist-stats span { font-size: .72rem; color: var(--mut); } .ist-stats b { font-size: 1.2rem; }
+@media (max-width: 480px) { .ist-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.ist-t { width: 100%; border-collapse: collapse; margin-top: 6px; font-size: .85rem; }
+.ist-t th, .ist-t td { text-align: left; padding: 4px 6px; border-bottom: 1px solid var(--line); overflow-wrap: anywhere; }
+.ist-t th { color: var(--mut); font-weight: 600; font-size: .75rem; }

@@ -29,7 +29,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "4.16";
+const APP_VERSION = "4.17";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
@@ -49,7 +49,7 @@ function savePrefs(p) {
   applyPrefs(n);
 }
 const { h, d, gd, datFr, lè, non, JOU, JOU_KOUT, lisJou, tel4, avatar, badgePend, badgeTx, badgeKont, badgeDm, ICO,
-  LABEL_TX, SIY, KLAS, MOTIFS, motifLabel, MOTIF_KOUT, TYPES_FRE } = F;
+  LABEL_TX, SIY, KLAS, MOTIFS, motifLabel, MOTIF_KOUT, TYPES_FRE, lèKout } = F;
 const adopteInfo = (r) => ({ id: r.id_personne, prenom: r.prenom, nom: r.nom, code_client: r.code_client, photo_url: r.photo_url, tel4: r.tel4 });
 const go = (hash) => { if (location.hash === hash) render(); else location.hash = hash; };
 
@@ -114,7 +114,7 @@ function tabActif(r) {
   if (/^#\/rapo/.test(r)) return "rapo";
   if (/^#\/kat/.test(r)) return "kat";
   if (/^#\/senk/.test(r)) return "senk";
-  if (/^#\/(param|ajan|feries)/.test(r)) return "param";
+  if (/^#\/(param|ajan|feries|istorik)/.test(r)) return "param";
   return "tablo";
 }
 function updateNav() {
@@ -1339,6 +1339,7 @@ async function viewParam() {
   <h2>Senkronizasyon</h2>
   <a class="row senk-lyen" href="#/senk"><div class="grow"><b>${t("Senkronizasyon")}</b><div class="mut sm">${M.outbox.length ? `${M.outbox.length} ${t("poko voye")}` : t("Tout bagay voye ✓")} · ${t("Dènye senk")} ${lè(await db.meta("last_sync"))}</div></div><span aria-hidden="true">›</span></a>
   ${estManager() || moi.admin ? `<h2>Administrasyon</h2>` : ""}
+  ${estManager() ? `<a class="btn block" href="#/istorik">Istorik modifikasyon</a>` : ""}
   ${estManager() ? `<a class="btn block" href="#/feries">Jou ferye</a>` : ""}
   ${moi.admin ? `<a class="btn block" href="#/ajan">Jere ajan yo</a>` : ""}
   <button class="btn block danger" id="logout">Dekonekte</button>
@@ -1392,6 +1393,64 @@ async function viewSenk() {
     toast(`${n} operasyon efase.`);
     render();
   }));
+}
+
+// ---------- Istorik modifikasyon pa jou (manadjè) ----------
+// Demann ajan yo, desizyon manadjè yo, modifikasyon ki fèt (ak valè avan → apre), anilasyon, modifikasyon dirèk manadjè.
+let jouIstorik = null;
+const DIRÈK = "Modifikasyon dirèk manadjè";
+function evènmanModif(x) {
+  const dirèk = x.rezon === DIRÈK || (x.operasyon === "siprime" && x.statut === "fini" && x.desizyon_pa && x.desizyon_pa === x.agent_id);
+  if (dirèk) return [{ le: x.itilize_le || x.desizyon_le || x.kreye_le, tip: x.operasyon === "siprime" ? "anile_dirèk" : "dirèk", pa: x.agent_id, x }];
+  const l = [{ le: x.kreye_le, tip: "demann", pa: x.agent_id, x }];
+  if (x.desizyon_le) l.push({ le: x.desizyon_le, tip: x.statut === "refize" ? "refize" : x.operasyon === "siprime" ? "anile" : "apwouve", pa: x.desizyon_pa, x });
+  if (x.itilize_le && x.operasyon === "modifye") l.push({ le: x.itilize_le, tip: "aplike", pa: x.agent_id, x });
+  return l;
+}
+function valèIstorik(kind, k, v) {
+  if (v == null || v === "") return "—";
+  if (kind === "tx" && (k === "montant" || k.startsWith("solde"))) return gd(v);
+  if (k === "telephone") return F.telFmt(v);
+  if (k === "date_naissance") return datFr(v);
+  return String(v);
+}
+async function viewIstorik() {
+  if (!estManager()) return go("#/param");
+  const M = await S.model();
+  ajans = (await db.meta("ajans")) || {};
+  jouIstorik ||= M.today;
+  const TIP = { demann: ["info", "Demann"], apwouve: ["ok", "Apwouve"], refize: ["err", "Refize"], anile: ["err", "Anile (apwouve)"],
+    aplike: ["ok", "Modifikasyon fèt"], dirèk: ["warn", "Modifikasyon dirèk manadjè"], anile_dirèk: ["err", "Anile pa manadjè"] };
+  const ev = [...M.modif.values()].flatMap(evènmanModif).filter((e) => e.le && S.jouLokal(new Date(e.le)) === jouIstorik)
+    .sort((a, b) => String(b.le).localeCompare(String(a.le)));
+  const kont = (tips) => ev.filter((e) => tips.includes(e.tip)).length;
+  const avanApre = (e) => {
+    if (!["aplike", "dirèk"].includes(e.tip) || !e.x.chan) return "";
+    const av = e.x.vale_avan || {}, ap = e.x.vale_apre || {};
+    return `<table class="ist-t"><thead><tr><th>${t("Chan")}</th><th>${t("Avan")}</th><th>${t("Apre")}</th></tr></thead><tbody>${e.x.chan.map((k) => {
+      const a = k === "gps" ? av.geocode : av[k], p = k === "gps" ? (ap.gps_lat != null ? `${Number(ap.gps_lat).toFixed(5)},${Number(ap.gps_lng).toFixed(5)}` : "") : ap[k];
+      return `<tr><td>${t(etikètChan(e.x.kind, k))}</td><td data-brut>${h(valèIstorik(e.x.kind, k, a))}</td><td data-brut><b>${h(valèIstorik(e.x.kind, k, p))}</b></td></tr>`; }).join("")}</tbody></table>`;
+  };
+  $app.innerHTML = `<a href="#/param" class="back">‹ Paramèt</a><h1>Istorik modifikasyon</h1>
+    <div class="ist-jou"><button type="button" class="btn sm" id="ist-prev" aria-label="${t("Jou anvan")}">‹</button>
+      <input type="date" id="ist-dat" value="${h(jouIstorik)}" max="${h(M.today)}" aria-label="${t("Jou")}">
+      <button type="button" class="btn sm" id="ist-next" aria-label="${t("Jou apre")}" ${jouIstorik >= M.today ? "disabled" : ""}>›</button></div>
+    <div class="stats ist-stats"><div><span>${t("Demann yo")}</span><b>${kont(["demann"])}</b></div><div><span>${t("Apwouve yo")}</span><b>${kont(["apwouve", "anile"])}</b></div>
+      <div><span>${t("Refize yo")}</span><b>${kont(["refize"])}</b></div><div><span>${t("Modifikasyon fèt")}</span><b>${kont(["aplike", "dirèk"])}</b></div>
+      <div><span>${t("Anilasyon")}</span><b>${kont(["anile", "anile_dirèk"])}</b></div></div>
+    <div class="list ist-lis">${ev.map((e) => { const [kl, et] = TIP[e.tip]; const x = e.x;
+      const href = x.kind === "kliyan" ? `#/kliyan/${x.ref_id}` : (() => { const tx = M.txs.get(x.ref_id); return tx ? `#/cycle/${tx.id_compte_epargne}` : "#/epay"; })();
+      const ki = x.operasyon === "siprime" ? (x.kind === "tx" ? t("Anile tranzaksyon an") : t("Retire kliyan an nan Grandon")) : (x.chan || []).map((k) => t(etikètChan(x.kind, k))).join(", ");
+      return `<div class="row col ist">
+        <div><b class="mono">${lèKout(e.le)}</b> <span class="badge ${kl}">${t(et)}</span> <a href="${href}">${x.kind === "kliyan" ? d(ciblModif(M, x.kind, x.ref_id)) : h(ciblModif(M, x.kind, x.ref_id))}</a></div>
+        <div class="sm">${ki}${nomAjan(e.pa) ? ` · <span data-brut>${h(nomAjan(e.pa))}</span>` : ""}</div>
+        ${e.tip === "demann" || e.tip === "anile_dirèk" ? `<div class="mut sm">${t("Rezon")}: ${d(x.rezon)}</div>` : ""}
+        ${e.tip === "refize" && x.motif_refi ? `<div class="err-msg sm">${t("Rezon refi a")}: ${d(x.motif_refi)}</div>` : ""}
+        ${avanApre(e)}</div>`; }).join("") || `<p class="empty">${t("Pa gen modifikasyon jou sa a.")}</p>`}</div>`;
+  const ale = (j) => { jouIstorik = j > M.today ? M.today : j; viewIstorik(); };
+  document.getElementById("ist-prev").onclick = () => ale(S.ajouteJou(jouIstorik, -1));
+  document.getElementById("ist-next").onclick = () => ale(S.ajouteJou(jouIstorik, 1));
+  document.getElementById("ist-dat").onchange = (e) => e.target.value && ale(e.target.value);
 }
 
 // ---------- Jesyon ajan (admin, anliy sèlman) ----------
@@ -1474,6 +1533,7 @@ async function render() {
   if ((m = r.match(/^#\/tx\/nouvo\/([\w-]+)$/))) return viewTxNew(m[1]);
   if (r === "#/param") return viewParam();
   if (r === "#/senk") return viewSenk();
+  if (r === "#/istorik") return viewIstorik();
   if (r === "#/ajan" && moi.admin) return viewAjan();
   if (r === "#/feries") return viewFeries();
   go("#/");
