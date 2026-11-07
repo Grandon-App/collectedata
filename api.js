@@ -27,6 +27,26 @@ export async function clearSession() {
   await db.meta("session", null);
 }
 
+// Idantite aparèy la (pèsistan): sèvè a aksepte yon sèl aparèy aktif pa ajan.
+const KLE_APAREY = "grandon-aparey";
+let aparey = null;
+export function apareyId() {
+  if (aparey) return aparey;
+  try { aparey = localStorage.getItem(KLE_APAREY); } catch {}
+  if (!aparey || !/^[0-9a-zA-Z-]{8,64}$/.test(aparey)) {
+    aparey = crypto.randomUUID?.() || Array.from(crypto.getRandomValues(new Uint8Array(16)), (b) => b.toString(16).padStart(2, "0")).join("");
+    try { localStorage.setItem(KLE_APAREY, aparey); } catch {}
+  }
+  return aparey;
+}
+export function apareyNon() {
+  const u = navigator.userAgent || "";
+  const os = /Android/i.test(u) ? "Android" : /iPhone|iPad|iPod/i.test(u) ? "iPhone" : /Windows/i.test(u) ? "Windows" : /Mac OS/i.test(u) ? "Mac" : /Linux/i.test(u) ? "Linux" : "Aparèy";
+  const m = u.match(/Android[^;)]*;\s*([^;)]+?)(?:\s+Build|\))/i);
+  const nav = /Edg\//.test(u) ? "Edge" : /SamsungBrowser/.test(u) ? "Samsung" : /Firefox\//.test(u) ? "Firefox" : /Chrome\//.test(u) ? "Chrome" : /Safari\//.test(u) ? "Safari" : "";
+  return [os, m && m[1] !== "K" ? m[1].trim() : "", nav].filter(Boolean).join(" · ").slice(0, 80);
+}
+
 export function telefon8(t) {
   let d = String(t || "").replace(/\D/g, "");
   if (d.length === 11 && d.startsWith("509")) d = d.slice(3);
@@ -34,7 +54,7 @@ export function telefon8(t) {
 }
 
 async function raw(path, { method = "GET", body, headers = {}, auth = true, blob } = {}) {
-  const h = { apikey: C.SUPABASE_KEY, ...headers };
+  const h = { apikey: C.SUPABASE_KEY, "x-client-info": `grandon aparey=${apareyId()}`, ...headers };
   if (auth) {
     await ensureFresh();
     h.Authorization = `Bearer ${session.access_token}`;
@@ -88,6 +108,29 @@ export async function login(ident, password) {
     if (err.status === 400) throw new ApiError("Telefòn oswa modpas la pa bon.", { status: 400 });
     throw err;
   }
+}
+
+// Chanje pwòp modpas mwen. `ansyen` null = chanjman obligatwa touswit apre koneksyon (modpas tanporè).
+export async function chanjeModpas(ansyen, nouvo) {
+  if (String(nouvo || "").length < 8) throw new ApiError("Modpas la dwe gen omwen 8 karaktè.");
+  if (ansyen != null) {
+    if (ansyen === nouvo) throw new ApiError("Nouvo modpas la dwe diferan de ansyen an.");
+    try {
+      const { data } = await raw("/auth/v1/token?grant_type=password", { method: "POST", body: { email: session.user.email, password: ansyen }, auth: false });
+      await saveSession(fromAuth(data));
+    } catch (e) {
+      if (e.status === 400) throw new ApiError("Ansyen modpas la pa bon.", { status: 400 });
+      throw e;
+    }
+  }
+  try {
+    await raw("/auth/v1/user", { method: "PUT", body: { password: nouvo } });
+  } catch (e) {
+    if (e.status === 422 && /different/i.test(e.message)) throw new ApiError("Nouvo modpas la dwe diferan de ansyen an.", { status: 422 });
+    if (e.status === 422) throw new ApiError("Modpas sa a twò fasil. Chwazi yon lòt.", { status: 422 });
+    throw e;
+  }
+  await rpc("grandon_modpas_chanje", {});
 }
 
 // Edge function grandon-kont (jesyon kont ajan, admin sèlman)

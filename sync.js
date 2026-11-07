@@ -231,6 +231,24 @@ const EXEC = {
 let running = null;
 export const isRunning = () => !!running;
 
+// Yon sèl aparèy aktif pa ajan: sèvè a di si aparèy sa a toujou aktif (epi li konnen konbyen operasyon poko voye).
+// Retounen null si aparèy la aktif, sinon { debloke } (debloke = yon manadjè te libere kont lan).
+export async function tcheAparey(poko) {
+  try {
+    const r = await api.rpc("grandon_aparey_eta", { p_aparey: api.apareyId(), p_poko_voye: poko });
+    if (r && r.aktif === false) {
+      const b = { debloke: !!r.debloke, le: new Date().toISOString() };
+      await db.meta("aparey_bloke", b);
+      return b;
+    }
+    if (await db.meta("aparey_bloke")) await db.meta("aparey_bloke", null);
+    return null;
+  } catch (e) {
+    if (e.retry || e.code === "SESSION") throw e;
+    return null; // fonksyon an pa disponib: pa bloke ajan an
+  }
+}
+
 export function run({ pull: doPull = true } = {}) {
   if (running) return running;
   running = (async () => {
@@ -244,6 +262,7 @@ export function run({ pull: doPull = true } = {}) {
       if (!s || s.expired) { res.session = true; return res; }
       const blocked = new Set();
       const ops = (await db.all("outbox")).sort((a, b) => a.seq - b.seq);
+      if ((res.aparey = await tcheAparey(ops.length))) return res; // lòt aparèy aktif: pa voye anyen, kenbe outbox la
       for (const op of ops) {
         const cur = await db.get("outbox", op.seq); // relire: remap ka chanje l
         if (!cur) continue;
@@ -269,6 +288,8 @@ export function run({ pull: doPull = true } = {}) {
             await db.meta("last_error", e.message);
             break;
           }
+          // Refi pèmisyon: petèt se paske yon lòt aparèy vin aktif. Lè sa a, kite operasyon an poko voye.
+          if ((e.status === 401 || e.status === 403 || e.code === "42501") && (res.aparey = await tcheAparey(ops.length))) break;
           cur.status = "erè";
           cur.error = e.message;
           cur.tries++;
@@ -278,6 +299,8 @@ export function run({ pull: doPull = true } = {}) {
           notify();
         }
       }
+      if (res.aparey) return res;
+      if (res.ok) await tcheAparey((await db.all("outbox")).length).catch(() => {}); // sèvè a konnen sa ki rete
       if (doPull && !res.offline && !res.session) await pull();
       await db.meta("last_sync", new Date().toISOString());
     } catch (e) {
@@ -312,7 +335,7 @@ export async function pull() {
   try { // non ajan yo (manadjè yo wè tout moun; yon ajan wè sèlman pa l)
     const aj = await api.select("grandon_ajan?select=user_id,nom");
     await db.meta("ajans", Object.fromEntries(aj.map((x) => [x.user_id, x.nom])));
-  } catch { /* anplwaye Bwat Sekrem: pa gen tab grandon_ajan pou yo */ }
+  } catch { /* administratè (imèl): pa gen liy grandon_ajan pou yo */ }
   await db.replaceAll("feries", feries);
   await db.replaceAll("suivis", suivis);
   await db.replaceAll("demandes", demandes);

@@ -182,6 +182,28 @@ const FR = {
   "Frekans lan dwe 1, 2, 3 oswa 6 fwa pa semèn.": "La fréquence doit être 1, 2, 3 ou 6 fois par semaine.",
   "pa nan lis plan Grandon yo.": "n'est pas dans la liste des plans Grandon.", "Kont Grandon an pa jwenn.": "Compte Grandon introuvable.",
   "Ou pa gen dwa": "Vous n'avez pas le droit de",
+  // Modpas ak aparèy
+  "Chanje modpas mwen": "Changer mon mot de passe", "Chwazi pwòp modpas ou": "Choisissez votre mot de passe",
+  "Modpas ou resevwa a se yon modpas tanporè. Chwazi yon modpas pa w anvan w kontinye: se ou sèl ki pou konnen l.": "Le mot de passe reçu est temporaire. Choisissez votre propre mot de passe avant de continuer : vous seul devez le connaître.",
+  "Ansyen modpas": "Ancien mot de passe", "Nouvo modpas": "Nouveau mot de passe", "(omwen 8 karaktè)": "(au moins 8 caractères)",
+  "Konfime nouvo modpas la": "Confirmez le nouveau mot de passe", "Fòk ou gen entènèt pou chanje modpas.": "Il faut Internet pour changer le mot de passe.",
+  "De modpas yo pa menm.": "Les deux mots de passe ne correspondent pas.", "Modpas ou chanje ✓": "Mot de passe changé ✓",
+  "Ansyen modpas la pa bon.": "L'ancien mot de passe est incorrect.", "Nouvo modpas la dwe diferan de ansyen an.": "Le nouveau mot de passe doit être différent de l'ancien.",
+  "Modpas sa a twò fasil. Chwazi yon lòt.": "Ce mot de passe est trop faible. Choisissez-en un autre.", "Modpas la dwe gen omwen 8 karaktè.": "Le mot de passe doit avoir au moins 8 caractères.",
+  "Ansyen aparèy ou a dekonekte.": "Votre ancien appareil a été déconnecté.",
+  "Kont ou konekte sou yon lòt aparèy": "Votre compte est connecté sur un autre appareil", "Kont ou debloke": "Votre compte a été débloqué",
+  "Ou konekte sou yon lòt aparèy. Pou sekirite, yon sèl aparèy ka aktif an menm tan: aparèy sa a dekonekte.": "Vous vous êtes connecté sur un autre appareil. Par sécurité, un seul appareil peut être actif à la fois : cet appareil est déconnecté.",
+  "Yon manadjè debloke kont ou pou w ka konekte sou yon lòt aparèy. Aparèy sa a pa aktif ankò.": "Un manager a débloqué votre compte pour que vous puissiez vous connecter sur un autre appareil. Cet appareil n'est plus actif.",
+  "operasyon poko voye sou aparèy sa a. Yo pa efase: konekte ankò sou aparèy sa a pou voye yo.": "opération(s) non envoyée(s) sur cet appareil. Elles ne sont pas effacées : reconnectez-vous sur cet appareil pour les envoyer.",
+  "Konekte ankò sou aparèy sa a": "Se reconnecter sur cet appareil",
+  "operasyon poko voye sou": "opération(s) non envoyée(s) sur", "Voye yo sou aparèy sa a anvan, oswa mande yon manadjè debloke w.": "Envoyez-les d'abord depuis cet appareil, ou demandez à un manager de vous débloquer.",
+  "ansyen aparèy la": "l'ancien appareil",
+  "Aparèy ajan yo": "Appareils des agents", "Yon ajan ka aktif sou yon sèl aparèy. Si telefòn li pèdi oswa kraze, debloke l pou l ka konekte sou yon lòt.": "Un agent ne peut être actif que sur un seul appareil. Si son téléphone est perdu ou cassé, débloquez-le pour qu'il puisse se connecter sur un autre.",
+  "Fòk ou gen entènèt pou wè aparèy yo.": "Il faut Internet pour voir les appareils.", "Libere": "Libéré", "Poko konekte": "Jamais connecté",
+  "Pwochen koneksyon an lib.": "La prochaine connexion est libre.", "Aparèy": "Appareil", "Dènye fwa": "Vu le", "Debloke": "Débloquer",
+  "Debloke ajan sa a?": "Débloquer cet agent ?", "aparèy aktif la ap dekonekte, epi ajan an ap ka konekte sou yon nouvo aparèy.": "l'appareil actif sera déconnecté et l'agent pourra se connecter sur un nouvel appareil.",
+  "operasyon poko voye sou ansyen aparèy la: yo ap pèdi si aparèy sa a pa janm reparèt.": "opération(s) non envoyée(s) sur l'ancien appareil : elles seront perdues si cet appareil ne réapparaît jamais.",
+  "Ajan an debloke ✓": "Agent débloqué ✓", "Se manadjè sèlman ki ka debloke yon ajan.": "Seul un manager peut débloquer un agent.",
 };
 const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 let RE = null;

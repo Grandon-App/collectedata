@@ -29,7 +29,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "4.17";
+const APP_VERSION = "4.18";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
@@ -114,7 +114,7 @@ function tabActif(r) {
   if (/^#\/rapo/.test(r)) return "rapo";
   if (/^#\/kat/.test(r)) return "kat";
   if (/^#\/senk/.test(r)) return "senk";
-  if (/^#\/(param|ajan|feries|istorik)/.test(r)) return "param";
+  if (/^#\/(param|ajan|feries|istorik|modpas|aparey)/.test(r)) return "param";
   return "tablo";
 }
 function updateNav() {
@@ -169,6 +169,15 @@ function viewLogin(expired) {
         await api.clearSession();
         throw new Error("Gen done yon lòt ajan sou telefòn sa a ki poko voye. Se li ki pou konekte.");
       }
+      // Yon sèl aparèy aktif: sèvè a refize si ansyen aparèy la gen operasyon ki poko voye, sinon li dekonekte l.
+      let ap = null;
+      try {
+        ap = await api.rpc("grandon_aparey_konekte", { p_aparey: api.apareyId(), p_non: api.apareyNon() });
+      } catch (e2) {
+        if (/ANSYEN_APAREY/.test(e2.message)) { await api.clearSession(); throw new Error(e2.message.replace(/^.*?ANSYEN_APAREY:\s*/, "")); }
+        if (e2.status !== 404) { await api.clearSession(); throw e2; }
+      }
+      await db.meta("aparey_bloke", null);
       // Ajan Grandon (telefòn) oswa administratè (imèl).
       const [ga] = await api.select(`grandon_ajan?user_id=eq.${s.user.id}&select=nom,role,actif`);
       const [p] = ga?.actif ? [null] : await api.select(`profiles?user_id=eq.${s.user.id}&select=firstname,name,role`);
@@ -178,11 +187,13 @@ function viewLogin(expired) {
       }
       if (prev && prev !== s.user.id) { const keep = await db.meta("session"); await db.wipe(); await db.meta("session", keep); }
       moi = ga?.actif
-        ? { id: s.user.id, nom: ga.nom, role: ga.role, admin: ga.role === "admin", manager: ga.role === "admin" || ga.role === "manager", tel: api.telefon8(f.tel.value) }
+        ? { id: s.user.id, nom: ga.nom, role: ga.role, admin: ga.role === "admin", manager: ga.role === "admin" || ga.role === "manager", tel: api.telefon8(f.tel.value), modpasTanpore: !!ap?.modpas_tanpore }
         : { id: s.user.id, nom: `${p.firstname || ""} ${p.name || ""}`.trim() || s.user.email, role: Number(p.role), admin: Number(p.role) === 1, manager: [1, 2, 5].includes(Number(p.role)) };
       await db.meta("owner", s.user.id);
       await db.meta("moi", moi);
       navigator.storage?.persist?.();
+      if (ap?.ansyen_dekonekte) toast(t("Ansyen aparèy ou a dekonekte."), "info", 6000);
+      if (moi.modpasTanpore) return go("#/modpas");
       b.textContent = "Ap telechaje done yo…";
       await S.run();
       // Si ajan an te deja peze yon onglè pandan telechajman an, kite l kote l ye.
@@ -1318,6 +1329,7 @@ async function viewParam() {
     <div class="kv"><span>Non</span><b>${h(moi.nom)}</b></div>
     ${moi.tel ? `<div class="kv"><span>Telefòn</span><b>${h(moi.tel)}</b></div>` : ""}
     <div class="kv"><span>Wòl</span><b>${h(WOL[moi.role] || "Anplwaye")}</b></div>
+    ${moi.tel ? `<a class="btn block" href="#/modpas" id="lyen-modpas">Chanje modpas mwen</a>` : ""}
   </div>
   <h2>Aparans</h2>
   <div class="card form">
@@ -1340,6 +1352,7 @@ async function viewParam() {
   <a class="row senk-lyen" href="#/senk"><div class="grow"><b>${t("Senkronizasyon")}</b><div class="mut sm">${M.outbox.length ? `${M.outbox.length} ${t("poko voye")}` : t("Tout bagay voye ✓")} · ${t("Dènye senk")} ${lè(await db.meta("last_sync"))}</div></div><span aria-hidden="true">›</span></a>
   ${estManager() || moi.admin ? `<h2>Administrasyon</h2>` : ""}
   ${estManager() ? `<a class="btn block" href="#/istorik">Istorik modifikasyon</a>` : ""}
+  ${estManager() ? `<a class="btn block" href="#/aparey">Aparèy ajan yo</a>` : ""}
   ${estManager() ? `<a class="btn block" href="#/feries">Jou ferye</a>` : ""}
   ${moi.admin ? `<a class="btn block" href="#/ajan">Jere ajan yo</a>` : ""}
   <button class="btn block danger" id="logout">Dekonekte</button>
@@ -1382,6 +1395,7 @@ async function viewSenk() {
     </div>`).join("") || `<p class="empty">Tout bagay voye ✓</p>`}</div>`;
   document.getElementById("sync").onclick = async () => {
     const r = await S.run();
+    if (r.aparey) return render();
     r.notices.forEach((n) => toast(n, "info", 6000));
     toast(r.offline ? "Pa gen koneksyon." : r.session ? "Konekte ankò." : r.errors ? `${r.errors} erè.` : "Senkronizasyon fini ✓", r.errors || r.offline ? "err" : "ok");
     render();
@@ -1392,6 +1406,80 @@ async function viewSenk() {
     const n = await S.dropOp(Number(b.dataset.drop));
     toast(`${n} operasyon efase.`);
     render();
+  }));
+}
+
+// ---------- Modpas: chanjman obligatwa (modpas tanporè) oswa volontè ----------
+function viewModpas(fòse) {
+  if (fòse) { $nav.hidden = true; document.body.classList.remove("has-nav"); }
+  $app.innerHTML = `${fòse ? "" : `<a href="#/param" class="back">‹ Paramèt</a>`}<h1>${fòse ? "Chwazi pwòp modpas ou" : "Chanje modpas mwen"}</h1>
+  ${fòse ? `<p class="note warn">Modpas ou resevwa a se yon modpas tanporè. Chwazi yon modpas pa w anvan w kontinye: se ou sèl ki pou konnen l.</p>` : ""}
+  <form id="f-modpas" class="card form">
+    ${fòse ? "" : `<label>Ansyen modpas<input name="ansyen" type="password" autocomplete="current-password" required></label>`}
+    <label>Nouvo modpas <small class="mut">(omwen 8 karaktè)</small><input name="nouvo" type="password" autocomplete="new-password" minlength="8" required></label>
+    <label>Konfime nouvo modpas la<input name="konfime" type="password" autocomplete="new-password" minlength="8" required></label>
+    <button class="btn pri" type="submit">Anrejistre</button>
+    <p class="err-msg" id="modpas-err" role="alert"></p>
+  </form>
+  ${navigator.onLine ? "" : `<p class="note">Fòk ou gen entènèt pou chanje modpas.</p>`}
+  ${fòse ? `<button class="btn block" id="modpas-soti" type="button">Dekonekte</button>` : ""}`;
+  const f = document.getElementById("f-modpas"), out = document.getElementById("modpas-err");
+  f.onsubmit = async (e) => {
+    e.preventDefault();
+    out.textContent = "";
+    if (f.nouvo.value !== f.konfime.value) { out.textContent = t("De modpas yo pa menm."); return; }
+    const b = f.querySelector("button"); b.disabled = true;
+    try {
+      await api.chanjeModpas(fòse ? null : f.ansyen.value, f.nouvo.value);
+      moi = { ...moi, modpasTanpore: false };
+      await db.meta("moi", moi);
+      toast(t("Modpas ou chanje ✓"), "ok");
+      if (fòse) { S.run(); go("#/"); } else go("#/param");
+    } catch (err) {
+      out.textContent = t(err.message); b.disabled = false;
+    }
+  };
+  document.getElementById("modpas-soti")?.addEventListener("click", async () => {
+    await api.clearSession(); go("#/login");
+  });
+}
+
+// ---------- Aparèy sa a pa aktif ankò (ajan an konekte sou yon lòt) ----------
+async function viewAparèyBloke(bl) {
+  const n = (await db.all("outbox")).length;
+  $nav.hidden = true; document.body.classList.remove("has-nav");
+  $app.innerHTML = `<section class="card aparey-bloke"><div class="ikon-gwo" aria-hidden="true">🔒</div>
+    <h1>${bl.debloke ? "Kont ou debloke" : "Kont ou konekte sou yon lòt aparèy"}</h1>
+    <p>${bl.debloke ? t("Yon manadjè debloke kont ou pou w ka konekte sou yon lòt aparèy. Aparèy sa a pa aktif ankò.") : t("Ou konekte sou yon lòt aparèy. Pou sekirite, yon sèl aparèy ka aktif an menm tan: aparèy sa a dekonekte.")}</p>
+    ${n ? `<p class="note warn">${n} ${t("operasyon poko voye sou aparèy sa a. Yo pa efase: konekte ankò sou aparèy sa a pou voye yo.")}</p>` : ""}
+    <button class="btn pri block" id="rekonekte">Konekte ankò sou aparèy sa a</button></section>`;
+  document.getElementById("rekonekte").onclick = async () => { await api.clearSession(); go("#/login"); };
+}
+
+// ---------- Aparèy ajan yo (manadjè): wè ki aparèy ki aktif, debloke yon ajan ki pèdi telefòn li ----------
+async function viewAparey() {
+  if (!estManager()) return go("#/param");
+  $app.innerHTML = `<a href="#/param" class="back">‹ Paramèt</a><h1>Aparèy ajan yo</h1>
+    <p class="mut sm">${t("Yon ajan ka aktif sou yon sèl aparèy. Si telefòn li pèdi oswa kraze, debloke l pou l ka konekte sou yon lòt.")}</p>
+    <div class="list" id="ap-lis"><p class="empty">${t("Ap chaje…")}</p></div>`;
+  const $l = document.getElementById("ap-lis");
+  let lis;
+  try { lis = await api.rpc("grandon_aparey_lis", {}); }
+  catch (e) { $l.innerHTML = `<p class="err-msg">${h(t(e.retry ? "Fòk ou gen entènèt pou wè aparèy yo." : e.message))}</p>`; return; }
+  $l.innerHTML = lis.map((a) => `<div class="row col ap-row" data-ap="${h(a.user_id)}">
+      <div><b data-brut>${h(a.nom)}</b> <span class="mut sm">${h(WOL[a.role] || a.role)}</span>
+        ${!a.actif ? `<span class="badge err">${t("Dezaktive")}</span>` : a.bloke ? `<span class="badge info">${t("Libere")}</span>` : a.aparey_non || a.denye_we ? `<span class="badge ok">${t("Aktif")}</span>` : `<span class="badge pend">${t("Poko konekte")}</span>`}</div>
+      <div class="sm">${a.bloke ? t("Pwochen koneksyon an lib.") : a.denye_we ? `<span data-brut>${h(a.aparey_non || t("Aparèy"))}</span> · ${t("Dènye fwa")} ${lè(a.denye_we)}` : ""}
+        ${a.poko_voye ? ` · <b>${a.poko_voye} ${t("poko voye")}</b>` : ""}</div>
+      ${!a.bloke && a.denye_we && a.user_id !== moi.id ? `<div class="btns"><button class="btn sm danger" data-debloke="${h(a.user_id)}">Debloke</button></div>` : ""}
+    </div>`).join("") || `<p class="empty">${t("Pa gen ajan.")}</p>`;
+  $l.querySelectorAll("[data-debloke]").forEach((b) => (b.onclick = async () => {
+    const a = lis.find((x) => x.user_id === b.dataset.debloke);
+    const tekst = `${a.nom} · ${t("aparèy aktif la ap dekonekte, epi ajan an ap ka konekte sou yon nouvo aparèy.")}${a.poko_voye ? ` ${a.poko_voye} ${t("operasyon poko voye sou ansyen aparèy la: yo ap pèdi si aparèy sa a pa janm reparèt.")}` : ""}`;
+    if (!(await ui.ask({ titre: "Debloke ajan sa a?", tekst, ok: "Debloke", danje: true, ikon: "!" }))) return;
+    b.disabled = true;
+    try { await api.rpc("grandon_aparey_debloke", { p_user: a.user_id }); toast(t("Ajan an debloke ✓"), "ok"); viewAparey(); }
+    catch (e) { toast(t(e.message), "err"); b.disabled = false; }
   }));
 }
 
@@ -1511,13 +1599,16 @@ async function viewAjan() {
 }
 
 // ---------- Routè ----------
-const FORM = /^#\/(kliyan\/nouvo|kliyan\/[\w-]+\/modifye|cycle\/nouvo|tx\/nouvo|ajan)/;
+const FORM = /^#\/(kliyan\/nouvo|kliyan\/[\w-]+\/modifye|cycle\/nouvo|tx\/nouvo|ajan|modpas)/;
 async function render() {
   const r = location.hash || "#/";
   const s = api.getSession();
   await updateBar();
   updateNav();
   if (!s || !moi || r === "#/login") return viewLogin(s?.expired);
+  if (moi.modpasTanpore) return viewModpas(true);
+  const bl = await db.meta("aparey_bloke");
+  if (bl) return viewAparèyBloke(bl);
   let m;
   if (r === "#/" || r === "#") return viewTablo();
   if (r === "#/kliyan") return viewKliyan();
@@ -1534,6 +1625,8 @@ async function render() {
   if (r === "#/param") return viewParam();
   if (r === "#/senk") return viewSenk();
   if (r === "#/istorik") return viewIstorik();
+  if (r === "#/modpas") return viewModpas(false);
+  if (r === "#/aparey") return viewAparey();
   if (r === "#/ajan" && moi.admin) return viewAjan();
   if (r === "#/feries") return viewFeries();
   go("#/");

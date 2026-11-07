@@ -438,3 +438,9 @@ html[data-look] button.row.tx-btn:focus-visible { outline: 3px solid var(--info)
 .ist-t { width: 100%; border-collapse: collapse; margin-top: 6px; font-size: .85rem; }
 .ist-t th, .ist-t td { text-align: left; padding: 4px 6px; border-bottom: 1px solid var(--line); overflow-wrap: anywhere; }
 .ist-t th { color: var(--mut); font-weight: 600; font-size: .75rem; }
+
+/* Aparèy bloke (kont lan aktif sou yon lòt aparèy) */
+.aparey-bloke { text-align: center; margin-top: 1.5rem; padding: 1.5rem 1.25rem; }
+.aparey-bloke h1 { font-size: 1.35rem; margin: .25rem 0 .75rem; }
+.aparey-bloke .ikon-gwo { font-size: 2.6rem; line-height: 1; margin-bottom: .5rem; }
+.aparey-bloke p { max-width: 34rem; margin-inline: auto; }
