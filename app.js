@@ -29,7 +29,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "4.25";
+const APP_VERSION = "4.26";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin", kesye: "Responsab kès" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
@@ -94,7 +94,7 @@ async function updateBar() {
   const on = navigator.onLine;
   $bar.hidden = false;
   $bar.innerHTML = `
-    <a href="#/" class="brand"><span class="mark" aria-hidden="true">G</span><span class="brand-t">Grandon</span> ${C.ANVIWONMAN ? `<small>${h(C.ANVIWONMAN)}</small>` : ""}</a>
+    <a href="#/" class="brand"><span class="brand-t wordmark">Grandon</span> ${C.ANVIWONMAN ? `<small>${h(C.ANVIWONMAN)}</small>` : ""}</a>
     <a href="#/senk" class="net ${on ? "on" : "off"}" aria-label="Senkronizasyon: ${on ? "anliy" : "offline"}, ${pend} poko voye, ${err} erè">
       <span class="dot"></span>${on ? "Anliy" : "Offline"}
       ${S.isRunning() ? `<span class="spin" aria-hidden="true"></span>` : ""}
@@ -144,8 +144,7 @@ if (document.fonts?.ready) document.fonts.ready.then(mezireBar).catch(() => {});
 function viewLogin(expired) {
   $app.innerHTML = `
   <section class="login">
-    <img src="${C.BAZ || ""}icons/icon-192.png" alt="" width="76" height="76">
-    <h1>Grandon</h1>
+    <h1 class="wordmark">Grandon</h1>
     <p class="mut">Aplikasyon ajan ${C.ANVIWONMAN ? `· ${h(C.ANVIWONMAN)}` : ""}</p>
     <div class="lang-sw" role="group" aria-label="Lang"><button type="button" data-lang="ht" class="${getLang() === "ht" ? "on" : ""}" data-brut>Kreyòl</button><button type="button" data-lang="fr" class="${getLang() === "fr" ? "on" : ""}" data-brut>Français</button></div>
     ${expired ? `<p class="note warn">Sesyon w fini. Konekte ankò: done ki sou telefòn nan ap rete.</p>` : ""}
