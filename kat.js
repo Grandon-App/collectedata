@@ -78,7 +78,7 @@ export async function viewKat({ $app, M, man, moi, ajans, getGps, toast }) {
   if (kong === "traje" && !man) kong = "kliyan";
   const mwen = (id) => id === moi?.id || id === "moi";
   const idAjan = (id) => (id === "moi" ? moi?.id : id);
-  const nonAjan = (id) => (mwen(id) ? t("Mwen") : ajans[id] || t("Lòt ajan"));
+  const nonAjan = (id) => (mwen(id) ? t("Kliyan mwen") : ajans[id] || t("Lòt ajan"));
   const kliyan = [...M.clients.values()].map((c) => ({ c, a: idAjan(ajanKliyan(M, c.id_personne)) }));
   const koule = kouleAjan([...kliyan.map((x) => x.a), ...Object.keys(ajans), moi?.id]);
   const kl = (a) => koule.get(a) || GRI;
@@ -104,6 +104,31 @@ export async function viewKat({ $app, M, man, moi, ajans, getGps, toast }) {
   if (Lf) {
     kat = Lf.map(el, { zoomControl: true, attributionControl: true, zoomAnimation: false, fadeAnimation: false, markerZoomAnimation: false }).setView([18.54, -72.34], 12);
     Lf.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, attribution: "© OpenStreetMap" }).addTo(kat);
+    // Pozisyon ajan an: pwen ble ki bat (pulse) + sèk presizyon. Bouton «Kote m ye» santre kat la sou li.
+    const m = kat;
+    let pwen = null, sèk = null;
+    const montreMwen = async (santre) => {
+      const btn = el.querySelector(".kat-loc"); btn?.classList.add("ap");
+      const p = await getGps(santre ? 12000 : 6000);
+      btn?.classList.remove("ap");
+      if (m !== kat) return;
+      if (!p) { if (santre) toast(t("Pa ka jwenn pozisyon ou. Aktive GPS la epi bay aplikasyon an pèmisyon."), "err", 5000); return; }
+      pwen?.remove(); sèk?.remove();
+      sèk = Lf.circle([p.lat, p.lng], { radius: p.acc || 30, color: "#2563eb", weight: 1, fillColor: "#2563eb", fillOpacity: 0.12, interactive: false }).addTo(m);
+      pwen = Lf.marker([p.lat, p.lng], { icon: Lf.divIcon({ className: "kat-mwen", html: "<i></i>", iconSize: [22, 22], iconAnchor: [11, 11] }), zIndexOffset: 1000, keyboard: false })
+        .bindPopup(`${t("Ou la")}${p.acc ? ` · ±${p.acc} m` : ""}`).addTo(m);
+      if (santre) m.setView([p.lat, p.lng], Math.max(m.getZoom(), 16), { animate: false });
+    };
+    const Loc = Lf.Control.extend({ options: { position: "topleft" }, onAdd() {
+      const b = Lf.DomUtil.create("button", "kat-loc");
+      b.type = "button"; b.title = t("Kote m ye"); b.setAttribute("aria-label", t("Kote m ye"));
+      b.innerHTML = ICO.gps;
+      Lf.DomEvent.disableClickPropagation(b);
+      b.onclick = () => montreMwen(true);
+      return b;
+    } });
+    new Loc().addTo(kat);
+    if (kong !== "pakou") montreMwen(false); // pakou a deja mande pozisyon an
   } else el.innerHTML = `<p class="empty">${t("Kat la pa ka chaje.")}</p>`;
   const limit = [];
   const mak = (lat, lng, koul, html, { nimewo = null, gwo = false } = {}) => {
@@ -122,7 +147,7 @@ export async function viewKat({ $app, M, man, moi, ajans, getGps, toast }) {
     const ids = [...new Set(kliyan.map((x) => x.a))].sort((a, b) => nonAjan(a).localeCompare(nonAjan(b)));
     if (filtAjan !== "tout" && !ids.includes(filtAjan)) filtAjan = "tout";
     const vizib = ak.filter((x) => filtAjan === "tout" || x.a === filtAjan);
-    ctl.innerHTML = chipsAjan(ids, (a) => `<small>${kliyan.filter((x) => x.a === a).length}</small>`);
+    ctl.innerHTML = chipsAjan(ids, (a) => `<small>${ak.filter((x) => x.a === a).length}</small>`); // kantite sou kat la (ak GPS)
     brancheChips();
     for (const { c, a } of vizib) {
       const ks = [...M.comptes.values()].filter((k) => k.id_personne === c.id_personne && k._actif);
@@ -132,7 +157,7 @@ export async function viewKat({ $app, M, man, moi, ajans, getGps, toast }) {
         <br><a href="#/kliyan/${h(c.id_personne)}">${t("Louvri fich la")} →</a>`);
     }
     const san = kliyan.filter((x) => (filtAjan === "tout" || x.a === filtAjan) && (x.c.gps_lat == null || x.c.gps_lng == null));
-    lis.innerHTML = `<p class="mut sm kat-r"><b>${vizib.length}</b> ${t("kliyan sou kat la")}${san.length ? ` · ${san.length} ${t("kliyan san GPS")}` : ""}</p>
+    lis.innerHTML = `${!vizib.length && san.length ? `<p class="note warn">${t("Kliyan sa yo pa gen pozisyon GPS, se poutèt sa yo pa parèt sou kat la. Louvri fich yo → Modifye pou anrejistre GPS la.")}</p>` : ""}<p class="mut sm kat-r"><b>${vizib.length}</b> ${t("kliyan sou kat la")}${san.length ? ` · ${san.length} ${t("kliyan san GPS")}` : ""}</p>
       ${san.length ? `<details class="kat-san"><summary>${t("Kliyan san GPS")} (${san.length})</summary><div class="list">${san.map(({ c }) => `<a class="row" href="#/kliyan/${h(c.id_personne)}"><div class="grow"><b>${d(non(c))}</b><div class="mut sm">${d(c.code_client || "")}</div></div></a>`).join("")}</div></details>` : ""}`;
     fini();
     return;
@@ -162,7 +187,7 @@ export async function viewKat({ $app, M, man, moi, ajans, getGps, toast }) {
     const depa = pòz ? { lat: pòz.lat, lng: pòz.lng, mwen: true } : { lat: pts[0].lat, lng: pts[0].lng, mwen: false };
     const r = pakou(depa, pts);
     if (kat) {
-      if (depa.mwen) { limit.push([depa.lat, depa.lng]); Lf.circleMarker([depa.lat, depa.lng], { radius: 9, color: "#fff", weight: 3, fillColor: "#111827", fillOpacity: 1 }).bindPopup(t("Ou la")).addTo(kat); }
+      if (depa.mwen) { limit.push([depa.lat, depa.lng]); Lf.marker([depa.lat, depa.lng], { icon: Lf.divIcon({ className: "kat-mwen", html: "<i></i>", iconSize: [22, 22], iconAnchor: [11, 11] }), zIndexOffset: 1000 }).bindPopup(t("Ou la")).addTo(kat); }
       Lf.polyline([[depa.lat, depa.lng], ...r.lòd.map((p) => [p.lat, p.lng])], { color: "#2563eb", weight: 4, opacity: 0.8, dashArray: "8 6" }).addTo(kat);
     }
     r.lòd.forEach((p, i) => {
