@@ -7,7 +7,10 @@ Aplikasyon ajan Grandon (PWA): kliyan, cycle epay ak depo, menm san entènèt.
 - Ajan an konekte ak nimewo telefòn li + modpas.
 - Epay: onglè Kont, Tranzaksyon, Fidbak (sa kliyan yo di lè yo pa peye) ak Validasyon (manadjè).
 
-Aplikasyon an pibliye sou GitHub Pages chak fwa ou pouse sou branch `main`. Lè w pibliye yon nouvo vèsyon, chanje `VERSION` nan `sw.js`.
+Aplikasyon an pibliye sou GitHub Pages chak fwa ou pouse sou branch `main`. Lè w pibliye yon nouvo vèsyon, chanje `VERSION` nan `sw.js` (ak `APP_VERSION` nan `app.js`).
+
+- **Prodiksyon:** rasin sit la (`config.js`, memwa telefòn `grandon-prod`).
+- **Tès:** dosye `tes/` (`tes/config.js`, memwa `grandon-ajan`). Se menm fichye aplikasyon yo (`../`); `tes/` gen sèlman pwòp `index.html`, `config.js`, `manifest.webmanifest` ak `sw.js`. De kopi yo pa pataje ni sesyon, ni done offline, ni cache.
 
 ## Look (aparans)
 

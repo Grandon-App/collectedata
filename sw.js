@@ -1,7 +1,8 @@
 // Service worker: kenbe aplikasyon an sou telefòn nan pou l louvri san entènèt.
 // Chanje VERSION chak fwa ou pibliye yon nouvo vèsyon.
-const VERSION = "grandon-ajan-v33";
-const SHELL = [
+const CFG = self.GRANDON_SW || { baz: "", lokal: null, non: "prod" };
+const VERSION = `grandon-ajan-v34-${CFG.non}`;
+const SHELL_BAZ = [
   "./", "index.html", "app.css", "look-a.css", "look-b.css", "look-c.css",
   "app.js", "db.js", "api.js", "sync.js", "config.js", "ui.js", "i18n.js", "taxonomy.js", "fmt.js",
   "looks.js", "look-base.js", "look-a.js", "look-b.js", "look-c.js", "kat.js",
@@ -9,6 +10,10 @@ const SHELL = [
   "vendor/leaflet/images/marker-icon.png", "vendor/leaflet/images/marker-icon-2x.png", "vendor/leaflet/images/marker-shadow.png",
   "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png", "icons/icon-maskable-512.png",
 ];
+// Fichye lokal yo (index, config, manifest) rete kote service worker la ye; lòt yo soti nan CFG.baz.
+const SHELL = SHELL_BAZ.map((u) => (!CFG.lokal || CFG.lokal.includes(u) ? u : CFG.baz + u));
+// Kopi tès la (tes/) gen pwòp service worker li: prodiksyon pa janm reponn pou li.
+const SOU_TES = CFG.non === "prod" ? new URL("tes/", self.registration.scope).pathname : null;
 const CACHE_FOTO = "grandon-foto";
 const CACHE_FONT = "grandon-font";
 const CACHE_KAT = "grandon-kat";
@@ -20,7 +25,11 @@ self.addEventListener("install", (e) => {
 
 self.addEventListener("activate", (e) => {
   e.waitUntil((async () => {
-    for (const k of await caches.keys()) if (k !== VERSION && k !== CACHE_FOTO && k !== CACHE_FONT && k !== CACHE_KAT) await caches.delete(k);
+    // Efase sèlman ansyen cache pa nou yo (ak ansyen non san sifiks): pa manyen cache lòt kopi a.
+    for (const k of await caches.keys()) {
+      const pam = k.endsWith(`-${CFG.non}`) || /^grandon-ajan-v\d+$/.test(k);
+      if (pam && k !== VERSION) await caches.delete(k);
+    }
     await self.clients.claim();
   })());
 });
@@ -51,6 +60,7 @@ self.addEventListener("fetch", (e) => {
   if (url.hostname === "tile.openstreetmap.org") { e.respondWith(cacheDabò(req, CACHE_KAT)); return; }
   // Supabase ak lòt sit: pa manyen yo, se aplikasyon an ki jere offline la.
   if (url.origin !== self.location.origin) return;
+  if (SOU_TES && url.pathname.startsWith(SOU_TES)) return;
   if (req.mode === "navigate") {
     e.respondWith(caches.match("index.html").then((r) => r || fetch(req)));
     return;

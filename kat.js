@@ -11,8 +11,8 @@ export function chajeLeaflet() {
   if (window.L?.map) return Promise.resolve(window.L);
   if (lp) return lp;
   lp = new Promise((res, rej) => {
-    const css = document.createElement("link"); css.rel = "stylesheet"; css.href = "vendor/leaflet/leaflet.css"; document.head.appendChild(css);
-    const s = document.createElement("script"); s.src = "vendor/leaflet/leaflet.js";
+    const css = document.createElement("link"); css.rel = "stylesheet"; css.href = `${window.GRANDON_CONFIG?.BAZ || ""}vendor/leaflet/leaflet.css`; document.head.appendChild(css);
+    const s = document.createElement("script"); s.src = `${window.GRANDON_CONFIG?.BAZ || ""}vendor/leaflet/leaflet.js`;
     s.onload = () => res(window.L); s.onerror = () => { lp = null; rej(new Error("Leaflet")); };
     document.head.appendChild(s);
   });

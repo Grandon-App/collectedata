@@ -29,7 +29,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "4.22";
+const APP_VERSION = "4.23";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin", kesye: "Responsab kès" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
@@ -144,7 +144,7 @@ if (document.fonts?.ready) document.fonts.ready.then(mezireBar).catch(() => {});
 function viewLogin(expired) {
   $app.innerHTML = `
   <section class="login">
-    <img src="icons/icon-192.png" alt="" width="76" height="76">
+    <img src="${C.BAZ || ""}icons/icon-192.png" alt="" width="76" height="76">
     <h1>Grandon</h1>
     <p class="mut">Aplikasyon ajan ${C.ANVIWONMAN ? `· ${h(C.ANVIWONMAN)}` : ""}</p>
     <div class="lang-sw" role="group" aria-label="Lang"><button type="button" data-lang="ht" class="${getLang() === "ht" ? "on" : ""}" data-brut>Kreyòl</button><button type="button" data-lang="fr" class="${getLang() === "fr" ? "on" : ""}" data-brut>Français</button></div>

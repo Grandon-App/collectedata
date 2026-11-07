@@ -1,5 +1,5 @@
 // Ti wrapper IndexedDB: tout done ajan an kenbe sou telefòn nan.
-const DB_NAME = "grandon-ajan";
+const DB_NAME = window.GRANDON_CONFIG?.DB || "grandon-ajan"; // prodiksyon ak tès pa pataje menm memwa
 const VER = 4; // v2: demandes, suivis, feries · v3: alet · v4: modif
 const STORES = {
   meta: { keyPath: "k" },
