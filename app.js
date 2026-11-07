@@ -29,7 +29,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "4.24";
+const APP_VERSION = "4.25";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin", kesye: "Responsab kès" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
@@ -545,10 +545,19 @@ async function decider(M, id, ok) {
   if (!navigator.onLine) return ui.info("Pa gen koneksyon.", "Fòk ou gen entènèt pou otorize yon demann.");
   let motif = null;
   if (ok) {
-    if (!(await ui.ask({ titre: dm.type === "V" ? "Apwouve viman sa a?" : "Apwouve retrè sa a?", ok: "Apwouve", foto: c?.photo_url,
+    // Se balans VALIDE a sèlman ki ka retire: depo ki poko valide pa konte.
+    const valide = k?.solde_actuel != null ? Number(k.solde_actuel) : null;
+    const lòt = [...M.demandes.values()].filter((x) => x.id !== id && x.id_compte_epargne === dm.id_compte_epargne && x.statut === "en_attente").reduce((a, x) => a + Number(x.montant || 0), 0);
+    const dispo = valide == null ? null : valide - lòt;
+    const twòp = dispo != null && Number(dm.montant) > dispo;
+    if (!(await ui.ask({ titre: dm.type === "V" ? "Apwouve viman sa a?" : "Apwouve retrè sa a?", ok: "Apwouve", foto: c?.photo_url, danje: twòp, ikon: twòp ? "!" : "?",
+      tekst: twòp ? "Balans valide a pa ase pou montan sa a: sèvè a ap refize l. Valide depo ki an atant yo anvan si kliyan an te vrèman bay kòb la." : "",
       detay: [["Kliyan", non(c)], ["Kont", k?.no_compte || ""], ["Montan (goud)", gd(dm.montant)],
         ...(dm.type === "V" ? [["Kont ki resevwa", M.comptes.get(dm.id_compte_dest)?.no_compte || ""]] : []),
-        ...(k?._solde != null ? [["Balans kont lan", gd(k._solde)]] : [])] }))) return;
+        ...(valide != null ? [["Balans valide", gd(valide)]] : []),
+        ...(Number(k?.depo_an_atant) > 0 ? [["Depo poko valide (pa konte)", gd(k.depo_an_atant)]] : []),
+        ...(lòt > 0 ? [["Lòt demann an atant", gd(lòt)]] : []),
+        ...(dispo != null ? [["Disponib pou retrè", gd(Math.max(0, dispo))]] : [])] }))) return;
   } else {
     motif = await ui.askText({ titre: "Refize demann sa a?", label: "Rezon refi a", min: 3 });
     if (!motif) return;
@@ -1434,7 +1443,7 @@ async function viewTxNew(compteId) {
   <form id="f" class="card form" novalidate>
     <fieldset class="field"><legend class="sr">Tip</legend><div class="seg s4">
       ${TIP_TX.map(([v, l], i) => `<label><input type="radio" name="type" value="${v}" ${i === 0 ? "checked" : ""}><span>${l}</span></label>`).join("")}</div></fieldset>
-    <p class="note info-note" id="oto" hidden>Sa a bezwen otorizasyon responsab kès la. Peye kliyan an sèlman lè demann lan apwouve.</p>
+    <p class="note info-note" id="oto" hidden>Sa a bezwen otorizasyon responsab kès la. Peye kliyan an sèlman lè demann lan apwouve.<br><b>Se sèlman kòb responsab kès la deja valide ki ka retire: depo ki poko valide pa konte.</b></p>
     <label id="l-fre" hidden>Tip frè *<select name="type_frais"><option value="">Chwazi…</option>${TYPES_FRE.map((x) => opt(x, "")).join("")}</select></label>
     <label id="l-dest" hidden>Kont ki resevwa viman an *<select name="dest"><option value="">Chwazi…</option>${lòt.map((x) => `<option value="${x.id_compte_epargne}">${h(non(M.clients.get(x.id_personne)))} · ${h(x.no_compte)}</option>`).join("")}</select></label>
     <label>Montan (goud) *<input name="montant" type="number" inputmode="decimal" min="1" step="any" required value="${plan || ""}"></label>

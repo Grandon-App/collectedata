@@ -211,6 +211,12 @@ const FR = {
   "Peze sou yon tranzaksyon pou mande otorizasyon pou modifye oswa anile l.": "Touchez une transaction pour demander l'autorisation de la modifier ou de l'annuler.",
   "Modifikasyon dirèk responsab kès": "Modification directe du responsable de caisse",
   "Balans kont": "Le solde du compte", "ta vin negatif": "deviendrait négatif", "Balans disponib": "Solde disponible",
+  "Balans valide": "Solde validé", "Depo poko valide (pa konte)": "Dépôts non validés (non comptés)", "Lòt demann an atant": "Autres demandes en attente",
+  "Disponib pou retrè": "Disponible pour retrait",
+  "Balans valide a pa ase pou montan sa a: sèvè a ap refize l. Valide depo ki an atant yo anvan si kliyan an te vrèman bay kòb la.": "Le solde validé ne suffit pas pour ce montant : le serveur le refusera. Validez d'abord les dépôts en attente si le client a vraiment versé l'argent.",
+  "Se sèlman kòb responsab kès la deja valide ki ka retire: depo ki poko valide pa konte.": "Seul l'argent déjà validé par le responsable de caisse peut être retiré : les dépôts non validés ne comptent pas.",
+  "Kont lan pa gen ase kòb ki valide pou retrè sa a. Se sèlman depo responsab kès la deja valide ki ka retire.": "Le compte n'a pas assez d'argent validé pour ce retrait. Seuls les dépôts déjà validés par le responsable de caisse peuvent être retirés.",
+  "Kont lan pa gen ase kòb ki valide pou viman sa a. Se sèlman depo responsab kès la deja valide ki ka retire.": "Le compte n'a pas assez d'argent validé pour ce virement. Seuls les dépôts déjà validés par le responsable de caisse peuvent être retirés.",
   // Modpas ak aparèy
   "Chanje modpas mwen": "Changer mon mot de passe", "Chwazi pwòp modpas ou": "Choisissez votre mot de passe",
   "Modpas ou resevwa a se yon modpas tanporè. Chwazi yon modpas pa w anvan w kontinye: se ou sèl ki pou konnen l.": "Le mot de passe reçu est temporaire. Choisissez votre propre mot de passe avant de continuer : vous seul devez le connaître.",

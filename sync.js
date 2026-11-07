@@ -291,7 +291,7 @@ export function run({ pull: doPull = true } = {}) {
           // Refi pèmisyon: petèt se paske yon lòt aparèy vin aktif. Lè sa a, kite operasyon an poko voye.
           if ((e.status === 401 || e.status === 403 || e.code === "42501") && (res.aparey = await tcheAparey(ops.length))) break;
           cur.status = "erè";
-          cur.error = e.message;
+          cur.error = String(e.message || '').replace(/^[A-Z_]{4,}:\s*/, '');
           cur.tries++;
           await db.put("outbox", cur);
           blocked.add(cur.id);
