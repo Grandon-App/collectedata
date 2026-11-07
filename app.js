@@ -29,7 +29,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "4.30";
+const APP_VERSION = "4.31";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin", kesye: "Responsab kès" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
@@ -1411,7 +1411,7 @@ async function viewCycleNew(idPersonne, kontId = null) {
   if (kMod) idPersonne = kMod.id_personne;
   const c = M.clients.get(idPersonne);
   if (!c) { $app.innerHTML = `<a href="#/epay" class="back">‹ Epay</a><p class="empty">Kliyan an pa jwenn.</p>`; return; }
-  const plans = M.plans.length ? M.plans : [1000, 1500, 2000, 2500, 3000, 3500, 4000, 5000, 6000, 7000, 7500, 10000, 15000, 20000, 25000, 30000, 35000, 40000, 50000, 75000, 100000];
+  const plans = M.plans.length ? M.plans : [1000, 1500, 2000, 2500, 3000, 3500, 4000, 4500, 5000, 6000, 7000, 7500, 8000, 9000, 10000, 15000, 20000, 25000, 30000, 35000, 40000, 50000, 75000, 100000];
   const dènye = kMod || S.comptesDuClient(M, idPersonne)[0];
   let freq = FREKANS.includes(dènye?.frequence_semaine) ? dènye.frequence_semaine : 2;
   let jours = dènye?.jours_paiement?.length === freq ? [...dènye.jours_paiement] : [...JOU_DEFO[freq]];
