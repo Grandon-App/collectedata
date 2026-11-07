@@ -29,7 +29,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "4.28";
+const APP_VERSION = "4.29";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin", kesye: "Responsab kès" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
@@ -2145,9 +2145,20 @@ async function viewAjan() {
       lis.innerHTML = ajan.map((a) => `<div class="row col">
         <div><b>${h(a.nom)}</b> <span class="badge ${a.actif ? "ok" : "mut"}">${a.actif ? WOL[a.role] : "Dezaktive"}</span>
           <div class="mut sm">${h(a.telephone.replace(/^509(\d{4})(\d{4})$/, "$1 $2"))}</div></div>
-        ${a.user_id === moi.id ? "" : `<div class="btns"><button class="btn sm" data-mp="${h(a.telephone)}">Nouvo modpas</button>
+        ${a.user_id === moi.id ? `<div class="mut sm">${t("Se ou (ou pa ka chanje pwòp wòl ou)")}</div>` : `<div class="btns"><button class="btn sm" data-wol="${h(a.telephone)}" data-wol-a="${h(a.role)}" data-non="${h(a.nom)}">${t("Chanje wòl")}</button><button class="btn sm" data-mp="${h(a.telephone)}">Nouvo modpas</button>
           <button class="btn sm ${a.actif ? "danger" : ""}" data-ak="${a.actif ? "desactiver" : "reactiver"}" data-tel="${h(a.telephone)}">${a.actif ? "Dezaktive" : "Reaktive"}</button></div>`}
       </div>`).join("") || `<p class="empty">Pa gen ajan.</p>`;
+      lis.querySelectorAll("[data-wol]").forEach((b) => (b.onclick = async () => {
+        const avan = b.dataset.wolA;
+        const r = await ui.askChoice({ titre: `${t("Chanje wòl")} · ${b.dataset.non}`, tekst: `${t("Wòl kounye a")}: ${t(WOL[avan] || avan)}`,
+          options: Object.entries(WOL).filter(([k]) => k !== avan).map(([k, l]) => [k, l]), ok: "Chanje wòl" });
+        if (!r?.valeur) return;
+        const nouvo = r.valeur;
+        const avètisman = avan === "agent" ? t("Kont kliyan li yo ap rete atache avè l, men yo p ap parèt sou non l nan Ekip la toutotan li pa ajan.") : "";
+        if (!(await ui.ask({ titre: `${b.dataset.non}: ${t(WOL[avan])} → ${t(WOL[nouvo])}?`, tekst: `${t("Nouvo wòl la ap aplike sou aplikasyon li nan pwochen senkronizasyon an.")} ${avètisman}`, ok: "Chanje wòl" }))) return;
+        try { await api.kont({ aksyon: "wol", telefon: b.dataset.wol, wol: nouvo }); toast(`${b.dataset.non}: ${t(WOL[nouvo])} ✓`, "ok"); charge(); }
+        catch (e) { toast(t(e.message), "err"); }
+      }));
       lis.querySelectorAll("[data-mp]").forEach((b) => (b.onclick = async () => {
         const mp = await ui.askText({ titre: "Nouvo modpas", label: "Modpas (omwen 8 karaktè)", min: 8 });
         if (!mp) return;
@@ -2189,6 +2200,15 @@ async function render() {
   updateNav();
   if (!s || !moi || r === "#/login") return viewLogin(s?.expired);
   if (moi.modpasTanpore) return viewModpas(true);
+  const mwen = ((await db.meta("ekip")) || []).find((x) => x.user_id === moi.id);
+  if (mwen && moi.tel && mwen.role !== moi.role) {
+    moi = { ...moi, role: mwen.role, admin: mwen.role === "admin", manager: mwen.role === "admin" || mwen.role === "manager" };
+    await db.meta("moi", moi);
+    toast(`${t("Wòl ou chanje")}: ${t(WOL[mwen.role] || mwen.role)}`, "info", 7000);
+    updateNav();
+    if (estKesye() && r !== "#/kes") return go("#/kes");
+    if (!estKesye() && r === "#/kes") return go("#/");
+  }
   const bl = await db.meta("aparey_bloke");
   if (bl) return viewAparèyBloke(bl);
   // Responsab kès: paj kliyan, epay ak kat yo pa pou li.

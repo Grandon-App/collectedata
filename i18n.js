@@ -231,6 +231,11 @@ const FR = {
   "depo an atant validasyon": "dépôt(s) en attente de validation", "Kont ki pa atache ak okenn ajan": "Comptes rattachés à aucun agent", "Pa gen depo jodi a": "Aucun dépôt aujourd'hui",
   "Pou kolekte": "À collecter", "Kolekte (plan)": "Collecté (plans)", "Rete": "Reste", "Kliyan peye": "Clients payés", "Poko wè": "Pas encore vus", "Depo an atant": "Dépôts en attente",
   "Mwa a: dwe": "Mois : dû", "Pa gen ajan teren.": "Aucun agent de terrain.",
+  "Chanje wòl": "Changer le rôle", "Wòl kounye a": "Rôle actuel", "Se ou (ou pa ka chanje pwòp wòl ou)": "C'est vous (vous ne pouvez pas changer votre propre rôle)",
+  "Kont kliyan li yo ap rete atache avè l, men yo p ap parèt sou non l nan Ekip la toutotan li pa ajan.": "Ses comptes clients restent rattachés à lui, mais n'apparaîtront pas à son nom dans l'Équipe tant qu'il n'est pas agent.",
+  "Nouvo wòl la ap aplike sou aplikasyon li nan pwochen senkronizasyon an.": "Le nouveau rôle s'appliquera sur son application à la prochaine synchronisation.",
+  "Wòl ou chanje": "Votre rôle a changé", "Ou pa ka chanje pwòp wòl ou.": "Vous ne pouvez pas changer votre propre rôle.", "Fòk gen omwen yon admin aktif.": "Il faut au moins un admin actif.",
+  "Manadjè": "Manager", "Ajan": "Agent",
   // Modpas ak aparèy
   "Chanje modpas mwen": "Changer mon mot de passe", "Chwazi pwòp modpas ou": "Choisissez votre mot de passe",
   "Modpas ou resevwa a se yon modpas tanporè. Chwazi yon modpas pa w anvan w kontinye: se ou sèl ki pou konnen l.": "Le mot de passe reçu est temporaire. Choisissez votre propre mot de passe avant de continuer : vous seul devez le connaître.",
