@@ -29,7 +29,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "4.14";
+const APP_VERSION = "4.15";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
@@ -1366,22 +1366,34 @@ async function boot() {
   if (moi) S.run();
 
   if ("serviceWorker" in navigator) {
-    const reg = await navigator.serviceWorker.register("sw.js").catch((e) => console.warn("SW", e));
+    // Nouvo vèsyon: service worker la aktive poukont li (skipWaiting). Lè l pran kontwòl, nou rechaje paj la,
+    // eksepte si ajan an nan mitan yon fòm: lè sa a nou montre yon bouton pou l rechaje lè l fini.
+    const teGenKontwòl = !!navigator.serviceWorker.controller;
+    let fèt = false;
+    const rechaje = () => {
+      if (fèt || !teGenKontwòl) return;
+      if (/^#\/(kliyan\/nouvo|kliyan\/[^/]+\/modifye|cycle\/nouvo|tx\/nouvo|ajan)/.test(location.hash) || document.querySelector(".modal-wrap")) {
+        if (document.querySelector(".toast.update")) return;
+        const b = document.createElement("button");
+        b.className = "toast info update";
+        b.textContent = t("Nouvo vèsyon disponib · Peze pou rechaje");
+        b.onclick = () => { fèt = true; location.reload(); };
+        document.body.appendChild(b);
+        return;
+      }
+      fèt = true; location.reload();
+    };
+    navigator.serviceWorker.addEventListener("controllerchange", rechaje);
+    const reg = await navigator.serviceWorker.register("sw.js", { updateViaCache: "none" }).catch((e) => console.warn("SW", e));
+    if (reg?.waiting) reg.waiting.postMessage("skipWaiting"); // yon vèsyon ki t ap tann depi anvan
     reg?.addEventListener("updatefound", () => {
       const nw = reg.installing;
-      nw?.addEventListener("statechange", () => {
-        if (nw.state === "installed" && navigator.serviceWorker.controller) {
-          const t = document.createElement("button");
-          t.className = "toast info update";
-          t.textContent = "Nouvo vèsyon disponib · Peze pou rechaje";
-          t.onclick = () => {
-            navigator.serviceWorker.addEventListener("controllerchange", () => location.reload(), { once: true });
-            nw.postMessage("skipWaiting");
-          };
-          document.body.appendChild(t);
-        }
-      });
+      nw?.addEventListener("statechange", () => { if (nw.state === "installed" && navigator.serviceWorker.controller) nw.postMessage("skipWaiting"); });
     });
+    // Tcheke si gen nouvo vèsyon chak fwa aplikasyon an tounen devan (ak chak 30 minit).
+    const tcheke = () => { if (navigator.onLine) reg?.update().catch(() => {}); };
+    document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") tcheke(); });
+    setInterval(tcheke, 30 * 60000);
   }
 }
 boot();

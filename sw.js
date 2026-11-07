@@ -1,6 +1,6 @@
 // Service worker: kenbe aplikasyon an sou telefòn nan pou l louvri san entènèt.
 // Chanje VERSION chak fwa ou pibliye yon nouvo vèsyon.
-const VERSION = "grandon-ajan-v25";
+const VERSION = "grandon-ajan-v26";
 const SHELL = [
   "./", "index.html", "app.css", "look-a.css", "look-b.css", "look-c.css",
   "app.js", "db.js", "api.js", "sync.js", "config.js", "ui.js", "i18n.js", "taxonomy.js", "fmt.js",
@@ -14,7 +14,8 @@ const CACHE_FONT = "grandon-font";
 const CACHE_KAT = "grandon-kat";
 
 self.addEventListener("install", (e) => {
-  e.waitUntil(caches.open(VERSION).then((c) => c.addAll(SHELL)));
+  // Nouvo vèsyon an pran plas ansyen an touswit (aplikasyon an rechaje paj la, eksepte nan mitan yon fòm).
+  e.waitUntil(caches.open(VERSION).then((c) => c.addAll(SHELL.map((u) => new Request(u, { cache: "reload" })))).then(() => self.skipWaiting()));
 });
 
 self.addEventListener("activate", (e) => {
