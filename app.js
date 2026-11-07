@@ -29,7 +29,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "4.19";
+const APP_VERSION = "4.20";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
@@ -49,7 +49,7 @@ function savePrefs(p) {
   applyPrefs(n);
 }
 const { h, d, gd, datFr, lè, non, JOU, JOU_KOUT, lisJou, tel4, avatar, badgePend, badgeTx, badgeKont, badgeDm, ICO,
-  LABEL_TX, SIY, KLAS, MOTIFS, motifLabel, MOTIF_KOUT, TYPES_FRE, lèKout } = F;
+  LABEL_TX, SIY, KLAS, MOTIFS, motifLabel, MOTIF_KOUT, TYPES_FRE, lèKout, datKout } = F;
 const adopteInfo = (r) => ({ id: r.id_personne, prenom: r.prenom, nom: r.nom, code_client: r.code_client, photo_url: r.photo_url, tel4: r.tel4 });
 const go = (hash) => { if (location.hash === hash) render(); else location.hash = hash; };
 
@@ -332,7 +332,7 @@ async function viewKliyan() {
 
 // ---------- Pati komen pou Epay ----------
 const estManager = () => !!(moi && (moi.manager ?? (moi.admin || moi.role === "manager" || [1, 2, 5].includes(Number(moi.role)))));
-const jourTx = (tx) => (S.jouTx(tx) === S.jodi() ? t("jodi a") : datFr(S.jouTx(tx)));
+const jourTx = (tx) => `${S.jouTx(tx) === S.jodi() ? t("jodi a") : datFr(S.jouTx(tx))} · ${lèKout(tx.date_transaction) || ""}`;
 const nomAjan = (id) => (id === moi?.id || id === "moi" ? t("Mwen") : (ajans[id] || (id ? t("Lòt ajan") : "")));
 let ajans = {};
 
@@ -567,6 +567,88 @@ async function paPeye(k, c) {
 
 // ---------- 3. Epay: onglè Kont / Tranzaksyon / Validasyon ----------
 let filtEpay = "", ongEpay = "kont", filtKont = "tout", filtFidbak = "semen";
+
+// ---------- Lis tranzaksyon (Epay → Tranzaksyon): yon sèl kolòn, lè egzak, filt ak tri ----------
+const TX_TRI = [["dat_desc", "Pi resan anvan"], ["dat_asc", "Pi ansyen anvan"], ["mon_desc", "Montan pi gwo"], ["mon_asc", "Montan pi piti"], ["kliyan", "Kliyan (A → Z)"]];
+const TX_TIP = [["", "Tout tip"], ["depo", "Depo"], ["fre", "Frè"], ["retre", "Retrè"], ["viman", "Viman"]];
+const TX_ETA = [["", "Tout eta"], ["poko", "Poko voye"], ["atant", "An atant validasyon"], ["valide", "Valide"], ["anile", "Anile / refize"]];
+const txF = { tri: "dat_desc", tip: "", eta: "", q: "", lim: 100 };
+const etaTx = (x) => (x._error || x._pending ? "poko" : x.validation_status === "pending" ? "atant" : x.validation_status === "rejected" ? "anile" : "valide");
+const lèTx = (x) => lèKout(x.date_transaction) || "—";
+function jouLabel(M, iso) {
+  if (iso === M.today) return t("Jodi a");
+  if (iso === S.ajouteJou(M.today, -1)) return t("Yè");
+  return `${t(JOU[S.isoJou(iso)])} ${datFr(iso)}`;
+}
+function rowTx(M, tx) {
+  const k = M.comptes.get(tx.id_compte_epargne), c = k && M.clients.get(k.id_personne), kind = S.txKind(tx);
+  const kanè = [tx.solde_avant_declare, tx.solde_declare].map((v) => (v != null && v !== "" ? gd(v) : "—"));
+  const detay = [d(k?.no_compte || t("Cycle poko voye")),
+    kind === "fre" && tx.type_frais ? d(tx.type_frais) : "",
+    kind === "viman_out" && tx.virement_to ? `→ ${d(tx.virement_to)}` : "", kind === "viman_in" && tx.virement_from ? `← ${d(tx.virement_from)}` : ""].filter(Boolean).join(" · ");
+  return `<a class="row txr${tx.validation_status === "rejected" ? " txr-anile" : ""}" href="#/cycle/${h(tx.id_compte_epargne)}" data-txr="${h(tx.id_transaction_epargne)}">
+    <span class="txr-le"><b class="mono">${lèTx(tx)}</b>${txF.tri.startsWith("dat") ? "" : `<small>${datKout(S.jouTx(tx))}</small>`}</span>
+    <span class="txr-main"><span class="txr-t"><b>${t(LABEL_TX[kind])}</b> · ${d(non(c))} ${badgeTx(tx)}</span>
+      <span class="mut sm txr-d">${detay}</span>
+      ${kanè[0] === "—" && kanè[1] === "—" ? "" : `<span class="mut sm txr-k">${t("kanè avan")} ${kanè[0]} → ${t("kanè apre")} ${kanè[1]}</span>`}
+      ${tx._error ? `<span class="err-msg sm">${d(t(tx._error))}</span>` : ""}</span>
+    <span class="txr-mon"><b class="${KLAS(kind)}">${SIY(kind)}${gd(tx.montant)}</b></span></a>`;
+}
+function lisTx(M) {
+  const v = txF.q.trim().toLowerCase();
+  const tous = [...M.txs.values()];
+  const l = tous.filter((x) => {
+    const kind = S.txKind(x);
+    if (txF.tip && !(txF.tip === "viman" ? kind.startsWith("viman") : kind === txF.tip)) return false;
+    if (txF.eta && etaTx(x) !== txF.eta) return false;
+    if (!v) return true;
+    const k = M.comptes.get(x.id_compte_epargne);
+    return non(k && M.clients.get(k.id_personne)).toLowerCase().includes(v) || String(k?.no_compte || "").toLowerCase().includes(v);
+  });
+  const dat = (x) => String(x.date_transaction || "");
+  const kl = (x) => { const k = M.comptes.get(x.id_compte_epargne); return non(k && M.clients.get(k.id_personne)); };
+  const CMP = { dat_desc: (a, b) => dat(b).localeCompare(dat(a)), dat_asc: (a, b) => dat(a).localeCompare(dat(b)),
+    mon_desc: (a, b) => Number(b.montant) - Number(a.montant) || dat(b).localeCompare(dat(a)),
+    mon_asc: (a, b) => Number(a.montant) - Number(b.montant) || dat(b).localeCompare(dat(a)),
+    kliyan: (a, b) => kl(a).localeCompare(kl(b), "fr") || dat(b).localeCompare(dat(a)) };
+  l.sort(CMP[txF.tri] || CMP.dat_desc);
+  const vizib = l.slice(0, txF.lim);
+  let html = "";
+  if (txF.tri.startsWith("dat")) {
+    const gr = new Map();
+    for (const x of vizib) { const j = S.jouTx(x); if (!gr.has(j)) gr.set(j, []); gr.get(j).push(x); }
+    for (const [j, xs] of gr) {
+      const ok = xs.filter((x) => x.validation_status !== "rejected");
+      const depo = ok.filter((x) => S.txKind(x) === "depo").reduce((a, x) => a + Number(x.montant || 0), 0);
+      html += `<section class="txj"><div class="txj-h"><h3>${jouLabel(M, j)}</h3><span class="mut sm">${xs.length} ${t(xs.length > 1 ? "tranzaksyon" : "tranzaksyon")}${depo ? ` · ${t("Depo")} <b class="in">+${gd(depo)}</b>` : ""}</span></div>
+        <div class="list tx-lis">${xs.map((x) => rowTx(M, x)).join("")}</div></section>`;
+    }
+  } else html = `<div class="list tx-lis">${vizib.map((x) => rowTx(M, x)).join("")}</div>`;
+  return { html: html || `<p class="empty">${tous.length ? t("Anyen pa koresponn.") : t("Poko gen tranzaksyon.")}</p>`, n: l.length, plis: l.length > vizib.length };
+}
+function seksyonTx(M) {
+  const r = lisTx(M);
+  const sel = (id, lbl, L, v) => `<label class="tx-sel"><span>${lbl}</span><select id="${id}">${L.map(([k, l]) => `<option value="${k}" ${k === v ? "selected" : ""}>${t(l)}</option>`).join("")}</select></label>`;
+  return `<section class="tx-seksyon"><h2>Tranzaksyon yo <small id="tx-n">${r.n}</small></h2>
+    <div class="tx-tool">
+      <input id="tx-q" type="search" class="search" placeholder="Chèche kliyan oswa nimewo kont…" aria-label="Chèche tranzaksyon" value="${h(txF.q)}" autocomplete="off">
+      ${sel("tx-tri", "Triye pa", TX_TRI, txF.tri)}${sel("tx-tip", "Tip", TX_TIP, txF.tip)}${sel("tx-eta", "Eta", TX_ETA, txF.eta)}
+    </div>
+    <div id="tx-kò">${r.html}${r.plis ? `<button type="button" class="btn block" id="tx-plis">${t("Montre plis")}</button>` : ""}</div></section>`;
+}
+function brancheTx(M) {
+  const rann = () => {
+    const r = lisTx(M);
+    document.getElementById("tx-kò").innerHTML = r.html + (r.plis ? `<button type="button" class="btn block" id="tx-plis">${t("Montre plis")}</button>` : "");
+    document.getElementById("tx-n").textContent = r.n;
+    plis();
+  };
+  const plis = () => { const b = document.getElementById("tx-plis"); if (b) b.onclick = () => { txF.lim += 100; rann(); }; };
+  const q = document.getElementById("tx-q"); if (!q) return;
+  q.oninput = () => { txF.q = q.value; txF.lim = 100; rann(); };
+  for (const [id, k] of [["tx-tri", "tri"], ["tx-tip", "tip"], ["tx-eta", "eta"]]) document.getElementById(id).onchange = (e) => { txF[k] = e.target.value; txF.lim = 100; rann(); };
+  plis();
+}
 function ctxKontRow(M, k, sekyon, swiviJodi) {
   const c = M.clients.get(k.id_personne) || {};
   return {
@@ -616,10 +698,9 @@ async function viewEpay() {
   if (ongEpay === "tx") {
     const mesDm = [...M.demandes.values()].filter((x) => man || x.agent_id === moi.id || x.agent_id === "moi")
       .sort((a, b) => String(b.capture_le).localeCompare(String(a.capture_le))).slice(0, 20);
-    const txs = [...M.txs.values()].sort((a, b) => String(b.date_transaction).localeCompare(String(a.date_transaction))).slice(0, 60);
     const mesModif = [...M.modif.values()].filter((x) => man || mwenSe(x.agent_id)).sort((a, b) => String(b.kreye_le).localeCompare(String(a.kreye_le))).slice(0, 20);
     ctx.demannHtml = mesDm.map((x) => liDemande(M, x)).join("") + mesModif.map((x) => liModif(M, x)).join("");
-    ctx.txHtml = txs.map((x) => liTx(M, x)).join("");
+    ctx.txHtml = seksyonTx(M);
   }
   if (ongEpay === "valid") ctx.validHtml = enAtant.map((x) => liDemande(M, x, { decide: true })).join("")
     + (modifAtant.length ? `<h2>${t("Demann modifikasyon")}</h2>${modifAtant.map((x) => liModif(M, x, { decide: true })).join("")}` : "");
@@ -633,6 +714,7 @@ async function viewEpay() {
   if (q) q.oninput = () => { filtEpay = q.value; const box = document.getElementById("kont"); if (box) { box.innerHTML = rowsKont(); brancherKont(); } };
   const brancherKont = () => $app.querySelectorAll("[data-papeye]").forEach((b) => (b.onclick = () => { const k = M.comptes.get(b.dataset.papeye); paPeye(k, M.clients.get(k.id_personne) || {}); }));
   brancherKont();
+  brancheTx(M);
   $app.querySelectorAll("[data-ok]").forEach((b) => (b.onclick = () => decider(M, b.dataset.ok, true)));
   $app.querySelectorAll("[data-non]").forEach((b) => (b.onclick = () => decider(M, b.dataset.non, false)));
   $app.querySelectorAll("[data-mok]").forEach((b) => (b.onclick = () => decideModif(M, b.dataset.mok, true)));

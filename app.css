@@ -444,3 +444,37 @@ html[data-look] button.row.tx-btn:focus-visible { outline: 3px solid var(--info)
 .aparey-bloke h1 { font-size: 1.35rem; margin: .25rem 0 .75rem; }
 .aparey-bloke .ikon-gwo { font-size: 2.6rem; line-height: 1; margin-bottom: .5rem; }
 .aparey-bloke p { max-width: 34rem; margin-inline: auto; }
+
+/* Epay → Tranzaksyon: lis yon sèl kolòn, lè, filt ak tri */
+.tx-tool { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+.tx-tool .search { grid-column: 1 / -1; margin: 0; }
+.tx-sel { display: flex; flex-direction: column; gap: 4px; font-size: .8rem; color: var(--mut); min-width: 0; }
+.tx-sel select { min-height: 44px; padding: 8px 10px; }
+.tx-tool .tx-sel:first-of-type { grid-column: 1 / -1; }
+@media (min-width: 720px) {
+  .tx-tool { grid-template-columns: minmax(220px, 2fr) repeat(3, minmax(140px, 1fr)); align-items: end; }
+  .tx-tool .search { grid-column: auto; min-height: 44px; }
+  .tx-tool .tx-sel:first-of-type { grid-column: auto; }
+}
+.tx-seksyon .list.tx-lis { display: flex; flex-direction: column; gap: 6px; }
+.txj { margin-bottom: 16px; }
+.txj-h { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; margin: 4px 2px 8px; padding-bottom: 6px; border-bottom: 1px solid var(--line); }
+.txj-h h3 { margin: 0; font-size: 1rem; }
+.row.txr { display: grid; grid-template-columns: 52px minmax(0, 1fr) auto; gap: 10px; align-items: center; }
+.txr-le { display: flex; flex-direction: column; align-items: flex-start; line-height: 1.2; }
+.txr-le b { font-size: .95rem; }
+.txr-le small { color: var(--mut); font-size: .72rem; }
+.txr-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.txr-t, .txr-d, .txr-k { overflow-wrap: anywhere; }
+.txr-mon { text-align: right; white-space: nowrap; }
+.txr.txr-anile .txr-mon b { text-decoration: line-through; opacity: .7; }
+@media (min-width: 1024px) {
+  .row.txr { grid-template-columns: 64px minmax(0, 1.4fr) minmax(0, 1fr) auto; }
+  .txr-main { display: contents; }
+  .txr-t { grid-column: 2; }
+  .txr-d { grid-column: 2; grid-row: 2; }
+  .txr-k { grid-column: 3; grid-row: 1 / span 2; align-self: center; }
+  .txr-le { grid-row: 1 / span 2; }
+  .txr-mon { grid-column: 4; grid-row: 1 / span 2; }
+  .txr-main .err-msg { grid-column: 2 / 4; }
+}

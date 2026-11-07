@@ -183,6 +183,9 @@ const FR = {
   "pa nan lis plan Grandon yo.": "n'est pas dans la liste des plans Grandon.", "Kont Grandon an pa jwenn.": "Compte Grandon introuvable.",
   "Ou pa gen dwa": "Vous n'avez pas le droit de",
   "Mete balans kanè a avan.": "Indiquez le solde du carnet avant.", "Mete balans kanè a apre.": "Indiquez le solde du carnet après.",
+  "Pi resan anvan": "Plus récentes d'abord", "Pi ansyen anvan": "Plus anciennes d'abord", "Montan pi gwo": "Montant le plus élevé", "Montan pi piti": "Montant le plus bas",
+  "Kliyan (A → Z)": "Client (A → Z)", "Tout tip": "Tous les types", "Tout eta": "Tous les statuts", "Valide": "Validée", "Triye pa": "Trier par", "Eta": "Statut",
+  "Montre plis": "Afficher plus", "Tip": "Type", "tranzaksyon": "transaction(s)", "Yè": "Hier", "Chèche kliyan oswa nimewo kont…": "Rechercher un client ou un numéro de compte…", "Poko gen tranzaksyon.": "Aucune transaction pour l'instant.",
   // Modpas ak aparèy
   "Chanje modpas mwen": "Changer mon mot de passe", "Chwazi pwòp modpas ou": "Choisissez votre mot de passe",
   "Modpas ou resevwa a se yon modpas tanporè. Chwazi yon modpas pa w anvan w kontinye: se ou sèl ki pou konnen l.": "Le mot de passe reçu est temporaire. Choisissez votre propre mot de passe avant de continuer : vous seul devez le connaître.",

@@ -120,7 +120,7 @@ export function epay(ctx) {
     </div>`;
   } else if (ong === "tx") {
     body = `${ctx.demannHtml ? `<h2>Demann retrè ak viman</h2><div class="list">${ctx.demannHtml}</div>` : ""}
-    <h2>Tranzaksyon yo</h2><div class="list">${ctx.txHtml || `<p class="empty">Poko gen tranzaksyon.</p>`}</div>`;
+    ${ctx.txHtml}`;
   } else if (ong === "fidbak") {
     body = `<div class="fb-tab">${lbl("Fidbak yo", String(ctx.nFidbak))}<p class="mut sm sub">Sa kliyan yo di lè yo pa peye (bouton «Pa peye»).</p>
     ${ctx.fidbakFilt}<div class="list" id="fidbak-list">${ctx.fidbakHtml || `<p class="empty">${ctx.fidbakVid}</p>`}</div></div>`;
