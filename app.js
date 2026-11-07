@@ -29,7 +29,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "4.26";
+const APP_VERSION = "4.27";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin", kesye: "Responsab kès" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
@@ -437,12 +437,14 @@ const CHAN_KLIYAN = [["prenom", "Prenon"], ["nom", "Non"], ["telephone", "Telef�
   ["piece", "Tip pyès"], ["numero_piece", "Nimewo pyès"], ["adresse", "Adrès"], ["lieu_de_travail", "Kote biznis la"], ["secteur", "Sektè"],
   ["activite", "Aktivite"], ["point_de_vente", "Pwen de vant"], ["capacite_distribution", "Kapasite distribisyon"], ["gps", "Pozisyon GPS"]];
 const CHAN_TX = [["montant", "Montan"], ["solde_avant_declare", "Balans kanè avan"], ["solde_declare", "Balans kanè apre"], ["type_frais", "Tip frè"], ["note", "Nòt"]];
-const etikètChan = (kind, k) => ((kind === "kliyan" ? CHAN_KLIYAN : CHAN_TX).find(([x]) => x === k) || [k, k])[1];
+const CHAN_CYCLE = [["duree_mois", "Dire"], ["frequence_semaine", "Frekans"], ["jours_paiement", "Jou peman"], ["montant_plan", "Plan"], ["date_debut", "Dat kòmansman"]];
+const etikètChan = (kind, k) => ((kind === "kliyan" ? CHAN_KLIYAN : kind === "cycle" ? CHAN_CYCLE : CHAN_TX).find(([x]) => x === k) || [k, k])[1];
 const mwenSe = (id) => id === moi?.id || id === "moi";
 const otorizasyon = (M, kind, ref) => [...M.modif.values()].find((x) => x.kind === kind && x.ref_id === ref && x.operasyon === "modifye" && x.statut === "apwouve" && mwenSe(x.agent_id));
 const demannModif = (M, kind, ref) => [...M.modif.values()].find((x) => x.kind === kind && x.ref_id === ref && x.statut === "an_atant");
 function ciblModif(M, kind, ref) {
   if (kind === "kliyan") return non(M.clients.get(ref));
+  if (kind === "cycle") { const k = M.comptes.get(ref); return `${t("Cycle")} ${k?.no_compte || ""} · ${non(k && M.clients.get(k.id_personne))}`; }
   const tx = M.txs.get(ref); const k = tx && M.comptes.get(tx.id_compte_epargne);
   return tx ? `${t(LABEL_TX[S.txKind(tx)])} ${gd(tx.montant)} · ${non(k && M.clients.get(k.id_personne))}` : t("Tranzaksyon");
 }
@@ -453,7 +455,7 @@ function chanTx(tx) {
 function liModif(M, x, { decide = false } = {}) {
   const ETA = { an_atant: ["warn", "An atant"], apwouve: ["ok", "Apwouve: ou ka modifye"], refize: ["err", "Refize"], itilize: ["mut", "Fèt"], fini: ["mut", "Fèt"] };
   const [kl, et] = ETA[x.statut] || ["mut", x.statut];
-  const href = x.kind === "kliyan" ? `#/kliyan/${x.ref_id}` : (() => { const tx = M.txs.get(x.ref_id); return tx ? `#/cycle/${tx.id_compte_epargne}` : "#/epay"; })();
+  const href = x.kind === "kliyan" ? `#/kliyan/${x.ref_id}` : x.kind === "cycle" ? `#/cycle/${x.ref_id}` : (() => { const tx = M.txs.get(x.ref_id); return tx ? `#/cycle/${tx.id_compte_epargne}` : "#/epay"; })();
   const ki = x.operasyon === "siprime" ? (x.kind === "tx" ? t("Anile tranzaksyon an") : t("Retire kliyan an nan Grandon")) : `${t("Modifye")}: ${(x.chan || []).map((k) => t(etikètChan(x.kind, k))).join(", ")}`;
   return `<div class="row col modif">
     <div><a href="${href}"><b>${x.kind === "kliyan" ? d(ciblModif(M, x.kind, x.ref_id)) : h(ciblModif(M, x.kind, x.ref_id))}</b></a> <span class="badge ${kl}">${t(et)}</span> ${x._pending ? `<span class="badge pend">${t("Poko voye")}</span>` : ""}
@@ -1301,22 +1303,30 @@ async function viewPick(kind) {
 // ---------- Nouvo cycle Grandon ----------
 const FREKANS = [1, 2, 3, 6];
 const JOU_DEFO = { 1: [1], 2: [1, 4], 3: [1, 3, 5], 6: [1, 2, 3, 4, 5, 6] };
-async function viewCycleNew(idPersonne) {
+async function viewCycleNew(idPersonne, kontId = null) {
   const M = await S.model();
+  const kMod = kontId ? M.comptes.get(kontId) : null; // mòd «modifye cycle» (manadjè / admin)
+  if (kontId && !kMod) { $app.innerHTML = `<a href="#/epay" class="back">‹ Epay</a><p class="empty">Cycle la pa jwenn.</p>`; return; }
+  if (kMod) idPersonne = kMod.id_personne;
   const c = M.clients.get(idPersonne);
   if (!c) { $app.innerHTML = `<a href="#/epay" class="back">‹ Epay</a><p class="empty">Kliyan an pa jwenn.</p>`; return; }
   const plans = M.plans.length ? M.plans : [1000, 1500, 2000, 2500, 3000, 4000, 5000, 7500, 10000, 15000, 20000, 25000, 30000, 35000, 40000, 50000, 75000, 100000];
-  const dènye = S.comptesDuClient(M, idPersonne)[0];
+  const dènye = kMod || S.comptesDuClient(M, idPersonne)[0];
   let freq = FREKANS.includes(dènye?.frequence_semaine) ? dènye.frequence_semaine : 2;
   let jours = dènye?.jours_paiement?.length === freq ? [...dènye.jours_paiement] : [...JOU_DEFO[freq]];
   const planDef = plans.includes(Number(dènye?.montant_plan)) ? Number(dènye.montant_plan) : plans[0];
+  const planPaLis = kMod && Number(kMod.montant_plan) && !plans.includes(Number(kMod.montant_plan));
+  const dureeDef = kMod ? (Number(kMod.duree_mois) >= 1 && Number(kMod.duree_mois) <= 12 ? Number(kMod.duree_mois) : 4) : (dènye?.duree_mois || 4);
   $app.innerHTML = `
-  <a href="#/kliyan/${idPersonne}" class="back">‹ ${d(non(c))}</a>
-  <h1>Nouvo cycle Grandon</h1>
-  <p class="mut">${d(non(c))} · ${h(c.telephone || "")}</p>
+  <a href="${kMod ? `#/cycle/${h(kontId)}` : `#/kliyan/${idPersonne}`}" class="back">‹ ${kMod ? d(kMod.no_compte || t("Cycle")) : d(non(c))}</a>
+  <h1>${kMod ? "Modifye cycle a" : "Nouvo cycle Grandon"}</h1>
+  <p class="mut">${d(non(c))} · ${kMod ? d(kMod.no_compte || "") : h(c.telephone || "")}</p>
+  ${kMod ? `<p class="note info-note">${t("Sa chanje kalandriye peman an, vèsman prevwa yo ak reta yo. Tranzaksyon yo ak balans lan pa chanje.")}</p>` : ""}
+  ${planPaLis ? `<p class="note warn">${t("Plan aktyèl la")} (${gd(kMod.montant_plan)}) ${t("pa nan lis plan Grandon yo: chwazi youn.")}</p>` : ""}
   <form id="f" class="card form" novalidate>
     <fieldset class="field"><legend>Dire * <small class="mut">(kantite mwa)</small></legend>
-      <div class="seg s5">${[2, 3, 4, 5, 6].map((m) => `<label><input type="radio" name="duree" value="${m}" ${m === (dènye?.duree_mois || 4) ? "checked" : ""}><span>${m}</span></label>`).join("")}</div>
+      ${kMod ? `<select name="duree" aria-label="${t("Dire")}">${Array.from({ length: 12 }, (_, i) => i + 1).map((m) => `<option value="${m}" ${m === dureeDef ? "selected" : ""}>${m} ${t("mwa")}</option>`).join("")}</select>`
+        : `<div class="seg s5">${[2, 3, 4, 5, 6].map((m) => `<label><input type="radio" name="duree" value="${m}" ${m === dureeDef ? "checked" : ""}><span>${m}</span></label>`).join("")}</div>`}
     </fieldset>
     <fieldset class="field"><legend>Frekans * <small class="mut">(kantite fwa pa semèn)</small></legend>
       <div class="seg s4">${FREKANS.map((n) => `<label><input type="radio" name="freq" value="${n}" ${n === freq ? "checked" : ""}><span>${n}×</span></label>`).join("")}</div>
@@ -1326,10 +1336,11 @@ async function viewCycleNew(idPersonne) {
     </fieldset>
     <label>Plan * <small class="mut">(minimòm chak fwa li peye)</small>
       <select name="plan">${plans.map((p) => `<option value="${p}" ${p === planDef ? "selected" : ""}>${gd(p)}</option>`).join("")}</select></label>
-    <label>Dat kòmansman<input name="debut" type="date" value="${S.jodi()}" min="${S.ajouteJou(S.jodi(), -30)}" max="${S.ajouteJou(S.jodi(), 30)}"></label>
+    <label>Dat kòmansman<input name="debut" type="date" value="${kMod ? h(kMod.date_debut || S.jodi()) : S.jodi()}" min="${kMod ? "2020-01-01" : S.ajouteJou(S.jodi(), -30)}" max="${S.ajouteJou(S.jodi(), 30)}"></label>
+    ${kMod ? `<label>Rezon <small class="mut">(opsyonèl)</small><input name="rezon" maxlength="200" autocomplete="off" placeholder="${h(t("Egz.: enfòmasyon cycle la te manke"))}"></label>` : ""}
     <div class="recap" id="recap" aria-live="polite"></div>
     <p class="err-msg" id="err" role="alert"></p>
-    <button class="btn pri" type="submit">Kreye cycle a</button>
+    <button class="btn pri" type="submit">${kMod ? "Anrejistre modifikasyon an" : "Kreye cycle a"}</button>
   </form>`;
   const f = document.getElementById("f");
   const boxes = [...f.querySelectorAll('input[name="jou"]')];
@@ -1370,11 +1381,27 @@ async function viewCycleNew(idPersonne) {
     e.preventDefault();
     const err = document.getElementById("err");
     const duree = Number(f.duree.value), plan = Number(f.plan.value), debut = f.debut.value;
-    if (!(duree >= 2 && duree <= 6)) return (err.textContent = "Chwazi dire a (2 a 6 mwa).");
+    if (!(duree >= (kMod ? 1 : 2) && duree <= (kMod ? 12 : 6))) return (err.textContent = t(kMod ? "Chwazi dire a (1 a 12 mwa)." : "Chwazi dire a (2 a 6 mwa)."));
     if (jours.length !== freq) return (err.textContent = `Chwazi egzakteman ${freq} jou peman.`);
     if (!plans.includes(plan)) return (err.textContent = "Chwazi plan an.");
-    if (!debut || debut < S.ajouteJou(S.jodi(), -30) || debut > S.ajouteJou(S.jodi(), 30)) return (err.textContent = "Dat kòmansman an dwe ant 30 jou pase ak 30 jou devan.");
     const js = [...jours].sort();
+    if (kMod) {
+      if (!debut || debut > S.ajouteJou(S.jodi(), 30)) return (err.textContent = t("Dat kòmansman an pa bon."));
+      if (!navigator.onLine) return (err.textContent = t("Fòk ou gen entènèt pou modifye yon cycle."));
+      const avan = [["Dire", kMod.duree_mois ? `${kMod.duree_mois} ${t("mwa")}` : "—"], ["Frekans", kMod.frequence_semaine ? `${kMod.frequence_semaine}×` : "—"],
+        ["Jou peman", kMod.jours_paiement?.length ? lisJou(kMod.jours_paiement) : "—"], ["Plan", gd(kMod.montant_plan || 0)], ["Dat kòmansman", datFr(kMod.date_debut)]];
+      const apre = [`${duree} ${t("mwa")}`, `${freq}×`, lisJou(js), gd(plan), datFr(debut)];
+      if (!(await ui.ask({ titre: "Modifye cycle a?", ok: "Anrejistre", foto: c.photo_url,
+        detay: avan.map(([l, a], i) => [l, a === apre[i] ? a : `${a} → ${apre[i]}`]).concat([["Fen cycle a", datFr(S.ajouteMwa(debut, duree))]]) }))) return;
+      const b = f.querySelector("button[type=submit]"); b.disabled = true;
+      try {
+        const r = await api.rpc("grandon_cycle_modifye", { p_compte: kontId, p_duree: duree, p_frequence: freq, p_jours: js, p_montant: plan, p_date_debut: debut, p_rezon: f.rezon.value.trim() || null });
+        await S.pull();
+        toast(t(r?.chanje === false ? "Pa gen anyen ki chanje." : "Cycle la modifye ✓"), r?.chanje === false ? "info" : "ok");
+        return go(`#/cycle/${kontId}`);
+      } catch (e2) { b.disabled = false; return (err.textContent = t(e2.message)); }
+    }
+    if (!debut || debut < S.ajouteJou(S.jodi(), -30) || debut > S.ajouteJou(S.jodi(), 30)) return (err.textContent = "Dat kòmansman an dwe ant 30 jou pase ak 30 jou devan.");
     if (!(await ui.ask({ titre: "Kreye cycle Grandon sa a?", ok: "Kreye cycle a", foto: c.photo_url, detay: [
       ["Kliyan", non(c)], ["Dire", `${duree} ${t("mwa")}`], ["Frekans", `${freq}× ${t("pa semèn")}`],
       ["Jou peman", js.map((j) => t(JOU[j])).join(", ")], ["Plan", `${gd(plan)}`], ["Fen cycle a", datFr(S.ajouteMwa(debut, duree))],
@@ -1409,6 +1436,8 @@ async function viewCycle(id) {
     errHtml: k._error ? `<p class="note err">${d(t(k._error))} <a href="#/senk">Wè</a></p>` : "",
   };
   $app.innerHTML = `<div id="cycle">${L().parts.cycleTop(ctx)}
+  ${man && !k._pending ? `<a class="btn block cycle-mod" href="#/cycle/${h(k.id_compte_epargne)}/modifye">${ICO.modifye || ""}<span>${t("Modifye cycle a")}</span></a>` : ""}
+  ${man && !k.frequence_semaine && !k._pending ? `<p class="note warn">${t("Cycle sa a pa gen frekans ni jou peman: kalandriye peman an vid. Peze «Modifye cycle a» pou mete yo.")}</p>` : ""}
   ${seksyonAlet([k], man)}
   ${k._demandes.length ? `<h2>Demann retrè ak viman</h2><div class="list">${k._demandes.map((x) => liDemande(M, x)).join("")}</div>` : ""}
   ${k._suivis.length ? `<h2>Fidbak</h2><div class="list">${k._suivis.map((x) => liSwivi(M, x, { kliyan: false })).join("")}</div>` : ""}
@@ -1947,7 +1976,11 @@ function valèIstorik(kind, k, v) {
   if (v == null || v === "") return "—";
   if (kind === "tx" && (k === "montant" || k.startsWith("solde"))) return gd(v);
   if (k === "telephone") return F.telFmt(v);
-  if (k === "date_naissance") return datFr(v);
+  if (k === "date_naissance" || k === "date_debut") return datFr(v);
+  if (k === "montant_plan") return gd(v);
+  if (k === "jours_paiement") return Array.isArray(v) ? lisJou(v) : String(v);
+  if (k === "frequence_semaine") return `${v}× / ${t("semèn")}`;
+  if (k === "duree_mois") return `${v} ${t("mwa")}`;
   return String(v);
 }
 async function viewIstorik() {
@@ -1975,7 +2008,7 @@ async function viewIstorik() {
       <div><span>${t("Refize yo")}</span><b>${kont(["refize"])}</b></div><div><span>${t("Modifikasyon fèt")}</span><b>${kont(["aplike", "dirèk", "dirèk_kes"])}</b></div>
       <div><span>${t("Anilasyon")}</span><b>${kont(["anile", "anile_dirèk"])}</b></div></div>
     <div class="list ist-lis">${ev.map((e) => { const [kl, et] = TIP[e.tip]; const x = e.x;
-      const href = x.kind === "kliyan" ? `#/kliyan/${x.ref_id}` : (() => { const tx = M.txs.get(x.ref_id); return tx ? `#/cycle/${tx.id_compte_epargne}` : "#/epay"; })();
+      const href = x.kind === "kliyan" ? `#/kliyan/${x.ref_id}` : x.kind === "cycle" ? `#/cycle/${x.ref_id}` : (() => { const tx = M.txs.get(x.ref_id); return tx ? `#/cycle/${tx.id_compte_epargne}` : "#/epay"; })();
       const ki = x.operasyon === "siprime" ? (x.kind === "tx" ? t("Anile tranzaksyon an") : t("Retire kliyan an nan Grandon")) : (x.chan || []).map((k) => t(etikètChan(x.kind, k))).join(", ");
       return `<div class="row col ist">
         <div><b class="mono">${lèKout(e.le)}</b> <span class="badge ${kl}">${t(et)}</span> <a href="${href}">${x.kind === "kliyan" ? d(ciblModif(M, x.kind, x.ref_id)) : h(ciblModif(M, x.kind, x.ref_id))}</a></div>
@@ -2047,7 +2080,7 @@ async function viewAjan() {
 }
 
 // ---------- Routè ----------
-const FORM = /^#\/(kliyan\/nouvo|kliyan\/[\w-]+\/modifye|cycle\/nouvo|tx\/nouvo|ajan|modpas)/;
+const FORM = /^#\/(kliyan\/nouvo|kliyan\/[\w-]+\/modifye|cycle\/nouvo|cycle\/[\w-]+\/modifye|tx\/nouvo|ajan|modpas)/;
 async function render() {
   const r = location.hash || "#/";
   const s = api.getSession();
@@ -2071,6 +2104,7 @@ async function render() {
   if ((m = r.match(/^#\/kliyan\/([\w-]+)$/))) return viewClient(m[1]);
   if ((m = r.match(/^#\/chwazi\/(cycle|tx)$/))) return viewPick(m[1]);
   if ((m = r.match(/^#\/cycle\/nouvo\/([\w-]+)$/))) return viewCycleNew(m[1]);
+  if ((m = r.match(/^#\/cycle\/([\w-]+)\/modifye$/))) return estManager() ? viewCycleNew(null, m[1]) : go(`#/cycle/${m[1]}`);
   if ((m = r.match(/^#\/cycle\/([\w-]+)$/))) return viewCycle(m[1]);
   if ((m = r.match(/^#\/tx\/nouvo\/([\w-]+)$/))) return viewTxNew(m[1]);
   if (r === "#/param") return viewParam();

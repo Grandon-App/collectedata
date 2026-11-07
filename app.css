@@ -572,3 +572,7 @@ details.rb > .list { padding: 0 10px 10px; }
 html[data-look] .brand .wordmark { font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Times New Roman", serif; font-size: 1.3rem; letter-spacing: .06em; }
 html[data-look] .login h1.wordmark { font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Times New Roman", serif; font-size: 2.6rem; letter-spacing: .08em; margin: 28px 0 2px; padding: 0 0 10px; position: relative; }
 html[data-look] .login h1.wordmark::after { content: ""; position: absolute; left: 50%; bottom: 0; width: 44px; height: 3px; border-radius: 3px; transform: translateX(-50%); background: var(--gold, var(--acc, currentColor)); }
+
+/* Bouton «Modifye cycle a» (manadjè / admin) */
+.btn.cycle-mod { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 10px 0 12px; }
+.btn.cycle-mod svg { width: 18px; height: 18px; flex: none; }
