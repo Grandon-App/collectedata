@@ -29,8 +29,8 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "4.21";
-const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin" };
+const APP_VERSION = "4.22";
+const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin", kesye: "Responsab kès" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
 function prefs() {
@@ -108,7 +108,11 @@ async function updateBar() {
 // ---------- Ba navigasyon anba ----------
 const $nav = document.getElementById("nav");
 const TABS = [["tablo", "#/", "Tablo"], ["kliyan", "#/kliyan", "Kliyan"], ["epay", "#/epay", "Epay"], ["rapo", "#/rapo", "Rapò"], ["kat", "#/kat", "Kat"], ["senk", "#/senk", "Senkronizasyon"], ["param", "#/param", "Paramèt"]];
+// Responsab kès: pa gen Tablo, Kliyan, Epay ni Kat. Li gen Kès (validasyon) ak Rapò.
+const TABS_KES = [["kes", "#/kes", "Kès"], ["rapo", "#/rapo", "Rapò"], ["senk", "#/senk", "Senkronizasyon"], ["param", "#/param", "Paramèt"]];
+const tabs = () => (estKesye() ? TABS_KES : TABS);
 function tabActif(r) {
+  if (/^#\/kes/.test(r)) return "kes";
   if (/^#\/(kliyan)/.test(r)) return "kliyan";
   if (/^#\/(epay|cycle|tx|chwazi)/.test(r)) return "epay";
   if (/^#\/rapo/.test(r)) return "rapo";
@@ -124,7 +128,7 @@ function updateNav() {
   $nav.hidden = false;
   if (!window.L?.map) setTimeout(() => KAT.chajeLeaflet().catch(() => {}), 400); // kat la pare menm si entènèt koupe apre
   document.body.classList.add("has-nav");
-  $nav.innerHTML = TABS.map(([k, href, label]) => `<a href="${href}" class="${k === a ? "on" : ""}${k === "senk" ? " nav-lap" : ""}" ${k === a ? 'aria-current="page"' : ""}>${ICO[k]}<span>${label}</span></a>`).join("")
+  $nav.innerHTML = tabs().map(([k, href, label]) => `<a href="${href}" class="${k === a ? "on" : ""}${k === "senk" ? " nav-lap" : ""}" ${k === a ? 'aria-current="page"' : ""}>${ICO[k]}<span>${label}</span></a>`).join("")
     + `<div class="nav-foot"><span class="nav-moi" data-brut>${h(moi.nom || "")}</span><span class="nav-wol">${WOL[moi.role] || "Anplwaye"}</span><span class="nav-ver mut">v${h(APP_VERSION)}</span></div>`;
   mezireBar();
 }
@@ -331,6 +335,7 @@ async function viewKliyan() {
 }
 
 // ---------- Pati komen pou Epay ----------
+const estKesye = () => moi?.role === "kesye";
 const estManager = () => !!(moi && (moi.manager ?? (moi.admin || moi.role === "manager" || [1, 2, 5].includes(Number(moi.role)))));
 const jourTx = (tx) => `${S.jouTx(tx) === S.jodi() ? t("jodi a") : datFr(S.jouTx(tx))} · ${lèKout(tx.date_transaction) || ""}`;
 const nomAjan = (id) => (id === moi?.id || id === "moi" ? t("Mwen") : (ajans[id] || (id ? t("Lòt ajan") : "")));
@@ -463,7 +468,7 @@ async function mandeModif(M, kind, ref, { tekst, chan, siprime, deps = [] }) {
   const r = await ui.askModif({ titre: "Mande otorizasyon", tekst, chan, siprime });
   if (!r) return;
   await S.enqueue("modif_demann", { id: S.uuid(), kind, ref, operasyon: r.operasyon, chan: r.chan, rezon: r.rezon, kreye_le: new Date().toISOString() }, deps);
-  toast(t("Demann lan voye bay manadjè a."));
+  toast(t(kind === "tx" ? "Demann lan voye bay responsab kès la." : "Demann lan voye bay manadjè a."));
   render();
 }
 async function decideModif(M, id, ok) {
@@ -497,7 +502,7 @@ async function aksyonTx(M, id) {
     await S.enqueue("modif_aplike", { id: S.uuid(), otorizasyon, kind: "tx", ref: id, chan: lis, vale: v });
     toast("Modifikasyon an anrejistre."); render();
   };
-  if (estManager()) {
+  if (estKesye()) {
     const r = await ui.askChoice({ titre: ciblModif(M, "tx", id), options: [["modifye", "Modifye"], ["anile", "Anile tranzaksyon an"]], noteLabel: "Rezon (obligatwa pou anile)", noteObligatwaPou: ["anile"], ok: "Kontinye" });
     if (!r) return;
     if (r.valeur === "anile") {
@@ -518,7 +523,7 @@ async function aksyonTx(M, id) {
     if (!v) return;
     return voye(oto.id, oto.chan, Object.fromEntries(oto.chan.map((k) => [k, v[k] ?? ""])));
   }
-  if (demannModif(M, "tx", id)) return ui.info("Demann ou an atant.", "Yon manadjè poko reponn demann ou an pou tranzaksyon sa a.");
+  if (demannModif(M, "tx", id)) return ui.info("Demann ou an atant.", "Responsab kès la poko reponn demann ou an pou tranzaksyon sa a.");
   return mandeModif(M, "tx", id, { tekst: ciblModif(M, "tx", id), chan, siprime: "Anile tranzaksyon an" });
 }
 
@@ -571,7 +576,7 @@ let filtEpay = "", ongEpay = "kont", filtKont = "tout", filtFidbak = "semen";
 // ---------- Lis tranzaksyon (Epay → Tranzaksyon): yon sèl kolòn, lè egzak, filt ak tri ----------
 const TX_TRI = [["dat_desc", "Pi resan anvan"], ["dat_asc", "Pi ansyen anvan"], ["mon_desc", "Montan pi gwo"], ["mon_asc", "Montan pi piti"], ["kliyan", "Kliyan (A → Z)"]];
 const TX_TIP = [["", "Tout tip"], ["depo", "Depo"], ["fre", "Frè"], ["retre", "Retrè"], ["viman", "Viman"]];
-const TX_ETA = [["", "Tout eta"], ["poko", "Poko voye"], ["atant", "An atant validasyon"], ["valide", "Valide"], ["anile", "Anile / refize"]];
+const TX_ETA = [["", "Tout eta"], ["poko", "Poko voye"], ["atant", "An atant validasyon"], ["valide", "Valide ✓"], ["anile", "Anile / refize"]];
 const txF = { tri: "dat_desc", tip: "", eta: "", q: "", lim: 100 };
 const etaTx = (x) => (x._error || x._pending ? "poko" : x.validation_status === "pending" ? "atant" : x.validation_status === "rejected" ? "anile" : "valide");
 const lèTx = (x) => lèKout(x.date_transaction) || "—";
@@ -789,8 +794,8 @@ async function viewEpay() {
   const jouSwivi = (x) => S.jouLokal(new Date(x.capture_le));
   const semenDe = S.ajouteJou(M.today, -6);
   const nFbJodi = swivis.filter((x) => jouSwivi(x) === M.today).length, nFbSemen = swivis.filter((x) => jouSwivi(x) >= semenDe).length;
-  const modifAtant = [...M.modif.values()].filter((x) => x.statut === "an_atant").sort((a, b) => String(a.kreye_le).localeCompare(String(b.kreye_le)));
-  const ongs = [["kont", "Kont", null], ["tx", "Tranzaksyon", null], ["fidbak", "Fidbak", nFbJodi || null], ...(man ? [["valid", "Validasyon", (enAtant.length + modifAtant.length) || null]] : [])];
+  const modifAtant = [...M.modif.values()].filter((x) => x.statut === "an_atant" && x.kind === "kliyan").sort((a, b) => String(a.kreye_le).localeCompare(String(b.kreye_le)));
+  const ongs = [["kont", "Kont", null], ["tx", "Tranzaksyon", null], ["fidbak", "Fidbak", nFbJodi || null], ...(man ? [["valid", "Validasyon", modifAtant.length || null]] : [])];
   const st = statsEpay(M);
   const swiviJodi = new Map([...M.suivis.values()].filter((x) => S.jouLokal(new Date(x.capture_le)) === M.today).map((x) => [x.id_compte_epargne, x.motif]));
   const pouJodi = [...M.comptes.values()].filter((k) => k._jodiPeman).sort((a, b) => (a._jodi >= a.montant_plan) - (b._jodi >= b.montant_plan));
@@ -826,8 +831,10 @@ async function viewEpay() {
     ctx.demannHtml = mesDm.map((x) => liDemande(M, x)).join("") + mesModif.map((x) => liModif(M, x)).join("");
     ctx.txHtml = seksyonTx(M);
   }
-  if (ongEpay === "valid") ctx.validHtml = enAtant.map((x) => liDemande(M, x, { decide: true })).join("")
-    + (modifAtant.length ? `<h2>${t("Demann modifikasyon")}</h2>${modifAtant.map((x) => liModif(M, x, { decide: true })).join("")}` : "");
+  if (ongEpay === "valid") {
+    ctx.validNote = t("Demann modifikasyon fich kliyan yo. Depo, retrè, viman ak modifikasyon tranzaksyon yo ale kay responsab kès la.");
+    ctx.validHtml = modifAtant.map((x) => liModif(M, x, { decide: true })).join("");
+  }
   $app.innerHTML = `<div id="epay">${P.epay(ctx)}</div>`;
   // Apre yon klik sou onglè/filt, paj la re-rann: remete fokis la sou menm bouton an (klavye / lektè ekran).
   const reRann = (sel) => viewEpay().then(() => requestAnimationFrame(() => $app.querySelector(sel)?.focus({ preventScroll: true })));
@@ -854,9 +861,13 @@ async function viewEpay() {
 let jouRapo = 0;
 async function viewRapo() {
   const M = await S.model();
+  const sipèvizè = estKesye() || estManager();
+  if (sipèvizè) { ajans = (await db.meta("ajans")) || {}; rapoF.jou ||= M.today; }
   const jou = [0, 1, 2].map((n) => S.ajouteJou(M.today, -n));
-  const D = jou[jouRapo];
-  const mwen = (x) => x.created_by === moi.id || x.created_by === "moi" || x.agent_id === moi.id || x.agent_id === "moi";
+  const D = sipèvizè ? rapoF.jou : jou[jouRapo];
+  const moun = (x) => x.created_by ?? x.agent_id;
+  const mwen = sipèvizè ? (x) => !rapoF.ajan || moun(x) === rapoF.ajan || (rapoF.ajan === moi.id && moun(x) === "moi")
+    : (x) => x.created_by === moi.id || x.created_by === "moi" || x.agent_id === moi.id || x.agent_id === "moi";
   const txs = [...M.txs.values()].filter((x) => mwen(x) && S.jouTx(x) === D && x.validation_status !== "rejected")
     .sort((a, b) => String(b.date_transaction).localeCompare(String(a.date_transaction)));
   const par = (k) => txs.filter((x) => S.txKind(x) === k);
@@ -869,11 +880,11 @@ async function viewRapo() {
   const swivi = [...M.suivis.values()].filter((x) => mwen(x) && S.jouLokal(new Date(x.capture_le)) === D).length;
   const dmAtant = [...M.demandes.values()].filter((x) => mwen(x) && x.statut === "en_attente").length;
   const poko = txs.filter((x) => x._pending).length;
-  const nonJou = (n) => (n === 0 ? "Jodi a" : n === 1 ? "Yè" : "Avan-yè");
+  const nonJou = sipèvizè ? () => (D === M.today ? "Jodi a" : D === S.ajouteJou(M.today, -1) ? "Yè" : datFr(D)) : (n) => (n === 0 ? "Jodi a" : n === 1 ? "Yè" : "Avan-yè");
   // Swivi kliyan jou sa a: peye / fidbak / poko wè (sèlman jodi a gen sans pou "poko wè")
-  const jodiKont = [...M.comptes.values()].filter((k) => k._actif && k.jours_paiement?.includes(S.isoJou(D)) && k.date_debut <= D && !M.feries.has(D));
+  const jodiKont = [...M.comptes.values()].filter((k) => k._actif && k.jours_paiement?.includes(S.isoJou(D)) && k.date_debut <= D && !M.feries.has(D) && (!sipèvizè || mwen(k)));
   const peyeJou = jodiKont.filter((k) => k._joursPeye.has(D)).length;
-  const fidbakJou = new Set([...M.suivis.values()].filter((x) => S.jouLokal(new Date(x.capture_le)) === D).map((x) => x.id_compte_epargne));
+  const fidbakJou = new Set([...M.suivis.values()].filter((x) => S.jouLokal(new Date(x.capture_le)) === D && (!sipèvizè || mwen(x))).map((x) => x.id_compte_epargne));
   const fidbakN = jodiKont.filter((k) => !k._joursPeye.has(D) && fidbakJou.has(k.id_compte_epargne)).length;
   const ctx = {
     ...ctxBase(M), isoJou: S.isoJou(D), i: jouRapo, D, nonJou,
@@ -883,7 +894,12 @@ async function viewRapo() {
     swiviStats: { total: jodiKont.length, peye: peyeJou, fidbak: fidbakN, pokoWe: Math.max(0, jodiKont.length - peyeJou - fidbakN) },
     parLe: S.kolekParLe(txs), poko, txHtml: txs.map((x) => liTx(M, x)).join(""), nTx: txs.length,
   };
-  $app.innerHTML = `<div id="rapo">${L().parts.rapo(ctx)}</div>`;
+  if (sipèvizè) {
+    const det = detayRapo(M, D, mwen);
+    Object.assign(ctx, { jou: [], i: 0, txTit: t("Detay chak ribrik"), txHtml: det.html, nTx: det.n });
+  }
+  $app.innerHTML = `<div id="rapo">${sipèvizè ? baRapo(M) : ""}${L().parts.rapo(ctx)}</div>`;
+  if (sipèvizè) brancheBaRapo(M);
   $app.querySelectorAll("[data-j]").forEach((b) => (b.onclick = () => { jouRapo = Number(b.dataset.j); viewRapo().then(() => requestAnimationFrame(() => $app.querySelector(`[data-j="${jouRapo}"]`)?.focus({ preventScroll: true }))); }));
 }
 
@@ -1386,12 +1402,12 @@ async function viewCycle(id) {
   };
   $app.innerHTML = `<div id="cycle">${L().parts.cycleTop(ctx)}
   ${seksyonAlet([k], man)}
-  ${k._demandes.length ? `<h2>Demann retrè ak viman</h2><div class="list">${k._demandes.map((x) => liDemande(M, x, { decide: man })).join("")}</div>` : ""}
+  ${k._demandes.length ? `<h2>Demann retrè ak viman</h2><div class="list">${k._demandes.map((x) => liDemande(M, x)).join("")}</div>` : ""}
   ${k._suivis.length ? `<h2>Fidbak</h2><div class="list">${k._suivis.map((x) => liSwivi(M, x, { kliyan: false })).join("")}</div>` : ""}
   <h2>Tranzaksyon</h2>
   ${(() => { const otos = k._txs.map((x) => otorizasyon(M, "tx", x.id_transaction_epargne)).filter(Boolean);
     return otos.length ? `<p class="note info-note">${t("Otorizasyon apwouve: peze sou tranzaksyon an pou modifye l")} (${otos.map((o) => o.chan.map((c) => t(etikètChan("tx", c))).join(", ")).join(" · ")}).</p>` : ""; })()}
-  <p class="mut sm">${t(estManager() ? "Peze sou yon tranzaksyon pou modifye oswa anile l." : "Peze sou yon tranzaksyon pou mande otorizasyon pou modifye oswa anile l.")}</p>
+  <p class="mut sm">${t("Peze sou yon tranzaksyon pou mande otorizasyon pou modifye oswa anile l.")}</p>
   <div class="list">${k._txs.map((x) => liTx(M, x, { kliyan: false, bouton: true })).join("") || `<p class="empty">Poko gen tranzaksyon.</p>`}</div></div>`;
   document.getElementById("papeye")?.addEventListener("click", () => paPeye(k, c));
   $app.querySelectorAll("[data-tx]").forEach((b) => (b.onclick = () => aksyonTx(M, b.dataset.tx)));
@@ -1418,7 +1434,7 @@ async function viewTxNew(compteId) {
   <form id="f" class="card form" novalidate>
     <fieldset class="field"><legend class="sr">Tip</legend><div class="seg s4">
       ${TIP_TX.map(([v, l], i) => `<label><input type="radio" name="type" value="${v}" ${i === 0 ? "checked" : ""}><span>${l}</span></label>`).join("")}</div></fieldset>
-    <p class="note info-note" id="oto" hidden>Sa a bezwen otorizasyon yon manadjè. Peye kliyan an sèlman lè demann lan apwouve.</p>
+    <p class="note info-note" id="oto" hidden>Sa a bezwen otorizasyon responsab kès la. Peye kliyan an sèlman lè demann lan apwouve.</p>
     <label id="l-fre" hidden>Tip frè *<select name="type_frais"><option value="">Chwazi…</option>${TYPES_FRE.map((x) => opt(x, "")).join("")}</select></label>
     <label id="l-dest" hidden>Kont ki resevwa viman an *<select name="dest"><option value="">Chwazi…</option>${lòt.map((x) => `<option value="${x.id_compte_epargne}">${h(non(M.clients.get(x.id_personne)))} · ${h(x.no_compte)}</option>`).join("")}</select></label>
     <label>Montan (goud) *<input name="montant" type="number" inputmode="decimal" min="1" step="any" required value="${plan || ""}"></label>
@@ -1700,13 +1716,220 @@ async function viewAparey() {
   }));
 }
 
+// ---------- Kès (responsab kès): validasyon depo, retrè / viman, modifikasyon tranzaksyon ----------
+// Se responsab kès la sèlman ki deside sou sa ki touche kach li pral resevwa a.
+const kesF = { ong: "depo", ajan: "", q: "" };
+const kesChwa = new Set(); // depo ki chwazi pou validasyon an blòk
+const sumMon = (l) => l.reduce((a, x) => a + Number(x.montant || 0), 0);
+const nonAjan = (id) => ajans[id] || nomAjan(id) || t("Lòt ajan");
+function depoAnAtant(M) {
+  return [...M.txs.values()].filter((x) => x.type_transaction === "D" && !x.virement_from && x.validation_status === "pending" && !x._pending);
+}
+function kesFiltre(M, l, kle) {
+  const v = kesF.q.trim().toLowerCase();
+  return l.filter((x) => (!kesF.ajan || x[kle] === kesF.ajan) && (!v || (() => {
+    const k = M.comptes.get(x.id_compte_epargne); const c = k && M.clients.get(k.id_personne);
+    return non(c).toLowerCase().includes(v) || String(k?.no_compte || "").toLowerCase().includes(v);
+  })()));
+}
+function rowDepoKes(M, x) {
+  const k = M.comptes.get(x.id_compte_epargne), c = k && M.clients.get(k.id_personne), j = S.jouTx(x), id = x.id_transaction_epargne;
+  const kanè = [x.solde_avant_declare, x.solde_declare].map((v) => (v != null && v !== "" ? gd(v) : "—"));
+  return `<div class="row kesr${kesChwa.has(id) ? " on" : ""}" data-kesr="${h(id)}">
+    <label class="kes-chk"><input type="checkbox" data-chk="${h(id)}" ${kesChwa.has(id) ? "checked" : ""} aria-label="${h(t("Chwazi"))}: ${h(non(c))} ${h(gd(x.montant))}"></label>
+    <span class="txr-le"><b class="mono">${lèKout(x.date_transaction) || "—"}</b><small>${j === M.today ? t("jodi a") : datKout(j)}</small></span>
+    <span class="txr-main"><span class="txr-t"><b>${d(non(c))}</b></span>
+      <span class="mut sm">${d(k?.no_compte || "")} · plan ${gd(k?.montant_plan || 0)}</span>
+      <span class="mut sm">${t("kanè avan")} ${kanè[0]} → ${t("kanè apre")} ${kanè[1]}</span></span>
+    <span class="kes-mon"><b class="in">+${gd(x.montant)}</b>
+      <span class="kes-bt"><button type="button" class="btn sm pri" data-dv="${h(id)}">Valide</button><button type="button" class="btn sm danger" data-dr="${h(id)}">Rejte</button></span></span>
+  </div>`;
+}
+function kesDepoHtml(M, l) {
+  if (!l.length) return `<p class="empty">${kesF.q || kesF.ajan ? t("Anyen pa koresponn.") : t("Pa gen depo an atant validasyon.")}</p>`;
+  const gr = new Map();
+  for (const x of [...l].sort((a, b) => String(a.date_transaction).localeCompare(String(b.date_transaction)))) {
+    const a = x.created_by || ""; if (!gr.has(a)) gr.set(a, []); gr.get(a).push(x);
+  }
+  const tous = l.every((x) => kesChwa.has(x.id_transaction_epargne));
+  return `<label class="kes-tout"><input type="checkbox" data-chkall ${tous ? "checked" : ""}> <span>${t("Chwazi tout")} (${l.length} · ${gd(sumMon(l))})</span></label>`
+    + [...gr].sort((a, b) => nonAjan(a[0]).localeCompare(nonAjan(b[0]), "fr")).map(([a, xs]) => `<section class="txj kes-g" data-kesg="${h(a)}">
+      <div class="txj-h"><label class="kes-gchk"><input type="checkbox" data-chkg="${h(a)}" ${xs.every((x) => kesChwa.has(x.id_transaction_epargne)) ? "checked" : ""} aria-label="${h(t("Chwazi tout depo"))} ${h(nonAjan(a))}">
+        <h3 data-brut>${h(nonAjan(a))}</h3></label><span class="mut sm">${xs.length} ${t("depo")} · <b class="in">${gd(sumMon(xs))}</b></span></div>
+      <div class="list tx-lis">${xs.map((x) => rowDepoKes(M, x)).join("")}</div></section>`).join("");
+}
+function kesIstorikHtml(M) {
+  const de = S.ajouteJou(M.today, -6);
+  const l = kesFiltre(M, [...M.txs.values()].filter((x) => x.validated_by === moi.id && x.validated_at && S.jouLokal(new Date(x.validated_at)) >= de), "created_by")
+    .sort((a, b) => String(b.validated_at).localeCompare(String(a.validated_at)));
+  const dm = [...M.demandes.values()].filter((x) => x.decide_par === moi.id && x.decide_le && S.jouLokal(new Date(x.decide_le)) >= de && (!kesF.ajan || x.agent_id === kesF.ajan));
+  if (!l.length && !dm.length) return `<p class="empty">${t("Pa gen desizyon nan 7 dènye jou yo.")}</p>`;
+  const ev = [...l.map((x) => ({ le: x.validated_at, x, tip: "tx" })), ...dm.map((x) => ({ le: x.decide_le, x, tip: "dm" }))].sort((a, b) => String(b.le).localeCompare(String(a.le)));
+  const gr = new Map();
+  for (const e of ev) { const j = S.jouLokal(new Date(e.le)); if (!gr.has(j)) gr.set(j, []); gr.get(j).push(e); }
+  return [...gr].map(([j, es]) => {
+    const ok = es.filter((e) => e.tip === "tx" && e.x.validation_status === "confirmed");
+    return `<section class="txj"><div class="txj-h"><h3>${jouLabel(M, j)}</h3><span class="mut sm">${es.length} ${t("desizyon")}${ok.length ? ` · ${t("valide")} <b class="in">${gd(sumMon(ok.map((e) => e.x)))}</b>` : ""}</span></div>
+    <div class="list tx-lis">${es.map(({ x, tip, le }) => {
+      const k = M.comptes.get(x.id_compte_epargne), c = k && M.clients.get(k.id_personne);
+      const okk = tip === "tx" ? x.validation_status === "confirmed" : x.statut === "approuvee";
+      const sa = tip === "tx" ? `${t("Depo")} ${gd(x.montant)}` : `${x.type === "V" ? t("Viman") : t("Retrè")} ${gd(x.montant)}`;
+      const motif = tip === "tx" ? x.validation_note : x.motif_refus;
+      return `<div class="row txr"><span class="txr-le"><b class="mono">${lèKout(le)}</b></span>
+        <span class="txr-main"><span class="txr-t"><b>${sa}</b> · ${d(non(c))} <span class="badge ${okk ? "ok" : "err"}">${t(okk ? "Valide ✓" : "Rejte ✗")}</span></span>
+          <span class="mut sm">${d(k?.no_compte || "")} · <span data-brut>${h(nonAjan(tip === "tx" ? x.created_by : x.agent_id))}</span></span>
+          ${motif ? `<span class="sm err-t">${t("Rezon")}: ${d(motif)}</span>` : ""}</span></div>`; }).join("")}</div></section>`;
+  }).join("");
+}
+async function viewKes() {
+  const M = await S.model();
+  ajans = (await db.meta("ajans")) || {};
+  const depo = depoAnAtant(M);
+  const dm = [...M.demandes.values()].filter((x) => x.statut === "en_attente" && !x._pending);
+  const mo = [...M.modif.values()].filter((x) => x.kind === "tx" && x.statut === "an_atant");
+  for (const id of [...kesChwa]) if (!depo.some((x) => x.id_transaction_epargne === id)) kesChwa.delete(id);
+  const ajanIds = [...new Set([...Object.keys(ajans), ...depo.map((x) => x.created_by), ...dm.map((x) => x.agent_id), ...mo.map((x) => x.agent_id)].filter((x) => x && x !== moi.id))];
+  const kont = (id) => depo.filter((x) => x.created_by === id).length + dm.filter((x) => x.agent_id === id).length + mo.filter((x) => x.agent_id === id).length;
+  const dF = kesFiltre(M, depo, "created_by"), dmF = kesFiltre(M, dm, "agent_id"), moF = mo.filter((x) => !kesF.ajan || x.agent_id === kesF.ajan);
+  const ONG = [["depo", "Depo", dF.length], ["dm", "Retrè ak viman", dmF.length], ["modif", "Modifikasyon", moF.length], ["ist", "Istorik", null]];
+  let kò = "";
+  if (kesF.ong === "depo") kò = kesDepoHtml(M, dF);
+  else if (kesF.ong === "dm") kò = `<div class="list">${dmF.sort((a, b) => String(a.capture_le).localeCompare(String(b.capture_le))).map((x) => liDemande(M, x, { decide: true })).join("") || `<p class="empty">${t("Pa gen demann retrè oswa viman an atant.")}</p>`}</div>`;
+  else if (kesF.ong === "modif") kò = `<p class="mut sm">${t("Ajan an mande pou modifye oswa anile yon tranzaksyon. Se ou sèlman ki ka bay otorizasyon an.")}</p><div class="list">${moF.map((x) => liModif(M, x, { decide: true })).join("") || `<p class="empty">${t("Pa gen demann modifikasyon tranzaksyon an atant.")}</p>`}</div>`;
+  else kò = kesIstorikHtml(M);
+  $app.innerHTML = `<div id="kes"><div class="page-head"><h1>Kès</h1></div>
+    <div class="kes-sum">
+      <div class="card kes-k"><span>${t("Depo pou resevwa")}</span><b class="in">${gd(sumMon(dF))}</b><small>${dF.length} ${t("depo an atant")}</small></div>
+      <div class="card kes-k"><span>${t("Retrè ak viman")}</span><b>${dmF.length}</b><small>${gd(sumMon(dmF))} ${t("an atant")}</small></div>
+      <div class="card kes-k"><span>${t("Modifikasyon")}</span><b>${moF.length}</b><small>${t("tranzaksyon an atant")}</small></div>
+    </div>
+    <div class="tx-tool kes-tool">
+      <input id="kes-q" type="search" class="search" placeholder="Chèche kliyan oswa nimewo kont…" aria-label="Chèche" value="${h(kesF.q)}" autocomplete="off">
+      <label class="tx-sel"><span>${t("Ajan")}</span><select id="kes-ajan"><option value="">${t("Tout ajan yo")}</option>${ajanIds.sort((a, b) => nonAjan(a).localeCompare(nonAjan(b), "fr")).map((id) => `<option value="${h(id)}" ${id === kesF.ajan ? "selected" : ""}>${h(nonAjan(id))}${kont(id) ? ` (${kont(id)})` : ""}</option>`).join("")}</select></label>
+    </div>
+    <div class="tabs" role="tablist" id="kes-ong">${ONG.map(([k, l, n]) => `<button type="button" role="tab" class="tab ${kesF.ong === k ? "on" : ""}" aria-selected="${kesF.ong === k}" data-kong="${k}">${t(l)}${n ? `<span class="cnt-b">${n}</span>` : ""}</button>`).join("")}</div>
+    <div id="kes-ko">${kò}</div>
+    ${kesF.ong === "depo" ? `<div class="kes-ba" id="kes-ba" ${kesChwa.size ? "" : "hidden"}><span id="kes-ba-t"></span><button type="button" class="btn danger" id="kes-rejte">Rejte</button><button type="button" class="btn pri" id="kes-valide">Valide</button></div>` : ""}
+  </div>`;
+  const mete = () => {
+    const xs = dF.filter((x) => kesChwa.has(x.id_transaction_epargne));
+    const ba = document.getElementById("kes-ba"); if (!ba) return;
+    ba.hidden = !xs.length;
+    document.getElementById("kes-ba-t").innerHTML = `<b>${xs.length}</b> ${t("chwazi")} · <b class="in">${gd(sumMon(xs))}</b>`;
+    $app.querySelectorAll("[data-kesr]").forEach((r) => r.classList.toggle("on", kesChwa.has(r.dataset.kesr)));
+    $app.querySelectorAll("[data-chkg]").forEach((c) => { const g = dF.filter((x) => (x.created_by || "") === c.dataset.chkg); c.checked = g.length && g.every((x) => kesChwa.has(x.id_transaction_epargne)); });
+    const all = $app.querySelector("[data-chkall]"); if (all) all.checked = dF.length && dF.every((x) => kesChwa.has(x.id_transaction_epargne));
+  };
+  mete();
+  $app.querySelectorAll("[data-chk]").forEach((c) => (c.onchange = () => { c.checked ? kesChwa.add(c.dataset.chk) : kesChwa.delete(c.dataset.chk); mete(); }));
+  $app.querySelectorAll("[data-chkg]").forEach((c) => (c.onchange = () => {
+    dF.filter((x) => (x.created_by || "") === c.dataset.chkg).forEach((x) => (c.checked ? kesChwa.add(x.id_transaction_epargne) : kesChwa.delete(x.id_transaction_epargne)));
+    $app.querySelectorAll("[data-chk]").forEach((i) => (i.checked = kesChwa.has(i.dataset.chk))); mete();
+  }));
+  $app.querySelector("[data-chkall]")?.addEventListener("change", (e) => {
+    dF.forEach((x) => (e.target.checked ? kesChwa.add(x.id_transaction_epargne) : kesChwa.delete(x.id_transaction_epargne)));
+    $app.querySelectorAll("[data-chk]").forEach((i) => (i.checked = kesChwa.has(i.dataset.chk))); mete();
+  });
+  $app.querySelectorAll("[data-dv]").forEach((b) => (b.onclick = () => kesDeside(M, [b.dataset.dv], true)));
+  $app.querySelectorAll("[data-dr]").forEach((b) => (b.onclick = () => kesDeside(M, [b.dataset.dr], false)));
+  document.getElementById("kes-valide")?.addEventListener("click", () => kesDeside(M, dF.filter((x) => kesChwa.has(x.id_transaction_epargne)).map((x) => x.id_transaction_epargne), true));
+  document.getElementById("kes-rejte")?.addEventListener("click", () => kesDeside(M, dF.filter((x) => kesChwa.has(x.id_transaction_epargne)).map((x) => x.id_transaction_epargne), false));
+  $app.querySelectorAll("[data-kong]").forEach((b) => (b.onclick = () => { kesF.ong = b.dataset.kong; viewKes().then(() => $app.querySelector(`[data-kong="${kesF.ong}"]`)?.focus({ preventScroll: true })); }));
+  document.getElementById("kes-ajan").onchange = (e) => { kesF.ajan = e.target.value; kesChwa.clear(); viewKes(); };
+  const q = document.getElementById("kes-q");
+  q.oninput = () => { kesF.q = q.value; clearTimeout(q._t); q._t = setTimeout(() => viewKes().then(() => { const n = document.getElementById("kes-q"); n.focus(); n.setSelectionRange(n.value.length, n.value.length); }), 250); };
+  $app.querySelectorAll("[data-ok]").forEach((b) => (b.onclick = () => decider(M, b.dataset.ok, true)));
+  $app.querySelectorAll("[data-non]").forEach((b) => (b.onclick = () => decider(M, b.dataset.non, false)));
+  $app.querySelectorAll("[data-mok]").forEach((b) => (b.onclick = () => decideModif(M, b.dataset.mok, true)));
+  $app.querySelectorAll("[data-mnon]").forEach((b) => (b.onclick = () => decideModif(M, b.dataset.mnon, false)));
+}
+async function kesDeside(M, ids, ok) {
+  if (!ids.length) return;
+  if (!navigator.onLine) return ui.info("Pa gen koneksyon.", "Fòk ou gen entènèt pou valide oswa rejte depo yo.");
+  const xs = ids.map((id) => M.txs.get(id)).filter(Boolean);
+  const total = sumMon(xs);
+  const ajanL = [...new Set(xs.map((x) => nonAjan(x.created_by)))].join(", ");
+  const sèl = xs.length === 1 && (() => { const k = M.comptes.get(xs[0].id_compte_epargne); return non(k && M.clients.get(k.id_personne)); })();
+  let motif = null;
+  if (ok) {
+    if (!(await ui.ask({ titre: xs.length > 1 ? `${t("Valide")} ${xs.length} ${t("depo")}?` : "Valide depo sa a?", ok: "Valide", ikon: "✓",
+      tekst: "Ou konfime ou resevwa kach la. Balans kont kliyan yo ap monte touswit.",
+      detay: [...(sèl ? [["Kliyan", sèl]] : [["Depo", String(xs.length)]]), ["Total", gd(total)], ["Ajan", ajanL]] }))) return;
+  } else {
+    motif = await ui.askText({ titre: xs.length > 1 ? `${t("Rejte")} ${xs.length} ${t("depo")} (${gd(total)})?` : `${t("Rejte depo sa a")} (${gd(total)})?`, label: "Rezon refi a", min: 3 });
+    if (!motif) return;
+  }
+  try {
+    const r = await api.rpc("grandon_depo_valide", { p_ids: ids, p_ok: ok, p_motif: motif });
+    ids.forEach((i) => kesChwa.delete(i));
+    toast(`${r?.trete ?? ids.length} ${t(ok ? "depo valide" : "depo rejte")} · ${gd(r?.total ?? total)}${r?.deja ? ` · ${r.deja} ${t("te deja trete")}` : ""}`, "ok");
+    await S.pull();
+  } catch (e) { return ui.info("Erè", e.message); }
+  render();
+}
+
+// ---------- Rapò (responsab kès / manadjè): chwazi ajan ak dat, detay chak ribrik ----------
+const rapoF = { ajan: "", jou: null };
+function baRapo(M) {
+  const ids = Object.keys(ajans).filter((id) => id !== moi.id).sort((a, b) => nonAjan(a).localeCompare(nonAjan(b), "fr"));
+  return `<div class="card rapo-ba">
+    <label class="tx-sel"><span>${t("Ajan")}</span><select id="rapo-ajan"><option value="">${t("Tout ajan yo")}</option>${ids.map((id) => `<option value="${h(id)}" ${id === rapoF.ajan ? "selected" : ""}>${h(nonAjan(id))}</option>`).join("")}</select></label>
+    <label class="tx-sel"><span>${t("Dat")}</span><span class="rapo-dat"><button type="button" class="btn sm" id="rapo-prev" aria-label="${t("Jou anvan")}">‹</button>
+      <input type="date" id="rapo-jou" value="${h(rapoF.jou)}" min="${h(S.ajouteJou(M.today, -199))}" max="${h(M.today)}">
+      <button type="button" class="btn sm" id="rapo-next" aria-label="${t("Jou apre")}" ${rapoF.jou >= M.today ? "disabled" : ""}>›</button></span></label>
+  </div>`;
+}
+function brancheBaRapo(M) {
+  const ale = (j) => { if (!j) return; rapoF.jou = j > M.today ? M.today : j; viewRapo(); };
+  document.getElementById("rapo-ajan").onchange = (e) => { rapoF.ajan = e.target.value; viewRapo(); };
+  document.getElementById("rapo-jou").onchange = (e) => ale(e.target.value);
+  document.getElementById("rapo-prev").onclick = () => ale(S.ajouteJou(rapoF.jou, -1));
+  document.getElementById("rapo-next").onclick = () => ale(S.ajouteJou(rapoF.jou, 1));
+}
+// Chak sa ajan an te antre nan chak ribrik, pou jou a.
+function detayRapo(M, D, pa) {
+  const nmK = (id) => { const k = M.comptes.get(id); return non(k && M.clients.get(k.id_personne)); };
+  const txJ = [...M.txs.values()].filter((x) => pa(x) && S.jouTx(x) === D).sort((a, b) => String(a.date_transaction).localeCompare(String(b.date_transaction)));
+  const ajanTxt = (id) => (rapoF.ajan ? "" : ` · <span data-brut>${h(nonAjan(id))}</span>`);
+  const etaB = (x) => (x.validation_status === "pending" ? `<span class="badge warn">${t("An atant validasyon")}</span>` : x.validation_status === "rejected" ? `<span class="badge err">${t("Rejte ✗")}</span>` : `<span class="badge ok">${t("Valide ✓")}</span>`);
+  const rowT = (x) => { const k = M.comptes.get(x.id_compte_epargne), kind = S.txKind(x);
+    const kanè = [x.solde_avant_declare, x.solde_declare].some((v) => v != null && v !== "") ? `${t("kanè avan")} ${x.solde_avant_declare != null && x.solde_avant_declare !== "" ? gd(x.solde_avant_declare) : "—"} → ${t("kanè apre")} ${x.solde_declare != null && x.solde_declare !== "" ? gd(x.solde_declare) : "—"}` : "";
+    return `<div class="row txr${x.validation_status === "rejected" ? " txr-anile" : ""}"><span class="txr-le"><b class="mono">${lèKout(x.date_transaction) || "—"}</b></span>
+      <span class="txr-main"><span class="txr-t"><b>${d(nmK(x.id_compte_epargne))}</b> ${etaB(x)}</span>
+        <span class="mut sm">${d(k?.no_compte || "")}${kind === "fre" && x.type_frais ? ` · ${d(x.type_frais)}` : ""}${kind === "viman_out" && x.virement_to ? ` → ${d(x.virement_to)}` : ""}${ajanTxt(x.created_by)}</span>
+        ${kanè ? `<span class="mut sm">${kanè}</span>` : ""}
+        ${x.validation_status === "rejected" && x.validation_note ? `<span class="sm err-t">${t("Rezon")}: ${d(x.validation_note)}</span>` : ""}</span>
+      <span class="txr-mon"><b class="${KLAS(kind)}">${SIY(kind)}${gd(x.montant)}</b></span></div>`; };
+  const seksyon = (kle, tit, xs, rann, tot) => `<details class="rb card" data-rb="${kle}" ${xs.length ? "open" : ""}><summary><b>${t(tit)}</b><span class="mut sm">${xs.length}${tot != null ? ` · ${gd(tot)}` : ""}</span></summary>
+    <div class="list tx-lis">${xs.map(rann).join("") || `<p class="empty">${t("Anyen.")}</p>`}</div></details>`;
+  const par = (k) => txJ.filter((x) => S.txKind(x) === k);
+  const ok = (l) => l.filter((x) => x.validation_status !== "rejected");
+  const dep = par("depo"), ret = par("retre"), fre = par("fre"), vim = par("viman_out");
+  const dekl = txJ.filter((x) => x.solde_declare != null && x.solde_declare !== "");
+  const cyc = [...M.comptes.values()].filter((k) => pa(k) && k.created_at && S.jouLokal(new Date(k.created_at)) === D);
+  const fb = [...M.suivis.values()].filter((x) => pa(x) && S.jouLokal(new Date(x.capture_le)) === D).sort((a, b) => String(a.capture_le).localeCompare(String(b.capture_le)));
+  const dmJ = [...M.demandes.values()].filter((x) => pa(x) && x.capture_le && S.jouLokal(new Date(x.capture_le)) === D);
+  const html = seksyon("depo", "Depo ankese", dep, rowT, sumMon(ok(dep)))
+    + seksyon("retre", "Retrè peye", ret, rowT, sumMon(ok(ret)))
+    + seksyon("fre", "Frè", fre, rowT, sumMon(ok(fre)))
+    + seksyon("viman", "Viman", vim, rowT, sumMon(ok(vim)))
+    + seksyon("deklare", "Balans deklare", dekl, rowT, dekl.reduce((a, x) => a + Number(x.solde_declare || 0), 0))
+    + seksyon("cycles", "Cycle kreye", cyc, (k) => `<div class="row txr"><span class="txr-le"><b class="mono">${lèKout(k.created_at) || "—"}</b></span>
+        <span class="txr-main"><span class="txr-t"><b>${d(nmK(k.id_compte_epargne))}</b></span><span class="mut sm">${d(k.no_compte || "")} · plan ${gd(k.montant_plan || 0)} · ${k.duree_mois || "?"} ${t("mwa")}${ajanTxt(k.created_by)}</span></span></div>`)
+    + seksyon("papeye", "Kliyan ki pa peye", fb, (x) => `<div class="row txr"><span class="txr-le"><b class="mono">${lèKout(x.capture_le) || "—"}</b></span>
+        <span class="txr-main"><span class="txr-t"><b>${d(nmK(x.id_compte_epargne))}</b> <span class="badge warn">${t(MOTIF_KOUT[x.motif] || "Lòt")}</span> ${estManager() ? badjKontwol(x) : ""}</span>
+        <span class="mut sm">${t(motifLabel(x.motif))}${ajanTxt(x.agent_id)}</span>${x.note ? `<span class="sm">«${d(x.note)}»</span>` : ""}</span></div>`)
+    + seksyon("demann", "Demann retrè ak viman", dmJ, (x) => liDemande(M, x));
+  return { html, n: txJ.length + cyc.length + fb.length + dmJ.length };
+}
+
 // ---------- Istorik modifikasyon pa jou (manadjè) ----------
 // Demann ajan yo, desizyon manadjè yo, modifikasyon ki fèt (ak valè avan → apre), anilasyon, modifikasyon dirèk manadjè.
 let jouIstorik = null;
-const DIRÈK = "Modifikasyon dirèk manadjè";
+const DIRÈK = "Modifikasyon dirèk manadjè", DIRÈK_KES = "Modifikasyon dirèk responsab kès";
 function evènmanModif(x) {
-  const dirèk = x.rezon === DIRÈK || (x.operasyon === "siprime" && x.statut === "fini" && x.desizyon_pa && x.desizyon_pa === x.agent_id);
-  if (dirèk) return [{ le: x.itilize_le || x.desizyon_le || x.kreye_le, tip: x.operasyon === "siprime" ? "anile_dirèk" : "dirèk", pa: x.agent_id, x }];
+  const dirèk = x.rezon === DIRÈK || x.rezon === DIRÈK_KES || (x.operasyon === "siprime" && x.statut === "fini" && x.desizyon_pa && x.desizyon_pa === x.agent_id);
+  if (dirèk) return [{ le: x.itilize_le || x.desizyon_le || x.kreye_le, tip: x.operasyon === "siprime" ? "anile_dirèk" : x.rezon === DIRÈK_KES ? "dirèk_kes" : "dirèk", pa: x.agent_id, x }];
   const l = [{ le: x.kreye_le, tip: "demann", pa: x.agent_id, x }];
   if (x.desizyon_le) l.push({ le: x.desizyon_le, tip: x.statut === "refize" ? "refize" : x.operasyon === "siprime" ? "anile" : "apwouve", pa: x.desizyon_pa, x });
   if (x.itilize_le && x.operasyon === "modifye") l.push({ le: x.itilize_le, tip: "aplike", pa: x.agent_id, x });
@@ -1725,12 +1948,12 @@ async function viewIstorik() {
   ajans = (await db.meta("ajans")) || {};
   jouIstorik ||= M.today;
   const TIP = { demann: ["info", "Demann"], apwouve: ["ok", "Apwouve"], refize: ["err", "Refize"], anile: ["err", "Anile (apwouve)"],
-    aplike: ["ok", "Modifikasyon fèt"], dirèk: ["warn", "Modifikasyon dirèk manadjè"], anile_dirèk: ["err", "Anile pa manadjè"] };
+    aplike: ["ok", "Modifikasyon fèt"], dirèk: ["warn", "Modifikasyon dirèk manadjè"], dirèk_kes: ["warn", "Modifikasyon dirèk responsab kès"], anile_dirèk: ["err", "Anile pa manadjè"] };
   const ev = [...M.modif.values()].flatMap(evènmanModif).filter((e) => e.le && S.jouLokal(new Date(e.le)) === jouIstorik)
     .sort((a, b) => String(b.le).localeCompare(String(a.le)));
   const kont = (tips) => ev.filter((e) => tips.includes(e.tip)).length;
   const avanApre = (e) => {
-    if (!["aplike", "dirèk"].includes(e.tip) || !e.x.chan) return "";
+    if (!["aplike", "dirèk", "dirèk_kes"].includes(e.tip) || !e.x.chan) return "";
     const av = e.x.vale_avan || {}, ap = e.x.vale_apre || {};
     return `<table class="ist-t"><thead><tr><th>${t("Chan")}</th><th>${t("Avan")}</th><th>${t("Apre")}</th></tr></thead><tbody>${e.x.chan.map((k) => {
       const a = k === "gps" ? av.geocode : av[k], p = k === "gps" ? (ap.gps_lat != null ? `${Number(ap.gps_lat).toFixed(5)},${Number(ap.gps_lng).toFixed(5)}` : "") : ap[k];
@@ -1741,7 +1964,7 @@ async function viewIstorik() {
       <input type="date" id="ist-dat" value="${h(jouIstorik)}" max="${h(M.today)}" aria-label="${t("Jou")}">
       <button type="button" class="btn sm" id="ist-next" aria-label="${t("Jou apre")}" ${jouIstorik >= M.today ? "disabled" : ""}>›</button></div>
     <div class="stats ist-stats"><div><span>${t("Demann yo")}</span><b>${kont(["demann"])}</b></div><div><span>${t("Apwouve yo")}</span><b>${kont(["apwouve", "anile"])}</b></div>
-      <div><span>${t("Refize yo")}</span><b>${kont(["refize"])}</b></div><div><span>${t("Modifikasyon fèt")}</span><b>${kont(["aplike", "dirèk"])}</b></div>
+      <div><span>${t("Refize yo")}</span><b>${kont(["refize"])}</b></div><div><span>${t("Modifikasyon fèt")}</span><b>${kont(["aplike", "dirèk", "dirèk_kes"])}</b></div>
       <div><span>${t("Anilasyon")}</span><b>${kont(["anile", "anile_dirèk"])}</b></div></div>
     <div class="list ist-lis">${ev.map((e) => { const [kl, et] = TIP[e.tip]; const x = e.x;
       const href = x.kind === "kliyan" ? `#/kliyan/${x.ref_id}` : (() => { const tx = M.txs.get(x.ref_id); return tx ? `#/cycle/${tx.id_compte_epargne}` : "#/epay"; })();
@@ -1767,7 +1990,7 @@ async function viewAjan() {
       <label>Non konplè *<input name="non" required autocomplete="off"></label>
       <label>Telefòn * <small class="mut">(8 chif)</small><input name="tel" inputmode="tel" required placeholder="3700 1234" autocomplete="off"></label>
       <div class="grid2">
-        <label>Wòl<select name="wol"><option value="agent">Ajan</option><option value="manager">Manadjè</option><option value="admin">Admin</option></select></label>
+        <label>Wòl<select name="wol"><option value="agent">Ajan</option><option value="manager">Manadjè</option><option value="kesye">Responsab kès</option><option value="admin">Admin</option></select></label>
         <label>Modpas * <small class="mut">(8+)</small><input name="modpas" type="text" required autocomplete="new-password" minlength="8"></label>
       </div>
       <p class="err-msg" id="err" role="alert"></p>
@@ -1826,6 +2049,9 @@ async function render() {
   if (moi.modpasTanpore) return viewModpas(true);
   const bl = await db.meta("aparey_bloke");
   if (bl) return viewAparèyBloke(bl);
+  // Responsab kès: paj kliyan, epay ak kat yo pa pou li.
+  if (estKesye() && (r === "#/" || r === "#" || /^#\/(kliyan|epay|kat|cycle|tx|chwazi|istorik|feries|aparey)/.test(r))) return go("#/kes");
+  if (r === "#/kes") return estKesye() ? viewKes() : go("#/");
   let m;
   if (r === "#/" || r === "#") return viewTablo();
   if (r === "#/kliyan") return viewKliyan();

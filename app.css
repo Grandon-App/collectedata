@@ -508,3 +508,61 @@ html[data-look] .chips.filt.kx-filt .chip { flex: 0 0 auto; min-width: max-conte
   .row.fbr { grid-template-columns: 64px minmax(0, 1fr); }
   .fbr .txr-main { display: flex; }
 }
+
+/* Kès (responsab kès) */
+.kes-sum { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: 12px; }
+.kes-k { display: flex; flex-direction: column; gap: 2px; padding: 12px; min-width: 0; }
+.kes-k span { font-size: .78rem; color: var(--mut); font-weight: 600; }
+.kes-k b { font-size: 1.2rem; overflow-wrap: anywhere; }
+.kes-k small { font-size: .72rem; color: var(--mut); }
+.kes-tool { grid-template-columns: 1fr; }
+.kes-tool .tx-sel:first-of-type { grid-column: auto; }
+#kes .tabs { margin: 4px 0 12px; }
+.kes-tout { display: flex; align-items: center; gap: 10px; padding: 10px 4px; font-weight: 600; cursor: pointer; }
+.kes-tout input, .kes-chk input, .kes-gchk input { width: 22px; height: 22px; min-height: 0; margin: 0; padding: 0; accent-color: var(--pri); cursor: pointer; flex: none; }
+.kes-gchk { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+.kes-gchk h3 { margin: 0; }
+.row.kesr { display: grid; grid-template-columns: 28px 48px minmax(0, 1fr); gap: 6px 10px; align-items: center; }
+.row.kesr.on { outline: 2px solid var(--pri); outline-offset: -2px; }
+.kes-chk { display: flex; align-items: center; justify-content: center; min-height: 44px; cursor: pointer; }
+.kes-mon { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.kes-mon > b { font-size: 1.05rem; white-space: nowrap; }
+.kes-bt { display: flex; gap: 8px; }
+.kes-bt .btn { min-width: 84px; }
+.kes-ba { position: sticky; bottom: calc(96px + env(safe-area-inset-bottom, 0px)); z-index: 5; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px; margin-top: 12px; box-shadow: 0 8px 24px rgba(0, 0, 0, .18); }
+.kes-ba[hidden] { display: none; }
+.kes-ba > span { flex: 1 1 140px; }
+.kes-ba .btn { min-width: 100px; }
+.rapo-ba { display: grid; grid-template-columns: 1fr; gap: 10px; padding: 12px; margin-bottom: 12px; }
+.rapo-dat { display: flex; gap: 6px; align-items: center; }
+.rapo-dat input { flex: 1; min-width: 0; min-height: 44px; }
+.rapo-dat .btn { min-width: 44px; min-height: 44px; }
+details.rb { padding: 0; margin-bottom: 10px; overflow: hidden; }
+details.rb > summary { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 12px 14px; cursor: pointer; list-style: none; min-height: 48px; }
+details.rb > summary::-webkit-details-marker { display: none; }
+details.rb > summary::after { content: "▾"; color: var(--mut); margin-left: 6px; transition: transform .15s; }
+details.rb:not([open]) > summary::after { transform: rotate(-90deg); }
+details.rb > summary > .mut { margin-left: auto; }
+details.rb > .list { padding: 0 10px 10px; }
+@media (min-width: 720px) {
+  .kes-tool { grid-template-columns: minmax(220px, 2fr) minmax(200px, 1fr); }
+  .row.kesr { grid-template-columns: 28px 60px minmax(0, 1fr) auto; }
+  .kes-mon { grid-column: 4; flex-direction: column; align-items: flex-end; }
+  .rapo-ba { grid-template-columns: minmax(200px, 1fr) minmax(260px, 1fr); }
+}
+@media (min-width: 1024px) { .kes-ba { bottom: 12px; } }
+/* Kès: liy yo kenbe pwòp griy yo (pa règ laptop lis tranzaksyon an) */
+#kes .txr-main, details.rb .txr-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.kes-ba .btn { flex: 1 1 110px; }
+@media (max-width: 560px) {
+  .kes-sum { grid-template-columns: 1fr 1fr; }
+  .kes-sum .kes-k:first-child { grid-column: 1 / -1; }
+}
+@media (min-width: 1024px) {
+  #kes .row.txr, details.rb .row.txr { grid-template-columns: 64px minmax(0, 1fr) auto; }
+  #kes .row.txr .txr-le, details.rb .row.txr .txr-le { grid-row: auto; }
+  #kes .row.txr .txr-mon, details.rb .row.txr .txr-mon { grid-column: 3; grid-row: auto; }
+  .row.kesr { grid-template-columns: 28px 64px minmax(0, 1fr) auto; }
+  .row.kesr .kes-chk { grid-column: 1; } .row.kesr .txr-le { grid-column: 2; grid-row: auto; } .row.kesr .txr-main { grid-column: 3; } .row.kesr .kes-mon { grid-column: 4; grid-row: auto; }
+}

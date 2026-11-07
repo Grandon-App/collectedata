@@ -101,7 +101,7 @@ export function epay(ctx) {
   } else if (ong === "fidbak") {
     body = ctx.fidbakSeksyon;
   } else {
-    body = `<p class="note info-note">Retrè ak viman yo bezwen otorizasyon yon manadjè. Lè ou apwouve, ekriti yo pase touswit sou kont yo.</p>
+    body = `<p class="note info-note">${ctx.validNote || ""}</p>
     <div class="list">${ctx.validHtml || `<p class="empty">Pa gen demann an atant.</p>`}</div>`;
   }
   return `
@@ -237,7 +237,7 @@ export function rapo(ctx) {
   </div>
   ${sw && sw.total ? `<div class="swv"><b>Swivi kliyan yo</b><span class="ok-t">${sw.peye} ${t("Peye")}</span><span class="warn-t">${sw.fidbak} ${t("fidbak anrejistre")}</span>${i === 0 ? `<span class="mut">${sw.pokoWe} ${t("poko wè")}</span>` : ""}</div>` : ""}
   ${poko ? `<p class="note warn">${poko} tranzaksyon poko voye: yo konte nan rapò a, men sèvè a poko resevwa yo.</p>` : ""}
-  <h2>Tranzaksyon mwen yo <span class="cnt-h">${ctx.nTx}</span></h2>
+  <h2>${ctx.txTit || "Tranzaksyon mwen yo"} <span class="cnt-h">${ctx.nTx}</span></h2>
   <div class="list rtx">${ctx.txHtml || `<p class="empty">Pa gen tranzaksyon ${t(nonJou(i)).toLowerCase()}.</p>`}</div>`;
 }
 

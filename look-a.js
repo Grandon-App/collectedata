@@ -85,7 +85,7 @@ export function epay(ctx) {
   } else if (ong === "fidbak") {
     body = ctx.fidbakSeksyon;
   } else {
-    body = `<p class="note info-note">Retrè ak viman yo bezwen otorizasyon yon manadjè. Lè ou apwouve, ekriti yo pase touswit sou kont yo.</p>
+    body = `<p class="note info-note">${ctx.validNote || ""}</p>
     <div class="list">${ctx.validHtml || `<p class="empty">Pa gen demann an atant.</p>`}</div>`;
   }
   return `
@@ -211,7 +211,7 @@ export function rapo(ctx) {
   </div>
   <div class="rapo-tx">
   ${poko ? `<p class="note warn">${poko} tranzaksyon poko voye: yo konte nan rapò a, men sèvè a poko resevwa yo.</p>` : ""}
-  <h2>Tranzaksyon mwen yo <small>${ctx.nTx}</small></h2>
+  <h2>${ctx.txTit || "Tranzaksyon mwen yo"} <small>${ctx.nTx}</small></h2>
   <div class="list">${ctx.txHtml || `<p class="empty">Pa gen tranzaksyon ${jouTxt}.</p>`}</div>
   </div>
   </div>`;
