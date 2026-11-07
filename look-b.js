@@ -86,7 +86,7 @@ const SR_CNT = { fidbak: "jodi a", valid: "Demann an atant" };
 // Onglè yo: sèl onglè aktif la nan lòd Tab (tabindex 0); flèch yo (app.js) deplase fokis la sou lòt yo (tabindex -1).
 export function epay(ctx) {
   const { ong, ongs, stats, filt, q, moi, today } = ctx;
-  const FILT = [["jodi", "Jodi a", stats.pouJodi], ["tout", "Tout", stats.aktif], ["reta", "An reta", stats.anReta]];
+  const FILT = [["tout", "Tout", stats.aktif], ["jodi", "Jodi a", stats.pouJodi], ["reta", "An reta", stats.anReta]];
   let body = "";
   if (ong === "kont") {
     body = `

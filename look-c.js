@@ -101,7 +101,7 @@ export function kontRow(r) {
 // ---------- Epay ----------
 export function epay(ctx) {
   const { ong, ongs, stats, filt, q } = ctx;
-  const FILT = [["jodi", "Jodi a", stats.pouJodi], ["tout", "Tout", stats.aktif], ["reta", "An reta", stats.anReta]];
+  const FILT = [["tout", "Tout", stats.aktif], ["jodi", "Jodi a", stats.pouJodi], ["reta", "An reta", stats.anReta]];
   let body = "";
   if (ong === "kont") {
     // .ep-2 / .ep-col: blòk senp sou telefòn; sou laptop (≥ 1024 px) 2 kolòn kòt a kòt («Peman jodi a» | «Kont ak cycle aktif»).

@@ -76,7 +76,7 @@ export function kontRow(r) {
 // ---------- Epay ----------
 export function epay(ctx) {
   const { ong, ongs, stats, filt, q } = ctx;
-  const FILT = [["jodi", "Jodi a", stats.pouJodi], ["tout", "Tout", stats.aktif], ["reta", "An reta", stats.anReta]];
+  const FILT = [["tout", "Tout", stats.aktif], ["jodi", "Jodi a", stats.pouJodi], ["reta", "An reta", stats.anReta]];
   let body = "";
   if (ong === "kont") {
     // Wrapper .ep-2 / section yo: sou laptop 2 kolòn (Peman jodi a | Kont ak cycle aktif); sou telefòn yo pa chanje anyen.

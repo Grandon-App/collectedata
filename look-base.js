@@ -36,7 +36,7 @@ export function kontRow(r) {
 
 export function epay(ctx) {
   const { ong, ongs, stats, filt, q } = ctx;
-  const FILT = [["jodi", "Jodi a", stats.pouJodi], ["tout", "Tout", stats.aktif], ["reta", "An reta", stats.anReta]];
+  const FILT = [["tout", "Tout", stats.aktif], ["jodi", "Jodi a", stats.pouJodi], ["reta", "An reta", stats.anReta]];
   let body = "";
   if (ong === "kont") {
     body = `
