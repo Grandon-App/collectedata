@@ -29,7 +29,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "4.33";
+const APP_VERSION = "4.34";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin", kesye: "Responsab kès" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
@@ -1463,12 +1463,17 @@ async function viewCycleNew(idPersonne, kontId = null) {
   let jours = dènye?.jours_paiement?.length === freq ? [...dènye.jours_paiement] : [...JOU_DEFO[freq]];
   const planDef = plans.includes(Number(dènye?.montant_plan)) ? Number(dènye.montant_plan) : plans[0];
   const planPaLis = kMod && Number(kMod.montant_plan) && !plans.includes(Number(kMod.montant_plan));
+  // Kliyan an gen yon kont aktif san kalandriye (ansyen kont): se sou kont sa a pou mete kalandriye a, pa sou yon 2yèm kont vid.
+  const sanKal = kMod ? [] : [...M.comptes.values()].filter((k) => k.id_personne === idPersonne && k._actif && !k.frequence_semaine && !k._pending);
   const dureeDef = kMod ? (Number(kMod.duree_mois) >= 1 && Number(kMod.duree_mois) <= 12 ? Number(kMod.duree_mois) : 4) : (dènye?.duree_mois || 4);
   $app.innerHTML = `
   <a href="${kMod ? `#/cycle/${h(kontId)}` : `#/kliyan/${idPersonne}`}" class="back">‹ ${kMod ? d(kMod.no_compte || t("Cycle")) : d(non(c))}</a>
   <h1>${kMod ? "Modifye cycle a" : "Nouvo cycle Grandon"}</h1>
   <p class="mut">${d(non(c))} · ${kMod ? d(kMod.no_compte || "") : h(c.telephone || "")}</p>
   ${kMod ? `<p class="note info-note">${t("Sa chanje kalandriye peman an, vèsman prevwa yo ak reta yo. Tranzaksyon yo ak balans lan pa chanje.")}</p>` : ""}
+  ${sanKal.length ? `<div class="note warn doub-kal"><p><b>${t("Kliyan sa a gen yon kont deja")}</b> (${sanKal.map((k) => `<a href="#/cycle/${h(k.id_compte_epargne)}">${d(k.no_compte || "")}</a>`).join(", ")}) ${t("ki pa gen jou peman. Kòb li ak depo li yo sou kont sa a.")}
+    ${estManager() ? t("Pa kreye yon 2yèm kont: mete kalandriye a sou kont lan.") : t("Pa kreye yon 2yèm kont: mande manadjè a mete kalandriye a sou kont lan.")}</p>
+    ${estManager() ? `<a class="btn sm pri" href="#/cycle/${h(sanKal[0].id_compte_epargne)}/modifye">${t("Mete kalandriye sou")} ${d(sanKal[0].no_compte || "")}</a>` : ""}</div>` : ""}
   ${planPaLis ? `<p class="note warn">${t("Plan aktyèl la")} (${gd(kMod.montant_plan)}) ${t("pa nan lis plan Grandon yo: chwazi youn.")}</p>` : ""}
   <form id="f" class="card form" novalidate>
     <fieldset class="field"><legend>Dire * <small class="mut">(kantite mwa)</small></legend>
@@ -1549,6 +1554,8 @@ async function viewCycleNew(idPersonne, kontId = null) {
       } catch (e2) { b.disabled = false; return (err.textContent = t(e2.message)); }
     }
     if (!debut || debut < S.ajouteJou(S.jodi(), -30) || debut > S.ajouteJou(S.jodi(), 30)) return (err.textContent = "Dat kòmansman an dwe ant 30 jou pase ak 30 jou devan.");
+    if (sanKal.length && !(await ui.ask({ titre: "Kreye yon 2yèm kont?", danje: true, ikon: "!", ok: "Kreye 2yèm kont lan",
+      tekst: `${t("Kliyan sa a gen kont")} ${sanKal.map((k) => k.no_compte).join(", ")} ${t("deja. Nouvo kont lan ap kòmanse a 0 G: depo ansyen kont lan p ap parèt ladan l.")}` }))) return;
     if (!(await ui.ask({ titre: "Kreye cycle Grandon sa a?", ok: "Kreye cycle a", foto: c.photo_url, detay: [
       ["Kliyan", non(c)], ["Dire", `${duree} ${t("mwa")}`], ["Frekans", `${freq}× ${t("pa semèn")}`],
       ["Jou peman", js.map((j) => t(JOU[j])).join(", ")], ["Plan", `${gd(plan)}`], ["Fen cycle a", datFr(S.ajouteMwa(debut, duree))],
