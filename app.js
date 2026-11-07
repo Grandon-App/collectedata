@@ -29,7 +29,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "4.11";
+const APP_VERSION = "4.12";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
@@ -226,9 +226,9 @@ async function viewTablo() {
     nonMwa: new Date(M.today + "T12:00:00Z").toLocaleDateString(getLang() === "fr" ? "fr-FR" : "fr-FR", { month: "long", year: "numeric", timeZone: "UTC" }) });
   st.mwaPwosan = st.mwaPrevu ? Math.round((st.mwaPlan / st.mwaPrevu) * 100) : 0;
   const man = estManager();
-  $app.innerHTML = `<div id="tablo">${L().parts.tablo({ ...ctxBase(M), stats: st, isoJou: S.isoJou(M.today) })}${man ? seksyonKontwol(M) : ""}</div>`;
+  $app.innerHTML = `<div id="tablo">${L().parts.tablo({ ...ctxBase(M), stats: st, isoJou: S.isoJou(M.today) })}${man ? `${seksyonKontwol(M)}<section class="doublon-sek" id="doublon" hidden></section>` : ""}</div>`;
   $app.querySelector("[data-mwa-reta]")?.addEventListener("click", () => { ongEpay = "kont"; filtKont = "reta"; });
-  if (man) { ajans = (await db.meta("ajans")) || {}; montreKontwol(M); }
+  if (man) { ajans = (await db.meta("ajans")) || {}; montreKontwol(M); chajeDoublon(); }
 }
 
 // Chif komen pou Epay/Tablo
@@ -358,16 +358,44 @@ function seksyonKontwol(M) {
     <p class="mut sm">${t("Fidbak ki pa t fèt kote kliyan an (plis pase 300 m), oswa san GPS · 7 dènye jou.")}</p>
     <div class="list">${l.map((x) => liSwivi(M, x)).join("") || `<p class="empty">${t("Tout fidbak yo te fèt kote kliyan yo.")}</p>`}</div></section>`;
 }
+// Kliyan «petèt doublon» (menm non ak yon lòt moun nan baz la): manadjè a deside. Bezwen entènèt; dènye lis la rete sou telefòn nan.
+async function chajeDoublon() {
+  const box = document.getElementById("doublon"); if (!box) return;
+  let l = null;
+  try { l = await api.rpc("grandon_doublon_lis", {}); await db.meta("doublon", l); } catch { l = await db.meta("doublon"); }
+  if (!document.getElementById("doublon") || !l?.length) return;
+  const kli = (x) => `<a href="#/kliyan/${h(x.id_personne)}"><b>${d(`${x.prenom || ""} ${x.nom || ""}`)}</b></a> · ${d(x.code_client || "—")} · ${x.tel4 ? `•••• ${d(x.tel4)}` : t("san telefòn")}`;
+  box.hidden = false;
+  box.innerHTML = `<h2>Kliyan petèt doublon <small class="mut">(${l.length})</small></h2>
+    <p class="mut sm">${t("Nouvo kliyan ki gen menm non ak yon moun ki deja nan baz la, men ak yon lòt telefòn. Verifye si se menm moun.")}</p>
+    <div class="list">${l.map((x) => `<div class="row col doublon" data-dbl="${h(x.id_personne)}">
+      <div><span class="badge warn">${t("Nouvo")}</span> ${kli(x)} <span class="mut sm">· ${lè(x.kreye_le)}${nomAjan(x.agent_id) ? ` · ${d(nomAjan(x.agent_id))}` : ""}</span></div>
+      ${(x.lot || []).map((o) => `<div class="sm"><span class="badge mut">${t(o.grandon ? "Deja kliyan Grandon" : "Deja nan baz la")}</span> ${kli(o)}</div>`).join("")}
+      <div class="btns"><button type="button" class="btn sm" data-dbl-dif="${h(x.id_personne)}">${t("Se 2 moun diferan")}</button>
+        <button type="button" class="btn sm danger" data-dbl-menm="${h(x.id_personne)}">${t("Se menm moun")}</button></div></div>`).join("")}</div>`;
+  const deside = async (id, desizyon) => {
+    if (!navigator.onLine) return toast(t("Fòk ou gen entènèt pou deside."), "err");
+    if (desizyon === "menm" && !(await ui.ask({ titre: "Se menm moun?", tekst: t("Dosye a ap make «doublon». Pa kreye cycle sou li; kontakte administratè a pou fizyone 2 dosye yo."), ok: "Wi, se menm moun" }))) return;
+    try { await api.rpc("grandon_doublon_deside", { p_id_personne: id, p_desizyon: desizyon }); toast(t("Desizyon an anrejistre.")); chajeDoublon(); }
+    catch (e) { toast(t(e.message || "Erè"), "err"); }
+  };
+  box.querySelectorAll("[data-dbl-dif]").forEach((b) => (b.onclick = () => deside(b.dataset.dblDif, "diferan")));
+  box.querySelectorAll("[data-dbl-menm]").forEach((b) => (b.onclick = () => deside(b.dataset.dblMenm, "menm")));
+}
 const KONTWOL_VU = "grandon-kontwol-vu";
+let kontwolOuvè = false; // pa louvri 2 popup youn sou lòt si Tablo a re-rann (sync) pandan popup la louvri
 async function montreKontwol(M) {
+  if (kontwolOuvè) return;
   const l = fidbakSispèk(M);
   let vu = []; try { vu = JSON.parse(localStorage.getItem(KONTWOL_VU) || "[]"); } catch { /* */ }
   const nouvo = l.filter((x) => !vu.includes(x.id));
   if (!nouvo.length) return;
+  kontwolOuvè = true;
   if (prefs().son !== false) ui.son("ijan");
   await ui.aletPopup({ titre: nouvo.length > 1 ? `${nouvo.length} ${t("fidbak pa fèt kote kliyan an")}` : t("Yon fidbak pa fèt kote kliyan an"), nivo: "ijan",
     soutit: t("Ajan an te anrejistre «Pa peye» lwen biznis kliyan an, oswa san GPS."), html: `<div class="list">${nouvo.map((x) => liSwivi(M, x)).join("")}</div>` });
   try { localStorage.setItem(KONTWOL_VU, JSON.stringify([...new Set([...vu, ...nouvo.map((x) => x.id)])].slice(-500))); } catch { /* */ }
+  kontwolOuvè = false;
 }
 
 function liTx(M, tx, { kliyan = true } = {}) {
@@ -712,11 +740,12 @@ async function viewClientNew() {
     const id = S.uuid();
     let photo_id = null;
     if (photo) { photo_id = S.uuid(); await db.put("photos", { id: photo_id, blob: photo }); }
+    const code_client = S.kodKliyan(v.prenom, v.nom);
     await S.enqueue("client", {
-      id, prenom: v.prenom.trim(), nom: v.nom.trim(), telephone: tel, sexe: v.sexe,
+      id, prenom: v.prenom.trim(), nom: v.nom.trim(), telephone: tel, sexe: v.sexe, code_client,
       ...valeursOccupation(v), gps, photo_id, capture_le: new Date().toISOString(),
     });
-    toast(navigator.onLine ? "Kliyan anrejistre." : "Kliyan anrejistre sou telefòn nan. L ap voye lè gen entènèt.");
+    toast(`${t(navigator.onLine ? "Kliyan anrejistre." : "Kliyan anrejistre sou telefòn nan. L ap voye lè gen entènèt.")} · ${code_client}`, "ok", 5000);
     go(f.cycle.checked ? `#/cycle/nouvo/${id}` : `#/kliyan/${id}`);
   };
 }
@@ -963,11 +992,12 @@ async function viewCycleNew(idPersonne) {
     const b = f.querySelector("button[type=submit]"); b.disabled = true;
     const id = S.uuid();
     const gps = await getGps(5000);
+    const no_compte = S.noKont(c.code_client);
     await S.enqueue("cycle", {
       id, id_personne: idPersonne, duree, frequence: freq, jours: js, montant: plan, date_debut: debut,
-      gps, capture_le: new Date().toISOString(), appareil: S.appareil(),
+      gps, capture_le: new Date().toISOString(), appareil: S.appareil(), no_compte,
     }, c._pending ? [idPersonne] : []);
-    toast("Cycle la anrejistre.");
+    toast(`${t("Cycle la anrejistre.")}${no_compte ? ` · ${no_compte}` : ""}`, "ok", 5000);
     go(`#/cycle/${id}`);
   };
 }

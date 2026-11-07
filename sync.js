@@ -111,16 +111,20 @@ const EXEC = {
     const r = await api.rpc("grandon_inscrire_client", {
       p_id: p.id, p_prenom: p.prenom, p_nom: p.nom, p_telephone: p.telephone, p_nif: p.numero_piece || p.nif || null,
       p_sexe: p.sexe || null, p_adresse: p.adresse || null, p_activite: p.activite || null, p_photo_url: photo_url,
-      ...gpsArgs(p.gps), p_capture_le: p.capture_le,
+      ...gpsArgs(p.gps), p_capture_le: p.capture_le, p_code_client: p.code_client || null,
     });
     const id = r.id_personne;
     if (id !== p.id) await remap(p.id, id);
     if (CHAN_FICH.some((k) => p[k])) await api.rpc("grandon_maj_client", { ...majArgs(p), p_id_personne: id });
     if (!(await db.get("clients", id)))
-      await db.put("clients", { id_personne: id, prenom: p.prenom, nom: p.nom, telephone: p.telephone, sexe: p.sexe, photo_url,
+      await db.put("clients", { id_personne: id, prenom: p.prenom, nom: p.nom, telephone: p.telephone, sexe: p.sexe, photo_url, code_client: r.code_client || p.code_client || null,
         ...Object.fromEntries(CHAN_FICH.map((k) => [k, p[k] || null])), gps_lat: p.gps?.lat ?? null, gps_lng: p.gps?.lng ?? null });
+    else if (r.code_client) { const c = await db.get("clients", id); c.code_client = r.code_client; await db.put("clients", c); }
     if (p.photo_id) await db.del("photos", p.photo_id);
-    return r.deja ? `${p.prenom} ${p.nom} te deja nan baz la: nou itilize dosye ki te la a.` : null;
+    if (r.deja) return `${p.prenom} ${p.nom} te deja nan baz la: nou itilize dosye ki te la a.`;
+    if (r.code_client && p.code_client && r.code_client !== p.code_client) return `${p.prenom} ${p.nom}: kòd kliyan an chanje (${r.code_client}).`;
+    if (r.doublon) return `${p.prenom} ${p.nom}: gen yon lòt moun ki gen menm non nan baz la. Yon manadjè ap verifye si se menm moun.`;
+    return null;
   },
 
   async adopte(p) {
@@ -175,6 +179,7 @@ const EXEC = {
     const r = await api.rpc("grandon_creer_cycle", {
       p_id: p.id, p_id_personne: p.id_personne, p_duree: p.duree, p_frequence: p.frequence, p_jours: p.jours,
       p_montant: p.montant, p_date_debut: p.date_debut, ...gpsArgs(p.gps), p_capture_le: p.capture_le, p_appareil: p.appareil,
+      p_no_compte: p.no_compte || null,
     });
     await db.put("comptes", {
       id_compte_epargne: p.id, no_compte: r.no_compte, id_personne: p.id_personne, solde_actuel: 0, montant_plan: p.montant,
@@ -324,7 +329,7 @@ export async function model() {
     const p = o.payload;
     const pend = { _pending: true, _error: o.status === "erè" ? o.error : null, _seq: o.seq };
     if (o.kind === "client")
-      M.clients.set(p.id, { id_personne: p.id, prenom: p.prenom, nom: p.nom, telephone: p.telephone, sexe: p.sexe, photo_id: p.photo_id,
+      M.clients.set(p.id, { id_personne: p.id, prenom: p.prenom, nom: p.nom, telephone: p.telephone, sexe: p.sexe, photo_id: p.photo_id, code_client: p.code_client || null,
         ...Object.fromEntries(CHAN_FICH.map((k) => [k, p[k] || null])), gps_lat: p.gps?.lat ?? null, gps_lng: p.gps?.lng ?? null, ...pend });
     if (o.kind === "maj" && M.clients.has(p.id)) {
       const c = M.clients.get(p.id);
@@ -336,7 +341,7 @@ export async function model() {
       M.clients.set(p.id, { id_personne: p.id, prenom: p.prenom, nom: p.nom, code_client: p.code_client, photo_url: p.photo_url, tel4: p.tel4, ...pend });
     if (o.kind === "cycle")
       M.comptes.set(p.id, {
-        id_compte_epargne: p.id, no_compte: null, id_personne: p.id_personne, solde_actuel: 0, montant_plan: p.montant,
+        id_compte_epargne: p.id, no_compte: p.no_compte || null, id_personne: p.id_personne, solde_actuel: 0, montant_plan: p.montant,
         duree_mois: p.duree, frequence_semaine: p.frequence, jours_paiement: p.jours, date_debut: p.date_debut,
         date_fin: ajouteMwa(p.date_debut, p.duree), depo_an_atant: 0, created_at: p.capture_le, created_by: "moi", ...pend });
     if (o.kind === "demande")
@@ -512,3 +517,12 @@ export function kontwolSwivi(x, c) {
   return { distans_m: d, kontwol: d - prec > LIM_KONTWOL_M ? "lwen" : prec > LIM_KONTWOL_M ? "pa_presi" : "ok" };
 }
 export const swiviSispèk = (x) => x.kontwol === "lwen" || x.kontwol === "san_gps_ajan";
+
+// ---------- Kòd kreye sou telefòn nan (offline) ----------
+// Menm fòm ak sèvè a: kòd kliyan = 2 inisyal + "-" + 5 karaktè; nimewo kont = kòd kliyan + "-" + 3 karaktè.
+// Sèvè a itilize yo si yo lib; si se pa sa (ra anpil), li bay yon lòt e telefòn nan mete l ajou.
+const ALFA = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+const azò = (n) => { const b = new Uint8Array(n); crypto.getRandomValues(b); return [...b].map((x) => ALFA[x % 36]).join(""); };
+const inisyalKod = (s) => (String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().match(/[A-Z]/) || ["X"])[0];
+export const kodKliyan = (prenom, nom) => `${inisyalKod(prenom)}${inisyalKod(nom)}-${azò(5)}`;
+export const noKont = (kod) => (kod ? `${String(kod).toUpperCase()}-${azò(3)}` : null);
