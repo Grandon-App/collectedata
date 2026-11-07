@@ -29,7 +29,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "4.18";
+const APP_VERSION = "4.19";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
@@ -1213,8 +1213,8 @@ async function viewTxNew(compteId) {
     <label>Montan (goud) *<input name="montant" type="number" inputmode="decimal" min="1" step="any" required value="${plan || ""}"></label>
     <p class="mut sm" id="hint"></p>
     <div class="grid2">
-      <label>Balans kanè a avan <small class="mut">(opsyonèl)</small><input name="solde_avant" type="number" inputmode="decimal" step="any"></label>
-      <label>Balans kanè a apre <small class="mut">(opsyonèl)</small><input name="solde" type="number" inputmode="decimal" step="any"></label>
+      <label>Balans kanè a avan *<input name="solde_avant" type="number" inputmode="decimal" min="0" step="any" required></label>
+      <label>Balans kanè a apre *<input name="solde" type="number" inputmode="decimal" min="0" step="any" required></label>
     </div>
     <label>Nòt<textarea name="note" rows="2"></textarea></label>
     <p class="err-msg" id="err" role="alert"></p>
@@ -1241,6 +1241,7 @@ async function viewTxNew(compteId) {
   };
   f.solde_avant.oninput = autoApre; f.montant.addEventListener("input", autoApre);
   f.solde.oninput = () => (f.solde.dataset.manuel = "1");
+  [f.solde_avant, f.solde].forEach((i) => i.addEventListener("input", () => { i.removeAttribute("aria-invalid"); f.solde.removeAttribute("aria-invalid"); }));
   f.onsubmit = async (e) => {
     e.preventDefault();
     const err = document.getElementById("err");
@@ -1248,17 +1249,22 @@ async function viewTxNew(compteId) {
     if (!(m > 0)) return (err.textContent = t("Mete montan an."));
     if (typ === "FL" && !f.type_frais.value) return (err.textContent = t("Chwazi tip frè a."));
     if (typ === "V" && !f.dest.value) return (err.textContent = t("Chwazi kont ki resevwa viman an."));
+    // Balans kanè yo obligatwa: tranzaksyon an pa ka konfime san yo.
+    for (const [chan, mesaj] of [["solde_avant", "Mete balans kanè a avan."], ["solde", "Mete balans kanè a apre."]]) {
+      const v = f[chan].value.trim();
+      f[chan].removeAttribute("aria-invalid");
+      if (v === "" || !(Number(v) >= 0)) { f[chan].setAttribute("aria-invalid", "true"); f[chan].focus(); return (err.textContent = t(mesaj)); }
+    }
     if (typ === "D" && plan && m < plan && !(await ui.ask({ titre: "Montan an pi piti pase plan an", ikon: "!", ok: "Kontinye",
       detay: [["Montan (goud)", gd(m)], ["Minimòm plan an", gd(plan)]] }))) return;
-    const av = f.solde_avant.value === "" ? null : Number(f.solde_avant.value);
-    const ap = f.solde.value === "" ? null : Number(f.solde.value);
+    const av = Number(f.solde_avant.value), ap = Number(f.solde.value);
     const kd = typ === "V" ? M.comptes.get(f.dest.value) : null;
     const lib = Object.fromEntries(TIP_TX)[typ];
     if (!(await ui.ask({ titre: typ === "R" || typ === "V" ? `${t("Demann")} · ${t(lib)}` : lib, ok: typ === "R" || typ === "V" ? "Voye demann lan" : "Konfime",
       foto: c?.photo_url, ikon: typ === "D" ? "+" : "−", detay: [["Kliyan", non(c)], ["Kont", k.no_compte || t("cycle poko voye")], ["Montan (goud)", gd(m)],
         ...(typ === "FL" ? [["Tip frè", f.type_frais.value]] : []),
         ...(kd ? [["Kont ki resevwa", `${non(M.clients.get(kd.id_personne))} · ${kd.no_compte}`]] : []),
-        ...(av != null ? [["Balans kanè a avan", gd(av)]] : []), ...(ap != null ? [["Balans kanè a apre", gd(ap)]] : [])] }))) return;
+        ["Balans kanè a avan", gd(av)], ["Balans kanè a apre", gd(ap)]] }))) return;
     const b = f.querySelector("button[type=submit]"); b.disabled = true;
     const base = { id: S.uuid(), compte: k.id_compte_epargne, montant: m, solde_avant_declare: av, solde_declare: ap,
       note: f.note.value.trim() || null, gps: await getGps(5000), capture_le: new Date().toISOString() };

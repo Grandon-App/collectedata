@@ -182,6 +182,7 @@ const FR = {
   "Frekans lan dwe 1, 2, 3 oswa 6 fwa pa semèn.": "La fréquence doit être 1, 2, 3 ou 6 fois par semaine.",
   "pa nan lis plan Grandon yo.": "n'est pas dans la liste des plans Grandon.", "Kont Grandon an pa jwenn.": "Compte Grandon introuvable.",
   "Ou pa gen dwa": "Vous n'avez pas le droit de",
+  "Mete balans kanè a avan.": "Indiquez le solde du carnet avant.", "Mete balans kanè a apre.": "Indiquez le solde du carnet après.",
   // Modpas ak aparèy
   "Chanje modpas mwen": "Changer mon mot de passe", "Chwazi pwòp modpas ou": "Choisissez votre mot de passe",
   "Modpas ou resevwa a se yon modpas tanporè. Chwazi yon modpas pa w anvan w kontinye: se ou sèl ki pou konnen l.": "Le mot de passe reçu est temporaire. Choisissez votre propre mot de passe avant de continuer : vous seul devez le connaître.",
