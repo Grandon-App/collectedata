@@ -30,7 +30,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "4.35";
+const APP_VERSION = "4.36";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin", kesye: "Responsab kès" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
@@ -336,6 +336,55 @@ async function avètiAlet() {
       <div class="sm">${kl.slice(0, 8).map((x) => `<a href="#/cycle/${h(x.k.id_compte_epargne)}">${d(non(M0.clients.get(x.k.id_personne)))}</a>`).join(" · ")}${kl.length > 8 ? ` · +${kl.length - 8}` : ""}</div></div></div>`).join("") });
   try { localStorage.setItem(ALET_VU, JSON.stringify([...new Set([...vu, ...nouvo.map((a) => a.cle)])].slice(-3000))); } catch { /* */ }
   avètiOuvè = false;
+}
+
+// ---------- Lè operasyon: ajan yo (ak manadjè yo si admin lan vle) travay sèlman ant 2 lè (lè Ayiti) ----------
+const LE_DEFO = { aktif: true, de: "09:00", a: "20:00", roles: ["agent", "manager"] };
+const leParamet = async () => ({ ...LE_DEFO, ...(((await db.meta("paramet")) || {}).le_operasyon || {}) });
+const leKounye = () => new Intl.DateTimeFormat("en-GB", { timeZone: "America/Port-au-Prince", hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date());
+const amPm = (hhmm) => { const [H, M] = String(hhmm).split(":").map(Number); return `${((H + 11) % 12) + 1}:${String(M).padStart(2, "0")} ${H < 12 ? "AM" : "PM"}`; };
+async function leOk() {
+  const p = await leParamet();
+  if (!p.aktif || !moi || !(p.roles || []).includes(moi.role)) return true;
+  const l = leKounye();
+  return l >= p.de && l < p.a;
+}
+async function tèksLe() { const p = await leParamet(); return `${t("Ou ka fè operasyon sou pòtay la sèlman ant")} ${amPm(p.de)} ${t("ak")} ${amPm(p.a)}.`; }
+async function montreLeFèmen() { return ui.info("Pòtay la fèmen kounye a", `${await tèksLe()} ${t("Li")} ${amPm(leKounye())} ${t("kounye a")}.`); }
+async function viewLeFèmen() {
+  $app.innerHTML = `<div class="le-femen card"><div class="le-ico" aria-hidden="true">🕘</div><h1>${t("Pòtay la fèmen kounye a")}</h1>
+    <p>${await tèksLe()}</p><p class="mut">${t("Li")} <b>${amPm(leKounye())}</b> ${t("kounye a (lè Ayiti).")}</p>
+    <a class="btn" href="#/">${t("Retounen sou Tablo a")}</a></div>`;
+}
+async function viewLe() {
+  const p = await leParamet();
+  $app.innerHTML = `<a href="#/param" class="back">‹ Paramèt</a><h1>${t("Lè operasyon")}</h1>
+    <p class="mut">${t("Andeyò lè sa yo, ajan an pa ka fè depo, retrè, viman, fidbak, nouvo kliyan ni nouvo cycle. Sèvè a verifye l tou.")}</p>
+    <form id="f" class="card form" novalidate>
+      <label class="chk"><input type="checkbox" name="aktif" ${p.aktif ? "checked" : ""}> ${t("Limite lè operasyon yo")}</label>
+      <div class="grid2"><label>${t("Kòmanse a")}<input type="time" name="de" value="${h(p.de)}" required></label>
+        <label>${t("Fini a")}<input type="time" name="a" value="${h(p.a)}" required></label></div>
+      <fieldset class="field"><legend>${t("Pou ki moun")}</legend>
+        <label class="chk"><input type="checkbox" name="roles" value="agent" ${p.roles.includes("agent") ? "checked" : ""}> ${t("Ajan")}</label>
+        <label class="chk"><input type="checkbox" name="roles" value="manager" ${p.roles.includes("manager") ? "checked" : ""}> ${t("Manadjè")}</label>
+        <p class="mut sm">${t("Admin ak responsab kès yo pa limite.")}</p></fieldset>
+      <p class="err-msg" id="err" role="alert"></p>
+      <button class="btn pri" type="submit">${t("Anrejistre")}</button>
+    </form>`;
+  const f = document.getElementById("f");
+  f.onsubmit = async (e) => {
+    e.preventDefault();
+    const err = document.getElementById("err");
+    const de = f.de.value, a = f.a.value, roles = [...f.querySelectorAll("input[name=roles]:checked")].map((x) => x.value);
+    if (!de || !a || de >= a) return (err.textContent = t("Lè kòmansman an dwe anvan lè fen an."));
+    if (!navigator.onLine) return (err.textContent = t("Fòk ou gen entènèt pou chanje paramèt sa a."));
+    try {
+      await api.rpc("grandon_paramet_le", { p_aktif: f.aktif.checked, p_de: de, p_a: a, p_roles: roles });
+      await S.pull();
+      toast(`${t("Lè operasyon")}: ${amPm(de)} – ${amPm(a)} ✓`, "ok");
+      go("#/param");
+    } catch (e2) { err.textContent = t(e2.message); }
+  };
 }
 
 // ---------- Jesyon alèt (manadjè / admin): pwoblèm nan dosye yo, kanpay ak swivi ----------
@@ -868,6 +917,7 @@ async function decider(M, id, ok) {
   render();
 }
 async function paPeye(k, c) {
+  if (!(await leOk())) return montreLeFèmen();
   const r = await ui.askChoice({ titre: "Kliyan an pa peye", tekst: `${non(c)} · ${k.no_compte || ""}`, options: MOTIFS,
     noteLabel: "Nòt (opsyonèl)", noteObligatwaPou: ["lot"] });
   if (!r) return;
@@ -1333,7 +1383,9 @@ async function viewClientNew() {
     <label>Sèks<select name="sexe"><option value="">—</option><option value="F">Fi</option><option value="M">Gason</option></select></label>
     ${champsIdentite()}
     ${champsOccupation()}
-    <label>Foto kliyan an *<input name="photo" type="file" accept="image/*" capture="environment" required></label>
+    <div class="field foto-ch"><span>Foto kliyan an *</span>
+      <div class="btns"><button type="button" class="btn pri" id="kam">📷 ${t("Ouvri kamera a")}</button>
+        <label class="btn foto-fichye">🖼 ${t("Chwazi yon foto")}<input name="photo" type="file" accept="image/*"></label></div></div>
     <img id="prev" class="prev" alt="" hidden>
     <div class="gps" id="gps"><span class="gps-t mut sm" aria-live="polite">GPS: ap chèche…</span><button type="button" class="btn sm">Rekòmanse</button></div>
     <label class="chk"><input type="checkbox" name="cycle" checked> Kreye yon cycle Grandon touswit apre</label>
@@ -1368,15 +1420,19 @@ async function viewClientNew() {
       }));
     } catch { /* offline oswa erè: sèvè a ap verifye lè l voye */ }
   };
-  f.photo.onchange = async () => {
-    const file = f.photo.files[0];
-    if (!file) return;
+  const metFoto = async (file) => {
     try {
       photo = await compress(file);
       const img = document.getElementById("prev");
       img.src = URL.createObjectURL(photo);
       img.hidden = false;
     } catch { toast("Foto a pa ka li.", "err"); }
+  };
+  f.photo.onchange = () => { const file = f.photo.files[0]; if (file) metFoto(file); };
+  document.getElementById("kam").onclick = async () => {
+    const r = await ui.kamera();
+    if (r?.erè) { toast(r.erè, "err", 7000); f.photo.click(); return; }
+    if (r) metFoto(r);
   };
   f.onsubmit = async (e) => {
     e.preventDefault();
@@ -1986,6 +2042,7 @@ async function viewParam() {
   ${estManager() ? `<a class="btn block" href="#/aparey">Aparèy ajan yo</a>` : ""}
   ${estManager() ? `<a class="btn block" href="#/feries">Jou ferye</a>` : ""}
   ${moi.admin ? `<a class="btn block" href="#/ajan">Jere ajan yo</a>` : ""}
+  ${moi.admin ? `<a class="btn block" href="#/le">${t("Lè operasyon")}</a>` : ""}
   <button class="btn block danger" id="logout">Dekonekte</button>
   <p class="mut sm center">Grandon · vèsyon ${h(APP_VERSION)}</p>`;
   $app.querySelectorAll('input[name="lang"]').forEach((r) => (r.onchange = () => { setLang(r.value); location.reload(); }));
@@ -2488,6 +2545,8 @@ async function render() {
   if (r === "#/epay") return viewEpay();
   if (r === "#/rapo") return viewRapo();
   if (r === "#/kat") { const M = await S.model(); ajans = (await db.meta("ajans")) || {}; return KAT.viewKat({ $app, M, man: estManager(), moi, ajans, getGps, toast }); }
+  if (/^#\/(kliyan\/nouvo|cycle\/nouvo|tx\/nouvo|chwazi)/.test(r) && !(await leOk())) return viewLeFèmen();
+  if (r === "#/le") return moi.admin ? viewLe() : go("#/");
   if (r === "#/kliyan/nouvo") return viewClientNew();
   if ((m = r.match(/^#\/kliyan\/([\w-]+)\/modifye$/))) return viewClientEdit(m[1]);
   if ((m = r.match(/^#\/kliyan\/([\w-]+)$/))) return viewClient(m[1]);

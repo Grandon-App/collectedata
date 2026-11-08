@@ -38,6 +38,44 @@ function ouvrir(html, { onOpen } = {}) {
   });
 }
 
+// Kamera nan aplikasyon an (getUserMedia): ajan an wè imaj la, li peze «Pran foto a». Retounen yon Blob JPEG oswa null.
+// { erè } si navigatè a pa ka louvri kamera a (pa gen pèmisyon, pa gen kamera).
+export async function kamera({ titre = "Pran foto kliyan an" } = {}) {
+  if (!navigator.mediaDevices?.getUserMedia) return { erè: t("Navigatè sa a pa ka louvri kamera a. Itilize «Chwazi yon foto».") };
+  let stream = null, fasing = "environment", video = null, erè = null;
+  const lanse = async () => {
+    stream?.getTracks().forEach((x) => x.stop());
+    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: fasing }, width: { ideal: 1600 }, height: { ideal: 1600 } }, audio: false });
+    video.srcObject = stream;
+    await video.play().catch(() => {});
+  };
+  const opts = { onOpen: (w, fin) => {
+    video = w.querySelector("video");
+    const okb = w.querySelector("[data-v=ok]"), msg = w.querySelector(".kam-err");
+    const kòmanse = () => { okb.disabled = true; lanse().then(() => (okb.disabled = false)).catch((e) => {
+      erè = e?.name === "NotAllowedError" ? t("Ou pa bay aplikasyon an pèmisyon pou kamera a. Pèmèt kamera a nan paramèt navigatè a.") : t("Kamera a pa ka louvri sou aparèy sa a.");
+      msg.textContent = erè; msg.hidden = false; }); };
+    kòmanse();
+    w.querySelector("[data-vire]").onclick = () => { fasing = fasing === "environment" ? "user" : "environment"; kòmanse(); };
+  } };
+  opts.onOpen.valeur = () => {
+    if (!video?.videoWidth) return null;
+    const s = Math.min(1, 1600 / Math.max(video.videoWidth, video.videoHeight));
+    const c = document.createElement("canvas");
+    c.width = Math.round(video.videoWidth * s); c.height = Math.round(video.videoHeight * s);
+    c.getContext("2d").drawImage(video, 0, 0, c.width, c.height);
+    return c;
+  };
+  const c = await ouvrir(`
+    <div class="modal-h"><span class="modal-ico" aria-hidden="true">📷</span><h2 id="modal-t">${h(t(titre))}</h2></div>
+    <div class="kam"><video class="kam-v" playsinline muted autoplay></video></div>
+    <p class="err-msg sm kam-err" role="alert" hidden></p>
+    <div class="modal-b kam-b"><button class="btn" data-v="no">${h(t("Anile"))}</button><button class="btn" type="button" data-vire>${h(t("Vire kamera a"))}</button><button class="btn pri" data-v="ok" disabled>${h(t("Pran foto a"))}</button></div>`, opts);
+  stream?.getTracks().forEach((x) => x.stop());
+  if (!c || c === true) return erè ? { erè } : null;
+  return await new Promise((r) => c.toBlob(r, "image/jpeg", 0.85));
+}
+
 // Konfimasyon. Retounen true/false.
 // detay: lis [etikèt, valè] pou montre yon rezime klè.
 export async function ask({ titre, tekst = "", detay = [], ok = "Konfime", anile = "Anile", danje = false, foto = null, ikon = "?" }) {

@@ -337,6 +337,8 @@ export async function pull() {
     api.selectAll(`grandon_modif?or=${encodeURIComponent(`(statut.in.(an_atant,apwouve),created_at.gte.${depi2})`)}&select=*&order=kreye_le.desc`).catch(() => null),
   ]);
   try { // non ajan yo (manadjè yo wè tout moun; yon ajan wè sèlman pa l)
+    const pa = await api.select("grandon_paramet?select=kle,vale").catch(() => null); // lè operasyon, elatriye
+    if (pa) await db.meta("paramet", Object.fromEntries(pa.map((x) => [x.kle, x.vale])));
     const aj = await api.select("grandon_ajan?select=user_id,nom,role,actif");
     await db.meta("ajans", Object.fromEntries(aj.map((x) => [x.user_id, x.nom])));
     await db.meta("ekip", aj.map((x) => ({ user_id: x.user_id, nom: x.nom, role: x.role, actif: x.actif })));
