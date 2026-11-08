@@ -614,14 +614,6 @@ html[data-look] .login h1.wordmark::after { content: ""; position: absolute; lef
 .potfey-k { display: flex; align-items: center; gap: 12px; padding: 10px 14px; margin: 8px 0; }
 .potfey-k .grow { display: flex; flex-direction: column; min-width: 0; }
 /* Alèt: jesyon manadjè, Tablo, rapèl */
-.alet-pw-g { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; margin-bottom: 8px; }
-.alet-pw { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; }
-.alet-pw.zewo { opacity: .6; }
-.alet-pw-h { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-weight: 600; }
-.alet-pw-h b { font-size: 1.6rem; font-variant-numeric: tabular-nums; }
-.alet-pw-a { display: flex; flex-wrap: wrap; gap: 4px; }
-.chip-s { font-size: .75rem; padding: 1px 8px; border-radius: 99px; background: var(--track, rgba(127,127,127,.15)); }
-.alet-pw-lis .list { max-height: 320px; overflow: auto; }
 .alet-ajan { max-width: 360px; margin: 6px 0 10px; }
 .alet-tablo { margin: 14px 0; }
 .alet-tr .alet-kl { font-weight: 600; }
@@ -630,13 +622,6 @@ html[data-look] .login h1.wordmark::after { content: ""; position: absolute; lef
 .alet-tit .btns { display: flex; gap: 6px; flex-wrap: wrap; }
 .notif-p { display: flex; flex-direction: column; gap: 4px; }
 .alet-kp { gap: 6px; }
-.alet-pw-g { grid-template-columns: repeat(auto-fill, minmax(min(100%, 160px), 1fr)); }
-.alet-pw.zewo { padding: 8px 12px; gap: 2px; }
-.alet-pw.zewo p, .alet-pw.zewo small { display: none; }
-.alet-pw .btns { display: flex; flex-wrap: wrap; gap: 6px; }
-.alet-pw .btns .btn { flex: 1 1 auto; }
-.alet-pw-h span { font-size: .92rem; }
-.alet-pw .btns .btn { white-space: nowrap; padding-inline: 10px; }
 /* Foto: kamera nan aplikasyon an + chwazi yon fichye */
 .foto-ch { display: flex; flex-direction: column; gap: 6px; }
 .foto-ch .btns { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -655,3 +640,33 @@ html[data-look] .login h1.wordmark::after { content: ""; position: absolute; lef
 .foto-ak.foto-manke { border: 1px dashed var(--warn, #c9a227); }
 .gps-ak { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 12px 14px; margin: 10px 0; border: 1px dashed var(--warn, #c9a227); }
 .gps-ak .grow { flex: 1 1 220px; min-width: 0; }
+/* Alèt: tablo pwoblèm yo (yon liy pa pwoblèm, yon kolòn pa ajan) */
+.chip-s { font-size: .75rem; padding: 1px 8px; border-radius: 99px; background: var(--track, rgba(127,127,127,.15)); }
+.pw-tab { padding: 4px 0; overflow: hidden; margin-bottom: 14px; }
+.pw-r { display: grid; align-items: center; gap: 10px; padding: 10px 16px; }
+.alet-pw + .alet-pw, .pw-tet + .alet-pw { border-top: 1px solid var(--line, rgba(127,127,127,.18)); }
+.pw-tet { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; opacity: .7; padding-block: 8px; }
+.pw-l { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.pw-n, .pw-a { text-align: center; font-variant-numeric: tabular-nums; }
+.pw-n b { font-size: 1.35rem; }
+.pw-a-non { display: none; }
+.pw-b { display: flex; gap: 6px; justify-content: flex-end; flex-wrap: wrap; }
+.pw-b .btn { white-space: nowrap; }
+.alet-pw.zewo .pw-r { opacity: .55; padding-block: 6px; }
+.alet-pw-lis { padding: 0 16px 14px; }
+.pw-lis { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 8px; max-height: 420px; overflow: auto; }
+.pw-lis .row { display: flex; align-items: center; gap: 8px; border: 1px solid var(--line, rgba(127,127,127,.18)); border-radius: 10px; padding: 8px 10px; }
+.pw-lis .row .grow { min-width: 0; }
+.pw-sou { margin: 6px 0 8px; display: flex; flex-direction: column; gap: 2px; }
+@media (max-width: 760px) {
+  .pw-r { display: flex !important; flex-wrap: wrap; gap: 6px 10px; }
+  .pw-tet { display: none !important; }
+  .pw-l { flex: 1 1 60%; }
+  .pw-n { flex: 0 0 auto; }
+  .pw-a { flex: 0 0 auto; font-size: .75rem; padding: 1px 8px; border-radius: 99px; background: var(--track, rgba(127,127,127,.15)); }
+  .pw-a-non { display: inline; margin-right: 4px; }
+  .pw-a0 { display: none; }
+  .pw-b { flex: 1 1 100%; justify-content: stretch; }
+  .pw-b .btn { flex: 1 1 0; }
+}
+.pw-sou small { font-size: .8rem; font-weight: 400; }

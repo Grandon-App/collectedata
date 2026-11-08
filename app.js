@@ -30,7 +30,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "4.41";
+const APP_VERSION = "4.42";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin", kesye: "Responsab kès" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
@@ -421,14 +421,20 @@ async function viewAlet() {
   const lòt = aAktif.filter((a) => !a.kanpay_id && nanF(a.k) && (!aletF.lis || (aletF.lis === "reta" ? a._anReta : a.tip === aletF.lis)))
     .sort((a, b) => b._anReta - a._anReta || String(a.dele || "9999").localeCompare(String(b.dele || "9999")));
   const nReta = aAktif.filter((a) => nanF(a.k) && a._anReta).length;
-  const kart = ({ p, kont, nAlet, nReta, parA }) => `<div class="card alet-pw${kont.length ? "" : " zewo"}" data-pw="${h(p.k)}">
-    <div class="alet-pw-h"><span>${t(p.l)}</span><b>${kont.length}</b></div>
-    <small class="mut">${t(p.oto ? (p.k === "kal" ? "kont" : "kliyan") : "kliyan make")}${nAlet ? ` · ${nAlet} ${t("alèt aktif")}` : ""}${nReta ? ` · <span class="err-t">${nReta} ${t("an reta")}</span>` : ""}</small>
-    ${parA.size && !aletF.ajan ? `<div class="alet-pw-a">${[...parA].sort((a, b) => b[1] - a[1]).map(([id, n]) => `<span class="chip-s" data-brut>${h(nonA(id).split(" ")[0])} ${n}</span>`).join("")}</div>` : ""}
-    <div class="btns">${kont.length ? `<button type="button" class="btn sm" data-pw-wè="${h(p.k)}">${t("Wè yo")}</button>` : ""}
-      ${p.oto && kont.length ? `<button type="button" class="btn sm pri" data-pw-lanse="${h(p.k)}">${t("Lanse alèt")}</button>` : ""}</div>
-    ${p.oto ? "" : `<p class="mut sm">${t("Make yon kliyan sou paj kont li (＋ Alèt → Pwoblèm).")}</p>`}
+  // Tablo pwoblèm yo: yon liy pa pwoblèm, yon kolòn pa ajan (sou laptop), lis kliyan yo louvri sou tout lajè a anba liy lan.
+  const kolAjan = aletF.ajan ? [] : lis.filter((a) => pw.some((r) => r.parA.get(a.user_id)));
+  const kolGrid = `grid-template-columns: minmax(170px, 2.2fr) 64px ${kolAjan.map(() => "minmax(64px, 1fr)").join(" ")} minmax(210px, auto)`;
+  const liy = ({ p, kont, nAlet, nReta, parA }) => `<div class="alet-pw${kont.length ? "" : " zewo"}" data-pw="${h(p.k)}">
+    <div class="pw-r" style="${kolGrid}">
+      <div class="pw-l"><b>${t(p.l)}</b><small class="mut">${t(p.oto ? (p.k === "kal" ? "kont" : "kliyan") : "kliyan make")}${nAlet ? ` · ${nAlet} ${t("alèt aktif")}` : ""}${nReta ? ` · <span class="err-t">${nReta} ${t("an reta")}</span>` : ""}</small></div>
+      <div class="alet-pw-h pw-n"><b>${kont.length}</b></div>
+      ${kolAjan.map((a) => `<div class="pw-a${parA.get(a.user_id) ? "" : " pw-a0"}" data-brut><span class="pw-a-non">${h(a.nom.split(" ")[0])}</span>${parA.get(a.user_id) || "<span class=\"mut\">—</span>"}</div>`).join("")}
+      <div class="pw-b">${kont.length ? `<button type="button" class="btn sm" data-pw-wè="${h(p.k)}" aria-expanded="false">${t("Wè yo")}</button>` : ""}
+        ${p.oto && kont.length ? `<button type="button" class="btn sm pri" data-pw-lanse="${h(p.k)}">${t("Lanse alèt")}</button>` : ""}</div>
+    </div>
     <div class="alet-pw-lis" hidden></div></div>`;
+  const pwOto = pw.filter((r) => r.p.oto).sort((a, b) => b.kont.length - a.kont.length), pwMan = pw.filter((r) => !r.p.oto);
+  const tèt = `<div class="pw-r pw-tet" style="${kolGrid}"><div>${t("Pwoblèm")}</div><div class="pw-n">${t("Total")}</div>${kolAjan.map((a) => `<div class="pw-a" data-brut>${h(a.nom.split(" ")[0])}</div>`).join("")}<div></div></div>`;
   $app.innerHTML = `<div id="alet"><div class="page-head"><h1>${t("Alèt")}</h1></div>
     <p class="mut sm">${t("Kantite kliyan ki gen yon pwoblèm nan dosye yo, alèt ki aktif yo ak swivi ajan yo.")}</p>
     <label class="tx-sel alet-ajan"><span>${t("Pòtfèy")}</span><select id="alet-ajan"><option value="">${t("Tout ajan yo")}</option>${lis.map((a) => `<option value="${h(a.user_id)}" ${aletF.ajan === a.user_id ? "selected" : ""}>${h(a.nom)}</option>`).join("")}</select></label>
@@ -438,7 +444,9 @@ async function viewAlet() {
       <div class="card kes-k"><span>${t("Rapèl ajan yo")}</span><b>${aAktif.filter((a) => nanF(a.k) && a.tip === "rapel").length}</b><small>${t("aktif")}</small></div>
     </div>
     <h2>${t("Pwoblèm nan dosye yo")}</h2>
-    <div class="alet-pw-g">${pw.map(kart).join("")}</div>
+    <div class="card pw-tab">${tèt}${pwOto.map(liy).join("")}</div>
+    <h3 class="pw-sou">${t("Pwoblèm manadjè make")} <small class="mut">${t("Make yon kliyan sou paj kont li (＋ Alèt → Pwoblèm).")}</small></h3>
+    <div class="card pw-tab">${tèt}${pwMan.map(liy).join("")}</div>
     <h2>${t("Kanpay alèt yo")}</h2>
     <div class="list">${kanpay.map((g) => { const pc = g.n ? Math.round((g.regle / g.n) * 100) : 0; const parA = new Map();
       for (const x of g.l) { const id = ajanK(x.k); const o = parA.get(id) || { n: 0, r: 0 }; o.n++; if (x._eta !== "aktif") o.r++; parA.set(id, o); }
@@ -449,7 +457,7 @@ async function viewAlet() {
         <div class="alet-pw-a">${[...parA].map(([id, o]) => `<span class="chip-s" data-brut>${h(nonA(id))} ${o.r}/${o.n}</span>`).join("")}</div>
         ${g.n - g.regle ? `<div class="btns"><button type="button" class="btn sm" data-kp-fermen="${h(g.id)}">${t("Fèmen kanpay la")}</button></div>` : ""}</div>`; }).join("") || `<p class="empty">${t("Poko gen kanpay.")}</p>`}</div>
     <h2>${t("Lòt alèt ak rapèl aktif")} <small>${lòt.length}</small></h2>
-    <div class="chips filt" role="group">${[["", "Tout"], ["reta", "An reta"], ["manyel", "Manadjè"], ["rapel", "Rapèl ajan"]].map(([v, l]) => `<button type="button" class="chip ${aletF.lis === v ? "on" : ""}" data-alis="${v}" aria-pressed="${aletF.lis === v}">${t(l)}</button>`).join("")}</div>
+    <div class="chips filt kx-filt" role="group">${[["", "Tout"], ["reta", "An reta"], ["manyel", "Manadjè"], ["rapel", "Rapèl ajan"]].map(([v, l]) => `<button type="button" class="chip ${aletF.lis === v ? "on" : ""}" data-alis="${v}" aria-pressed="${aletF.lis === v}">${t(l)}</button>`).join("")}</div>
     <div class="list alet-tablo">${lòt.map((a) => `<div class="alet-tr">${liAlet(a, { man: true }).replace('<div class="grow">', `<div class="grow"><a class="alet-kl" href="#/cycle/${h(a.k.id_compte_epargne)}">${d(non(M.clients.get(a.k.id_personne)))} · ${d(a.k.no_compte || "")}</a> <span class="mut sm" data-brut>${h(nonA(ajanK(a.k)))}</span><br>`)}</div>`).join("") || `<p class="empty">${t("Pa gen lòt alèt aktif.")}</p>`}</div></div>`;
   document.getElementById("alet-ajan").onchange = (e) => { aletF.ajan = e.target.value; viewAlet(); };
   $app.querySelectorAll("[data-alis]").forEach((b) => (b.onclick = () => { aletF.lis = b.dataset.alis; viewAlet(); }));
@@ -457,7 +465,8 @@ async function viewAlet() {
   $app.querySelectorAll("[data-pw-wè]").forEach((b) => (b.onclick = () => {
     const box = b.closest(".alet-pw").querySelector(".alet-pw-lis"), r = pw.find((x) => x.p.k === b.dataset.pwWè);
     box.hidden = !box.hidden;
-    if (!box.hidden) box.innerHTML = `<div class="list">${r.kont.map((k) => { const a = aAktif.find((x) => x.pwoblem === r.p.k && x.k.id_compte_epargne === k.id_compte_epargne);
+    b.setAttribute("aria-expanded", String(!box.hidden)); b.textContent = t(box.hidden ? "Wè yo" : "Kache yo");
+    if (!box.hidden) box.innerHTML = `<div class="pw-lis">${[...r.kont].sort((x, y) => nonA(ajanK(x)).localeCompare(nonA(ajanK(y)), "fr") || non(M.clients.get(x.id_personne)).localeCompare(non(M.clients.get(y.id_personne)), "fr")).map((k) => { const a = aAktif.find((x) => x.pwoblem === r.p.k && x.k.id_compte_epargne === k.id_compte_epargne);
       const foto = r.p.k === "foto" || r.p.k === "foto_move";
       return `<div class="row"><a class="grow lnk" href="${foto ? `#/kliyan/${h(k.id_personne)}` : `#/cycle/${h(k.id_compte_epargne)}`}"><b>${d(non(M.clients.get(k.id_personne)))}</b><div class="mut sm">${d(k.no_compte || "")} · <span data-brut>${h(nonA(ajanK(k)))}</span></div></a>
         ${a ? `<span class="badge ${a._anReta ? "err" : "warn"}">${t("Alèt")}${a.dele ? ` · ${datFr(a.dele)}` : ""}</span>` : ""}
