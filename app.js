@@ -30,7 +30,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "4.38";
+const APP_VERSION = "4.39";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin", kesye: "Responsab kès" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
@@ -1705,8 +1705,8 @@ async function viewPick(kind) {
 }
 
 // ---------- Nouvo cycle Grandon ----------
-const FREKANS = [1, 2, 3, 6];
-const JOU_DEFO = { 1: [1], 2: [1, 4], 3: [1, 3, 5], 6: [1, 2, 3, 4, 5, 6] };
+const FREKANS = [1, 2, 3, 6, 7];
+const JOU_DEFO = { 1: [1], 2: [1, 4], 3: [1, 3, 5], 6: [1, 2, 3, 4, 5, 6], 7: [1, 2, 3, 4, 5, 6, 7] };
 async function viewCycleNew(idPersonne, kontId = null) {
   const M = await S.model();
   const kMod = kontId ? M.comptes.get(kontId) : null; // mòd «modifye cycle» (manadjè / admin)
@@ -1735,13 +1735,14 @@ async function viewCycleNew(idPersonne, kontId = null) {
   <form id="f" class="card form" novalidate>
     <fieldset class="field"><legend>Dire * <small class="mut">(kantite mwa)</small></legend>
       ${kMod ? `<select name="duree" aria-label="${t("Dire")}">${Array.from({ length: 12 }, (_, i) => i + 1).map((m) => `<option value="${m}" ${m === dureeDef ? "selected" : ""}>${m} ${t("mwa")}</option>`).join("")}</select>`
-        : `<div class="seg s5">${[2, 3, 4, 5, 6].map((m) => `<label><input type="radio" name="duree" value="${m}" ${m === dureeDef ? "checked" : ""}><span>${m}</span></label>`).join("")}</div>`}
+        : `<select name="duree" aria-label="${t("Dire")}">${Array.from({ length: 11 }, (_, i) => i + 2).map((m) => `<option value="${m}" ${m === dureeDef ? "selected" : ""}>${m} ${t("mwa")}</option>`).join("")}</select>`}
     </fieldset>
     <fieldset class="field"><legend>Frekans * <small class="mut">(kantite fwa pa semèn)</small></legend>
-      <div class="seg s4">${FREKANS.map((n) => `<label><input type="radio" name="freq" value="${n}" ${n === freq ? "checked" : ""}><span>${n}×</span></label>`).join("")}</div>
+      <div class="seg s5">${FREKANS.map((n) => `<label><input type="radio" name="freq" value="${n}" ${n === freq ? "checked" : ""}><span>${n}×</span></label>`).join("")}</div>
     </fieldset>
     <fieldset class="field"><legend>Jou peman yo * <small class="mut" id="jou-hint"></small></legend>
-      <div class="jours" id="jours">${[1, 2, 3, 4, 5, 6, 7].map((j) => `<label ${j === 7 ? 'title="Dimanch pa yon jou peman"' : ""}><input type="checkbox" name="jou" value="${j}" ${j === 7 ? "disabled" : ""}><span>${JOU_KOUT[j]}</span></label>`).join("")}</div>
+      <div class="jours" id="jours">${[1, 2, 3, 4, 5, 6, 7].map((j) => `<label><input type="checkbox" name="jou" value="${j}"><span>${JOU_KOUT[j]}</span></label>`).join("")}</div>
+      <p class="mut sm" id="dim-not" hidden>${t("Kliyan sa a peye dimanch tou: pou li, dimanch pa jou konje.")}</p>
     </fieldset>
     <label>Plan * <small class="mut">(minimòm chak fwa li peye)</small>
       <select name="plan">${plans.map((p) => `<option value="${p}" ${p === planDef ? "selected" : ""}>${gd(p)}</option>`).join("")}</select></label>
@@ -1757,6 +1758,7 @@ async function viewCycleNew(idPersonne, kontId = null) {
     boxes.forEach((b) => (b.checked = jours.includes(Number(b.value))));
     const rest = freq - jours.length;
     document.getElementById("jou-hint").textContent = rest > 0 ? `(chwazi ${rest} ankò)` : `(${freq} jou)`;
+    document.getElementById("dim-not").hidden = !jours.includes(7);
   };
   const recap = () => {
     document.getElementById("err").textContent = "";
@@ -1768,7 +1770,7 @@ async function viewCycleNew(idPersonne, kontId = null) {
     document.getElementById("recap").innerHTML = `
       <div><span>Fen cycle a</span><b>${datFr(fin)}</b></div>
       <div><span>Jou peman</span><b>${ok ? lisJou([...jours].sort()) : "—"}</b></div>
-      <div><span>Vèsman prevwa</span><b>${ok ? n : "—"}</b><small class="mut">san dimanch ni jou ferye</small></div>
+      <div><span>Vèsman prevwa</span><b>${ok ? n : "—"}</b><small class="mut">${jours.includes(7) ? t("san jou ferye") : t("san dimanch ni jou ferye")}</small></div>
       <div><span>Total pou l sanble</span><b>${ok ? gd(plan * n) : "—"}</b><small class="mut">${gd(plan)} × ${ok ? n : "…"}</small></div>`;
   };
   f.querySelectorAll('input[name="freq"]').forEach((r) => (r.onchange = () => {
@@ -1790,7 +1792,7 @@ async function viewCycleNew(idPersonne, kontId = null) {
     e.preventDefault();
     const err = document.getElementById("err");
     const duree = Number(f.duree.value), plan = Number(f.plan.value), debut = f.debut.value;
-    if (!(duree >= (kMod ? 1 : 2) && duree <= (kMod ? 12 : 6))) return (err.textContent = t(kMod ? "Chwazi dire a (1 a 12 mwa)." : "Chwazi dire a (2 a 6 mwa)."));
+    if (!(duree >= (kMod ? 1 : 2) && duree <= 12)) return (err.textContent = t(kMod ? "Chwazi dire a (1 a 12 mwa)." : "Chwazi dire a (2 a 12 mwa)."));
     if (jours.length !== freq) return (err.textContent = `Chwazi egzakteman ${freq} jou peman.`);
     if (!plans.includes(plan)) return (err.textContent = "Chwazi plan an.");
     const js = [...jours].sort();

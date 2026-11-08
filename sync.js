@@ -34,13 +34,13 @@ export const ajouteMwa = (iso, n) => {
   return t.toISOString().slice(0, 10);
 };
 // Konbyen jou peman ant de dat (enklizif), dapre jou ki chwazi yo.
-// Dimanch ak jou ferye yo pa konte.
+// Jou ferye yo pa konte. Dimanch konte sèlman pou kliyan ki chwazi l (frekans 7×, oswa dimanch nan jou peman l yo).
 export function joursPeman(debut, fin, jours, feries = new Set()) {
   if (!jours?.length || !debut || !fin || fin < debut) return 0;
   let n = 0;
   for (let d = debut; d <= fin; d = ajouteJou(d, 1)) {
     const j = isoJou(d);
-    if (j !== 7 && jours.includes(j) && !feries.has(d)) n++;
+    if (jours.includes(j) && !feries.has(d)) n++;
   }
   return n;
 }
@@ -458,7 +458,7 @@ export async function model() {
     k._suivis.sort((a, b) => String(b.capture_le).localeCompare(String(a.capture_le)));
     k._demandes.sort((a, b) => String(b.capture_le).localeCompare(String(a.capture_le)));
     k._actif = !k.date_fin || k.date_fin >= today;
-    k._jodiPeman = k._actif && !!k.jours_paiement?.includes(isoJou(today)) && k.date_debut <= today && isoJou(today) !== 7 && !M.feries.has(today);
+    k._jodiPeman = k._actif && !!k.jours_paiement?.includes(isoJou(today)) && k.date_debut <= today && !M.feries.has(today);
     const finCycle = k.date_fin ? ajouteJou(k.date_fin, -1) : null;
     k._prevu = joursPeman(k.date_debut, finCycle && today > finCycle ? finCycle : today, k.jours_paiement, M.feries);
     k._prevuTotal = finCycle ? joursPeman(k.date_debut, finCycle, k.jours_paiement, M.feries) : null;
@@ -533,7 +533,7 @@ export function heatmap13(k, feries = new Set(), today = jodi()) {
       const date = ajouteJou(debut, i);
       const j = i + 1;
       const nanCycle = date >= (k.date_debut || "0000") && (!k.date_fin || date < k.date_fin);
-      if (j !== 7 && k.jours_paiement?.includes(j) && nanCycle && !feries.has(date) && date <= today) prevu++;
+      if (k.jours_paiement?.includes(j) && nanCycle && !feries.has(date) && date <= today) prevu++;
       if (k._joursPeye?.has(date)) peye++;
     }
     let state = "okenn";
