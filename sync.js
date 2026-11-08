@@ -137,6 +137,18 @@ const EXEC = {
       await db.put("clients", { id_personne: p.id, prenom: p.prenom, nom: p.nom, code_client: p.code_client, photo_url: p.photo_url, tel4: p.tel4 });
   },
 
+  async foto(p) {
+    const ph = await db.get("photos", p.photo_id);
+    if (!ph) return; // foto a pa sou telefòn nan ankò: anyen pou voye
+    const path = `${C.DOSYE_FOTO}/${p.id_personne}-${p.id.slice(0, 8)}.jpg`;
+    await api.upload(path, ph.blob);
+    const photo_url = api.publicUrl(path);
+    await api.rpc("grandon_foto_chanje", { p_id_personne: p.id_personne, p_photo_url: photo_url, p_capture_le: p.capture_le });
+    const c = await db.get("clients", p.id_personne);
+    if (c) { c.photo_url = photo_url; await db.put("clients", c); }
+    await db.del("photos", p.photo_id);
+  },
+
   async maj(p) {
     await api.rpc("grandon_maj_client", majArgs(p));
     const c = await db.get("clients", p.id);
@@ -385,6 +397,7 @@ export async function model() {
       if (p.gps) { c.gps_lat = p.gps.lat; c.gps_lng = p.gps.lng; }
       c._majPending = true; if (pend._error) c._error = pend._error;
     }
+    if (o.kind === "foto" && M.clients.has(p.id_personne)) Object.assign(M.clients.get(p.id_personne), { photo_id: p.photo_id, _fotoPending: true });
     if (o.kind === "adopte" && !M.clients.has(p.id))
       M.clients.set(p.id, { id_personne: p.id, prenom: p.prenom, nom: p.nom, code_client: p.code_client, photo_url: p.photo_url, tel4: p.tel4, ...pend });
     if (o.kind === "cycle")

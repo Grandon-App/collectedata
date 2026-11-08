@@ -649,3 +649,7 @@ html[data-look] .login h1.wordmark::after { content: ""; position: absolute; lef
 /* Lè operasyon */
 .le-femen { text-align: center; padding: 28px 18px; display: flex; flex-direction: column; align-items: center; gap: 8px; max-width: 520px; margin: 24px auto; }
 .le-ico { font-size: 2.6rem; }
+.foto-ak { display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; margin: 10px 0; }
+.foto-ak .btns { display: flex; flex-wrap: wrap; gap: 8px; }
+.foto-ak .btns .btn { flex: 1 1 180px; }
+.foto-ak.foto-manke { border: 1px dashed var(--warn, #c9a227); }

@@ -30,7 +30,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "4.36";
+const APP_VERSION = "4.37";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin", kesye: "Responsab kès" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
@@ -458,8 +458,10 @@ async function viewAlet() {
     const box = b.closest(".alet-pw").querySelector(".alet-pw-lis"), r = pw.find((x) => x.p.k === b.dataset.pwWè);
     box.hidden = !box.hidden;
     if (!box.hidden) box.innerHTML = `<div class="list">${r.kont.map((k) => { const a = aAktif.find((x) => x.pwoblem === r.p.k && x.k.id_compte_epargne === k.id_compte_epargne);
-      return `<a class="row" href="#/cycle/${h(k.id_compte_epargne)}"><div class="grow"><b>${d(non(M.clients.get(k.id_personne)))}</b><div class="mut sm">${d(k.no_compte || "")} · <span data-brut>${h(nonA(ajanK(k)))}</span></div></div>
-        ${a ? `<span class="badge ${a._anReta ? "err" : "warn"}">${t("Alèt")}${a.dele ? ` · ${datFr(a.dele)}` : ""}</span>` : ""}</a>`; }).join("")}</div>`;
+      const foto = r.p.k === "foto" || r.p.k === "foto_move";
+      return `<div class="row"><a class="grow lnk" href="${foto ? `#/kliyan/${h(k.id_personne)}` : `#/cycle/${h(k.id_compte_epargne)}`}"><b>${d(non(M.clients.get(k.id_personne)))}</b><div class="mut sm">${d(k.no_compte || "")} · <span data-brut>${h(nonA(ajanK(k)))}</span></div></a>
+        ${a ? `<span class="badge ${a._anReta ? "err" : "warn"}">${t("Alèt")}${a.dele ? ` · ${datFr(a.dele)}` : ""}</span>` : ""}
+        ${foto ? `<a class="btn sm pri" href="#/kliyan/${h(k.id_personne)}">📷 ${t("Ajoute foto")}</a>` : ""}</div>`; }).join("")}</div>`;
   }));
   $app.querySelectorAll("[data-pw-lanse]").forEach((b) => (b.onclick = async () => {
     if (!navigator.onLine) return ui.info("Pa gen koneksyon.", "Fòk ou gen entènèt pou lanse yon kanpay alèt.");
@@ -784,7 +786,7 @@ const CHAN_KLIYAN = [["prenom", "Prenon"], ["nom", "Non"], ["telephone", "Telef�
 const CHAN_TX = [["montant", "Montan"], ["solde_avant_declare", "Balans kanè avan"], ["solde_declare", "Balans kanè apre"], ["type_frais", "Tip frè"], ["note", "Nòt"]];
 const CHAN_CYCLE = [["duree_mois", "Dire"], ["frequence_semaine", "Frekans"], ["jours_paiement", "Jou peman"], ["montant_plan", "Plan"], ["date_debut", "Dat kòmansman"]];
 const CHAN_POTFEY = [["ajan", "Ajan pòtfèy"]];
-const etikètChan = (kind, k) => ((kind === "kliyan" ? CHAN_KLIYAN : kind === "cycle" ? CHAN_CYCLE : kind === "potfey" ? CHAN_POTFEY : CHAN_TX).find(([x]) => x === k) || [k, k])[1];
+const etikètChan = (kind, k) => ((kind === "kliyan" ? CHAN_KLIYAN : kind === "cycle" ? CHAN_CYCLE : kind === "potfey" ? CHAN_POTFEY : CHAN_TX).find(([x]) => x === k) || [k, k === "photo" ? "Foto" : k])[1];
 const mwenSe = (id) => id === moi?.id || id === "moi";
 const otorizasyon = (M, kind, ref) => [...M.modif.values()].find((x) => x.kind === kind && x.ref_id === ref && x.operasyon === "modifye" && x.statut === "apwouve" && mwenSe(x.agent_id));
 const demannModif = (M, kind, ref) => [...M.modif.values()].find((x) => x.kind === kind && x.ref_id === ref && x.statut === "an_atant");
@@ -1654,8 +1656,30 @@ async function viewClient(id) {
     mapsHref: gpsOk ? `https://maps.google.com/?q=${c.gps_lat},${c.gps_lng}` : null, telHref: c.telephone ? `tel:${String(c.telephone).replace(/\D/g, "")}` : null,
     errHtml: (c._error ? `<p class="note err">${d(t(c._error))} <a href="#/senk">Wè</a></p>` : "") + banyèModif(M, id) };
   const ksM = S.comptesDuClient(M, id);
-  $app.innerHTML = `<div id="fich">${L().parts.fich(ctx)}${seksyonAlet(ksM, man)}</div>`;
+  const fotoAk = estKesye() ? "" : `<section class="foto-ak card${c.photo_url || c.photo_id ? "" : " foto-manke"}">
+    ${c.photo_url || c.photo_id ? "" : `<p><b>${t("Kliyan sa a pa gen foto.")}</b> ${t("Pran youn kounye a.")}</p>`}
+    ${c._fotoPending ? `<p class="mut sm"><span class="badge pend">${t("Poko voye")}</span> ${t("Nouvo foto a ap monte lè gen entènèt.")}</p>` : ""}
+    <div class="btns"><button type="button" class="btn ${c.photo_url || c.photo_id ? "" : "pri"}" id="foto-kam">📷 ${t(c.photo_url || c.photo_id ? "Chanje foto a (kamera)" : "Ajoute foto (kamera)")}</button>
+      <label class="btn foto-fichye">🖼 ${t("Chwazi yon foto")}<input type="file" accept="image/*" id="foto-fich"></label></div></section>`;
+  $app.innerHTML = `<div id="fich">${L().parts.fich(ctx)}${fotoAk}${seksyonAlet(ksM, man)}</div>`;
   brancherAlet(M);
+  const chanjeFoto = async (blob) => {
+    if (!(await leOk())) return montreLeFèmen();
+    let photo; try { photo = await compress(blob); } catch { return toast("Foto a pa ka li.", "err"); }
+    const url = URL.createObjectURL(photo);
+    if (!(await ui.ask({ titre: c.photo_url || c.photo_id ? "Chanje foto kliyan an?" : "Ajoute foto sa a?", foto: url, ok: "Anrejistre foto a", tekst: non(c) }))) return;
+    const photo_id = S.uuid();
+    await db.put("photos", { id: photo_id, blob: photo });
+    await S.enqueue("foto", { id: S.uuid(), id_personne: id, photo_id, capture_le: new Date().toISOString() }, c._pending ? [id] : []);
+    toast(t("Foto a anrejistre."), "ok");
+    render();
+  };
+  document.getElementById("foto-kam")?.addEventListener("click", async () => {
+    const r = await ui.kamera();
+    if (r?.erè) { toast(r.erè, "err", 7000); document.getElementById("foto-fich")?.click(); return; }
+    if (r) chanjeFoto(r);
+  });
+  document.getElementById("foto-fich")?.addEventListener("change", (e) => { const f = e.target.files[0]; if (f) chanjeFoto(f); });
   if (ksM.length) montreAlet(M, ksM);
 }
 
@@ -1986,12 +2010,13 @@ async function viewFeries() {
 }
 
 // ---------- Senkronizasyon ----------
-const KIND = { client: "Kliyan", adopte: "Kliyan (ajoute)", maj: "Enfòmasyon kliyan an", cycle: "Cycle", tx: "Tranzaksyon", demande: "Demann", suivi: "Fidbak", modif_demann: "Demann modifikasyon", modif_aplike: "Modifikasyon", alet: "Alèt", alet_fermen: "Alèt (fèmen)" };
+const KIND = { client: "Kliyan", adopte: "Kliyan (ajoute)", foto: "Foto kliyan", maj: "Enfòmasyon kliyan an", cycle: "Cycle", tx: "Tranzaksyon", demande: "Demann", suivi: "Fidbak", modif_demann: "Demann modifikasyon", modif_aplike: "Modifikasyon", alet: "Alèt", alet_fermen: "Alèt (fèmen)" };
 function resume(o, M) {
   const p = o.payload;
   if (o.kind === "client") return `${p.prenom} ${p.nom} · ${p.telephone}`;
   if (o.kind === "adopte") return `${p.prenom} ${p.nom} · ${p.code_client || ""}`;
   if (o.kind === "maj") return non(M.clients.get(p.id));
+  if (o.kind === "foto") return non(M.clients.get(p.id_personne));
   if (o.kind === "suivi") { const k = M.comptes.get(p.compte); return `${t(motifLabel(p.motif))} · ${non(k && M.clients.get(k.id_personne))}`; }
   if (o.kind === "demande") { const k = M.comptes.get(p.compte); return `${p.type === "V" ? t("Viman") : t("Retrè")} ${gd(p.montant)} · ${non(k && M.clients.get(k.id_personne))}`; }
   if (o.kind === "cycle") return `${non(M.clients.get(p.id_personne))} · ${p.duree} mwa · ${p.frequence}×/sem · ${gd(p.montant)}`;
@@ -2397,6 +2422,7 @@ function evènmanModif(x) {
 }
 function valèIstorik(kind, k, v) {
   if (v == null || v === "") return "—";
+  if (k === "photo") return t("Foto");
   if (kind === "tx" && (k === "montant" || k.startsWith("solde"))) return gd(v);
   if (k === "telephone") return F.telFmt(v);
   if (k === "date_naissance" || k === "date_debut") return datFr(v);

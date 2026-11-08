@@ -4,7 +4,7 @@
 const vid = (v) => !String(v ?? "").trim();
 export const PWOBLEM = [
   { k: "tel", l: "Telefòn vid oswa pa bon", oto: true, f: (c) => String(c.telephone || "").replace(/\D/g, "").length < 8 },
-  { k: "foto", l: "Pa gen foto", oto: true, f: (c) => vid(c.photo_url) },
+  { k: "foto", l: "Pa gen foto", oto: true, f: (c) => vid(c.photo_url) && !c.photo_id },
   { k: "gps", l: "Pa gen pozisyon GPS", oto: true, f: (c) => c.gps_lat == null || c.gps_lng == null },
   { k: "biznis", l: "Kote biznis la vid", oto: true, f: (c) => vid(c.lieu_de_travail) },
   { k: "adres", l: "Adrès vid", oto: true, f: (c) => vid(c.adresse) },
