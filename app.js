@@ -30,7 +30,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "4.39";
+const APP_VERSION = "4.40";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin", kesye: "Responsab kès" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
@@ -1663,6 +1663,8 @@ async function viewClient(id) {
       <label class="btn foto-fichye">🖼 ${t("Chwazi yon foto")}<input type="file" accept="image/*" id="foto-fich"></label></div></section>`;
   $app.innerHTML = `<div id="fich">${L().parts.fich(ctx)}${fotoAk}${seksyonAlet(ksM, man)}</div>`;
   brancherAlet(M);
+  const wout = location.hash;
+  (ksM.length ? montreAlet(M, ksM) : Promise.resolve()).then(() => location.hash === wout && proposeGps(c));
   const chanjeFoto = async (blob) => {
     if (!(await leOk())) return montreLeFèmen();
     let photo; try { photo = await compress(blob); } catch { return toast("Foto a pa ka li.", "err"); }
@@ -1680,7 +1682,24 @@ async function viewClient(id) {
     if (r) chanjeFoto(r);
   });
   document.getElementById("foto-fich")?.addEventListener("change", (e) => { const f = e.target.files[0]; if (f) chanjeFoto(f); });
-  if (ksM.length) montreAlet(M, ksM);
+}
+
+// GPS: kliyan ki poko gen pozisyon GPS → mande ajan an si l nan biznis kliyan an pou aktive l (yon fwa chak fwa l antre sou paj la).
+let gpsMande = "";
+addEventListener("hashchange", () => { gpsMande = ""; });
+async function proposeGps(c) {
+  if (!c || c.gps_lat != null || estKesye() || gpsMande === location.hash || document.querySelector(".modal-wrap:not(.out)")) return;
+  gpsMande = location.hash;
+  if (!(await ui.ask({ titre: "Èske ou nan biznis kliyan an?", ikon: "📍", ok: "Wi, mwen la", anile: "Non, pa kounye a",
+    tekst: `${non(c)} ${t("poko gen pozisyon GPS. Si w nan biznis li kounye a, aplikasyon an ap anrejistre pozisyon an.")}` }))) return;
+  if (!(await leOk())) return montreLeFèmen();
+  toast(t("Ap chèche pozisyon an…"), "info", 4000);
+  const g = await getGps(20000, { fre: true });
+  if (!g) return ui.info("GPS pa mache", t("Aplikasyon an pa jwenn pozisyon an. Aktive lokalizasyon telefòn nan epi pèmèt li pou Grandon, apre eseye ankò."));
+  if (g.acc > 150) return ui.info("Pozisyon an pa presi ase", `${t("Presizyon")}: ${g.acc} m. ${t("Rete deyò, toupre biznis la, epi eseye ankò.")}`);
+  await S.enqueue("gps", { id: S.uuid(), id_personne: c.id_personne, lat: g.lat, lng: g.lng, acc: g.acc, capture_le: new Date().toISOString() }, c._pending ? [c.id_personne] : []);
+  toast(`${t("GPS kliyan an aktive")} ✓ (± ${g.acc} m)`, "ok", 5000);
+  render();
 }
 
 // ---------- Chwazi ----------
@@ -1921,7 +1940,8 @@ async function viewTxNew(compteId) {
     <p class="err-msg" id="err" role="alert"></p>
     <button class="btn pri" type="submit" id="go">Anrejistre</button>
   </form>`;
-  montreAlet(M, [k]);
+  const woutTx = location.hash;
+  montreAlet(M, [k]).then(() => location.hash === woutTx && proposeGps(c));
   const f = document.getElementById("f");
   const maj = () => {
     const tp = f.type.value;
@@ -2011,13 +2031,13 @@ async function viewFeries() {
 }
 
 // ---------- Senkronizasyon ----------
-const KIND = { client: "Kliyan", adopte: "Kliyan (ajoute)", foto: "Foto kliyan", maj: "Enfòmasyon kliyan an", cycle: "Cycle", tx: "Tranzaksyon", demande: "Demann", suivi: "Fidbak", modif_demann: "Demann modifikasyon", modif_aplike: "Modifikasyon", alet: "Alèt", alet_fermen: "Alèt (fèmen)" };
+const KIND = { client: "Kliyan", adopte: "Kliyan (ajoute)", foto: "Foto kliyan", gps: "GPS kliyan", maj: "Enfòmasyon kliyan an", cycle: "Cycle", tx: "Tranzaksyon", demande: "Demann", suivi: "Fidbak", modif_demann: "Demann modifikasyon", modif_aplike: "Modifikasyon", alet: "Alèt", alet_fermen: "Alèt (fèmen)" };
 function resume(o, M) {
   const p = o.payload;
   if (o.kind === "client") return `${p.prenom} ${p.nom} · ${p.telephone}`;
   if (o.kind === "adopte") return `${p.prenom} ${p.nom} · ${p.code_client || ""}`;
   if (o.kind === "maj") return non(M.clients.get(p.id));
-  if (o.kind === "foto") return non(M.clients.get(p.id_personne));
+  if (o.kind === "foto" || o.kind === "gps") return non(M.clients.get(p.id_personne));
   if (o.kind === "suivi") { const k = M.comptes.get(p.compte); return `${t(motifLabel(p.motif))} · ${non(k && M.clients.get(k.id_personne))}`; }
   if (o.kind === "demande") { const k = M.comptes.get(p.compte); return `${p.type === "V" ? t("Viman") : t("Retrè")} ${gd(p.montant)} · ${non(k && M.clients.get(k.id_personne))}`; }
   if (o.kind === "cycle") return `${non(M.clients.get(p.id_personne))} · ${p.duree} mwa · ${p.frequence}×/sem · ${gd(p.montant)}`;

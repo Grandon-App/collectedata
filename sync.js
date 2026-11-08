@@ -137,6 +137,14 @@ const EXEC = {
       await db.put("clients", { id_personne: p.id, prenom: p.prenom, nom: p.nom, code_client: p.code_client, photo_url: p.photo_url, tel4: p.tel4 });
   },
 
+  async gps(p) {
+    try {
+      await api.rpc("grandon_gps_aktive", { p_id_personne: p.id_personne, p_lat: p.lat, p_lng: p.lng, p_precision: p.acc ?? null, p_capture_le: p.capture_le });
+    } catch (e) { if (!/GPS_DEJA/.test(e.message || "")) throw e; } // yon lòt ajan te aktive l deja: sa bon
+    const c = await db.get("clients", p.id_personne);
+    if (c && c.gps_lat == null) { c.gps_lat = p.lat; c.gps_lng = p.lng; await db.put("clients", c); }
+  },
+
   async foto(p) {
     const ph = await db.get("photos", p.photo_id);
     if (!ph) return; // foto a pa sou telefòn nan ankò: anyen pou voye
@@ -397,6 +405,8 @@ export async function model() {
       if (p.gps) { c.gps_lat = p.gps.lat; c.gps_lng = p.gps.lng; }
       c._majPending = true; if (pend._error) c._error = pend._error;
     }
+    if (o.kind === "gps" && M.clients.has(p.id_personne) && M.clients.get(p.id_personne).gps_lat == null)
+      Object.assign(M.clients.get(p.id_personne), { gps_lat: p.lat, gps_lng: p.lng, _gpsPending: true });
     if (o.kind === "foto" && M.clients.has(p.id_personne)) Object.assign(M.clients.get(p.id_personne), { photo_id: p.photo_id, _fotoPending: true });
     if (o.kind === "adopte" && !M.clients.has(p.id))
       M.clients.set(p.id, { id_personne: p.id, prenom: p.prenom, nom: p.nom, code_client: p.code_client, photo_url: p.photo_url, tel4: p.tel4, ...pend });
