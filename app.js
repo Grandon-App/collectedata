@@ -30,7 +30,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "4.37";
+const APP_VERSION = "4.38";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin", kesye: "Responsab kès" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
@@ -1916,7 +1916,6 @@ async function viewTxNew(compteId) {
       <label>Balans kanè a avan *<input name="solde_avant" type="number" inputmode="decimal" min="0" step="any" required></label>
       <label>Balans kanè a apre *<input name="solde" type="number" inputmode="decimal" min="0" step="any" required></label>
     </div>
-    <label>Nòt<textarea name="note" rows="2"></textarea></label>
     <p class="err-msg" id="err" role="alert"></p>
     <button class="btn pri" type="submit" id="go">Anrejistre</button>
   </form>`;
@@ -1967,7 +1966,7 @@ async function viewTxNew(compteId) {
         ["Balans kanè a avan", gd(av)], ["Balans kanè a apre", gd(ap)]] }))) return;
     const b = f.querySelector("button[type=submit]"); b.disabled = true;
     const base = { id: S.uuid(), compte: k.id_compte_epargne, montant: m, solde_avant_declare: av, solde_declare: ap,
-      note: f.note.value.trim() || null, gps: await getGps(5000), capture_le: new Date().toISOString() };
+      note: null, gps: await getGps(5000), capture_le: new Date().toISOString() };
     const deps = k._pending ? [k.id_compte_epargne] : [];
     if (typ === "R" || typ === "V") {
       await S.enqueue("demande", { ...base, type: typ, compte_dest: kd?.id_compte_epargne || null }, deps);
