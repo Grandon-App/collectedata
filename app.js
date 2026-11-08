@@ -30,7 +30,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "4.40";
+const APP_VERSION = "4.41";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin", kesye: "Responsab kès" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
@@ -1661,8 +1661,9 @@ async function viewClient(id) {
     ${c._fotoPending ? `<p class="mut sm"><span class="badge pend">${t("Poko voye")}</span> ${t("Nouvo foto a ap monte lè gen entènèt.")}</p>` : ""}
     <div class="btns"><button type="button" class="btn ${c.photo_url || c.photo_id ? "" : "pri"}" id="foto-kam">📷 ${t(c.photo_url || c.photo_id ? "Chanje foto a (kamera)" : "Ajoute foto (kamera)")}</button>
       <label class="btn foto-fichye">🖼 ${t("Chwazi yon foto")}<input type="file" accept="image/*" id="foto-fich"></label></div></section>`;
-  $app.innerHTML = `<div id="fich">${L().parts.fich(ctx)}${fotoAk}${seksyonAlet(ksM, man)}</div>`;
+  $app.innerHTML = `<div id="fich">${L().parts.fich(ctx)}${gpsBouton(c)}${fotoAk}${seksyonAlet(ksM, man)}</div>`;
   brancherAlet(M);
+  brancheGpsBouton(c);
   const wout = location.hash;
   (ksM.length ? montreAlet(M, ksM) : Promise.resolve()).then(() => location.hash === wout && proposeGps(c));
   const chanjeFoto = async (blob) => {
@@ -1687,11 +1688,14 @@ async function viewClient(id) {
 // GPS: kliyan ki poko gen pozisyon GPS → mande ajan an si l nan biznis kliyan an pou aktive l (yon fwa chak fwa l antre sou paj la).
 let gpsMande = "";
 addEventListener("hashchange", () => { gpsMande = ""; });
-async function proposeGps(c) {
-  if (!c || c.gps_lat != null || estKesye() || gpsMande === location.hash || document.querySelector(".modal-wrap:not(.out)")) return;
-  gpsMande = location.hash;
-  if (!(await ui.ask({ titre: "Èske ou nan biznis kliyan an?", ikon: "📍", ok: "Wi, mwen la", anile: "Non, pa kounye a",
-    tekst: `${non(c)} ${t("poko gen pozisyon GPS. Si w nan biznis li kounye a, aplikasyon an ap anrejistre pozisyon an.")}` }))) return;
+async function proposeGps(c, { bouton = false } = {}) {
+  if (!c || c.gps_lat != null || estKesye()) return;
+  if (!bouton) {
+    if (gpsMande === location.hash || document.querySelector(".modal-wrap:not(.out)")) return;
+    gpsMande = location.hash;
+    if (!(await ui.ask({ titre: "Èske ou nan biznis kliyan an?", ikon: "📍", ok: "Wi, mwen la", anile: "Non, pa kounye a",
+      tekst: `${non(c)} ${t("poko gen pozisyon GPS. Si w nan biznis li kounye a, aplikasyon an ap anrejistre pozisyon an.")}` }))) return;
+  }
   if (!(await leOk())) return montreLeFèmen();
   toast(t("Ap chèche pozisyon an…"), "info", 4000);
   const g = await getGps(20000, { fre: true });
@@ -1701,6 +1705,12 @@ async function proposeGps(c) {
   toast(`${t("GPS kliyan an aktive")} ✓ (± ${g.acc} m)`, "ok", 5000);
   render();
 }
+
+// Bouton ki toujou la (fich, cycle, tranzaksyon) tank kliyan an pa gen GPS: ajan an ka aktive l nenpòt lè, menm apre l te di «Non».
+const gpsBouton = (c) => (!c || c.gps_lat != null || estKesye() ? "" : `<div class="gps-ak card"><div class="grow"><b>📍 ${t("Kliyan sa a poko gen GPS")}</b>
+  <div class="mut sm">${t("Lè w nan biznis kliyan an, peze bouton an pou anrejistre pozisyon an.")}</div></div>
+  <button type="button" class="btn sm pri" data-gps-aktive>${t("Mwen nan biznis la: aktive GPS")}</button></div>`);
+const brancheGpsBouton = (c) => $app.querySelectorAll("[data-gps-aktive]").forEach((b) => (b.onclick = () => proposeGps(c, { bouton: true })));
 
 // ---------- Chwazi ----------
 async function viewPick(kind) {
@@ -1891,6 +1901,7 @@ async function viewCycle(id) {
   };
   $app.innerHTML = `<div id="cycle">${L().parts.cycleTop(ctx)}
   ${man && !k._pending ? `<a class="btn block cycle-mod" href="#/cycle/${h(k.id_compte_epargne)}/modifye">${ICO.modifye || ""}<span>${t("Modifye cycle a")}</span></a>` : ""}
+  ${gpsBouton(c)}
   ${man && !k._pending ? `<div class="card potfey-k"><div class="grow"><span class="mut sm">${t("Ajan pòtfèy")}</span><b data-brut>${h(nomAjan(k.created_by) || t("San ajan"))}</b></div>
     <button type="button" class="btn sm" id="chanje-ajan">${t("Chanje ajan")}</button></div>` : ""}
   ${man && !k.frequence_semaine && !k._pending ? `<p class="note warn">${t("Cycle sa a pa gen frekans ni jou peman: kalandriye peman an vid. Peze «Modifye cycle a» pou mete yo.")}</p>` : ""}
@@ -1904,6 +1915,7 @@ async function viewCycle(id) {
   <div class="list">${k._txs.map((x) => liTx(M, x, { kliyan: false, bouton: true })).join("") || `<p class="empty">Poko gen tranzaksyon.</p>`}</div></div>`;
   document.getElementById("papeye")?.addEventListener("click", () => paPeye(k, c));
   document.getElementById("chanje-ajan")?.addEventListener("click", () => chanjeAjanPòtfèy(k, c));
+  brancheGpsBouton(c);
   $app.querySelectorAll("[data-tx]").forEach((b) => (b.onclick = () => aksyonTx(M, b.dataset.tx)));
   brancherAlet(M);
   montreAlet(M, [k]);
@@ -1925,6 +1937,7 @@ async function viewTxNew(compteId) {
   <a href="#/cycle/${k.id_compte_epargne}" class="back">‹ ${d(k.no_compte || t("Cycle"))}</a>
   <h1>Tranzaksyon</h1>
   <p class="mut">${d(non(c))} · ${d(k.no_compte || t("cycle poko voye"))} · plan ${gd(plan)}</p>
+  ${gpsBouton(c)}
   <form id="f" class="card form" novalidate>
     <fieldset class="field"><legend class="sr">Tip</legend><div class="seg s4">
       ${TIP_TX.map(([v, l], i) => `<label><input type="radio" name="type" value="${v}" ${i === 0 ? "checked" : ""}><span>${l}</span></label>`).join("")}</div></fieldset>
@@ -1940,6 +1953,7 @@ async function viewTxNew(compteId) {
     <p class="err-msg" id="err" role="alert"></p>
     <button class="btn pri" type="submit" id="go">Anrejistre</button>
   </form>`;
+  brancheGpsBouton(c);
   const woutTx = location.hash;
   montreAlet(M, [k]).then(() => location.hash === woutTx && proposeGps(c));
   const f = document.getElementById("f");

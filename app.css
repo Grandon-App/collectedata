@@ -653,3 +653,5 @@ html[data-look] .login h1.wordmark::after { content: ""; position: absolute; lef
 .foto-ak .btns { display: flex; flex-wrap: wrap; gap: 8px; }
 .foto-ak .btns .btn { flex: 1 1 180px; }
 .foto-ak.foto-manke { border: 1px dashed var(--warn, #c9a227); }
+.gps-ak { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 12px 14px; margin: 10px 0; border: 1px dashed var(--warn, #c9a227); }
+.gps-ak .grow { flex: 1 1 220px; min-width: 0; }
