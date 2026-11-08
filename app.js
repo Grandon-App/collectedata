@@ -30,7 +30,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "4.42";
+const APP_VERSION = "4.43";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin", kesye: "Responsab kès" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
@@ -343,16 +343,31 @@ const LE_DEFO = { aktif: true, de: "09:00", a: "20:00", roles: ["agent", "manage
 const leParamet = async () => ({ ...LE_DEFO, ...(((await db.meta("paramet")) || {}).le_operasyon || {}) });
 const leKounye = () => new Intl.DateTimeFormat("en-GB", { timeZone: "America/Port-au-Prince", hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date());
 const amPm = (hhmm) => { const [H, M] = String(hhmm).split(":").map(Number); return `${((H + 11) % 12) + 1}:${String(M).padStart(2, "0")} ${H < 12 ? "AM" : "PM"}`; };
+// Jou fèmen: dimanch, oswa yon jou ki nan lis «Jou ferye» konpayi an. Retounen null oswa { dimanch } / { ferye: libelle }.
+async function jouFèmen() {
+  const j = S.jodi();
+  if (S.isoJou(j) === 7) return { dimanch: true };
+  const f = ((await db.all("feries")) || []).find((x) => x.jour === j);
+  return f ? { ferye: f.libelle || "" } : null;
+}
 async function leOk() {
   const p = await leParamet();
   if (!p.aktif || !moi || !(p.roles || []).includes(moi.role)) return true;
+  if (await jouFèmen()) return false;
   const l = leKounye();
   return l >= p.de && l < p.a;
 }
-async function tèksLe() { const p = await leParamet(); return `${t("Ou ka fè operasyon sou pòtay la sèlman ant")} ${amPm(p.de)} ${t("ak")} ${amPm(p.a)}.`; }
+async function tèksLe() {
+  const p = await leParamet(), f = await jouFèmen();
+  const lè = `${t("Ou ka fè operasyon sou pòtay la sèlman ant")} ${amPm(p.de)} ${t("ak")} ${amPm(p.a)}, ${t("lendi a samdi, eksepte jou ferye yo")}.`;
+  if (f?.dimanch) return `${t("Pòtay la fèmen dimanch.")} ${lè}`;
+  if (f) return `${t("Pòtay la fèmen jodi a: jou ferye")}${f.ferye ? ` (${d(f.ferye)})` : ""}. ${lè}`;
+  return lè;
+}
 async function montreLeFèmen() { return ui.info("Pòtay la fèmen kounye a", `${await tèksLe()} ${t("Li")} ${amPm(leKounye())} ${t("kounye a")}.`); }
 async function viewLeFèmen() {
-  $app.innerHTML = `<div class="le-femen card"><div class="le-ico" aria-hidden="true">🕘</div><h1>${t("Pòtay la fèmen kounye a")}</h1>
+  const f = await jouFèmen();
+  $app.innerHTML = `<div class="le-femen card"><div class="le-ico" aria-hidden="true">${f ? "📅" : "🕘"}</div><h1>${t(f?.dimanch ? "Pòtay la fèmen dimanch" : f ? "Pòtay la fèmen jodi a (jou ferye)" : "Pòtay la fèmen kounye a")}</h1>
     <p>${await tèksLe()}</p><p class="mut">${t("Li")} <b>${amPm(leKounye())}</b> ${t("kounye a (lè Ayiti).")}</p>
     <a class="btn" href="#/">${t("Retounen sou Tablo a")}</a></div>`;
 }
@@ -360,6 +375,7 @@ async function viewLe() {
   const p = await leParamet();
   $app.innerHTML = `<a href="#/param" class="back">‹ Paramèt</a><h1>${t("Lè operasyon")}</h1>
     <p class="mut">${t("Andeyò lè sa yo, ajan an pa ka fè depo, retrè, viman, fidbak, nouvo kliyan ni nouvo cycle. Sèvè a verifye l tou.")}</p>
+    <p class="note info-note">${t("Pòtay la fèmen tou dimanch ak nan jou ferye ki nan lis la")} (<a href="#/feries">${t("Jou ferye")}</a>). ${t("Kliyan ki peye dimanch yo peye pou dimanch lan samdi (davans) oswa lendi.")}</p>
     <form id="f" class="card form" novalidate>
       <label class="chk"><input type="checkbox" name="aktif" ${p.aktif ? "checked" : ""}> ${t("Limite lè operasyon yo")}</label>
       <div class="grid2"><label>${t("Kòmanse a")}<input type="time" name="de" value="${h(p.de)}" required></label>
@@ -1972,7 +1988,7 @@ async function viewTxNew(compteId) {
     document.getElementById("l-fre").hidden = tp !== "FL";
     document.getElementById("l-dest").hidden = tp !== "V";
     document.getElementById("go").textContent = t(tp === "R" || tp === "V" ? "Voye demann lan" : "Anrejistre");
-    document.getElementById("hint").textContent = tp === "D" ? `${t("Minimòm plan an")}: ${gd(plan)}${k._jodi ? ` · ${t("deja peye jodi a")}: ${gd(k._jodi)}` : ""}`
+    document.getElementById("hint").textContent = tp === "D" ? `${t("Minimòm plan an")}: ${gd(plan)}${k._jodi ? ` · ${t("deja peye jodi a")}: ${gd(k._jodi)}` : ""}${S.isoJou(S.jodi()) === 6 && k.jours_paiement?.includes(7) ? ` · ${t("Pòtay la fèmen dimanch: kliyan an ka peye pou dimanch lan jodi a")} (${gd(plan * 2)} ${t("an tout")})` : ""}`
       : tp === "FL" ? t("Frè a soti sou kont kliyan an. Li pa afekte kach ou.") : tp === "V" ? t("Kòb la ap soti sou kont sa a pou l antre sou lòt kont lan.") : "";
   };
   f.querySelectorAll('input[name="type"]').forEach((r) => (r.onchange = () => { f.montant.value = r.value === "D" ? plan || "" : ""; maj(); }));
