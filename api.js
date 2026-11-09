@@ -54,7 +54,7 @@ export function telefon8(t) {
 }
 
 async function raw(path, { method = "GET", body, headers = {}, auth = true, blob } = {}) {
-  const h = { apikey: C.SUPABASE_KEY, "x-client-info": `grandon aparey=${apareyId()}`, ...headers };
+  const h = { apikey: C.SUPABASE_KEY, "x-client-info": `pwa aparey=${apareyId()} sevis=${C.SEVIS || "grandon"}`, ...headers };
   if (auth) {
     await ensureFresh();
     h.Authorization = `Bearer ${session.access_token}`;

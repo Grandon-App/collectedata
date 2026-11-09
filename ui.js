@@ -76,6 +76,24 @@ export async function kamera({ titre = "Pran foto kliyan an" } = {}) {
   return await new Promise((r) => c.toBlob(r, "image/jpeg", 0.85));
 }
 
+// Chwazi plizyè opsyon (kaz). opsyon: [[valè, etikèt]]. Retounen [valè…] oswa null.
+export function askChek({ titre, tekst = "", opsyon, chwa = [], ok = "Anrejistre", min = 1 }) {
+  let form;
+  const opts = { onOpen: (w) => {
+    form = w.querySelector("form");
+    const okb = w.querySelector("[data-v=ok]");
+    const chk = () => (okb.disabled = form.querySelectorAll("input:checked").length < min);
+    form.onchange = chk; chk();
+  } };
+  opts.onOpen.valeur = () => [...form.querySelectorAll("input:checked")].map((x) => x.value);
+  return ouvrir(`
+    <div class="modal-h"><span class="modal-ico" aria-hidden="true">✎</span><h2 id="modal-t">${h(t(titre))}</h2></div>
+    ${tekst ? `<p class="modal-p" data-brut>${h(tekst)}</p>` : ""}
+    <form class="modal-choix"><fieldset><legend class="sr">${h(t(titre))}</legend>
+      ${opsyon.map(([v, l]) => `<label class="chk"><input type="checkbox" value="${h(v)}" ${chwa.includes(v) ? "checked" : ""}><span data-brut>${h(l)}</span></label>`).join("")}</fieldset></form>
+    <div class="modal-b"><button class="btn" data-v="no">${h(t("Anile"))}</button><button class="btn pri" data-v="ok">${h(t(ok))}</button></div>`, opts);
+}
+
 // Konfimasyon. Retounen true/false.
 // detay: lis [etikèt, valè] pou montre yon rezime klè.
 export async function ask({ titre, tekst = "", detay = [], ok = "Konfime", anile = "Anile", danje = false, foto = null, ikon = "?" }) {

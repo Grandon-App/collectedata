@@ -17,7 +17,7 @@ export const uuid = () =>
 
 export const appareil = () => {
   const m = navigator.userAgent.match(/\(([^)]+)\)/);
-  return `PWA Grandon · ${m ? m[1].slice(0, 60) : "navigatè"}`;
+  return `PWA ${C.NON || "Grandon"} · ${m ? m[1].slice(0, 60) : "navigatè"}`;
 };
 
 // ---------- Dat (lè Ayiti) ----------

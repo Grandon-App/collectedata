@@ -30,7 +30,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "4.43";
+const APP_VERSION = "4.44";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin", kesye: "Responsab kès" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
@@ -2543,17 +2543,24 @@ async function viewAjan() {
         <label>Wòl<select name="wol"><option value="agent">Ajan</option><option value="manager">Manadjè</option><option value="kesye">Responsab kès</option><option value="admin">Admin</option></select></label>
         <label>Modpas * <small class="mut">(8+)</small><input name="modpas" type="text" required autocomplete="new-password" minlength="8"></label>
       </div>
+      <fieldset class="field" id="sv-f"><legend>${t("Sèvis")}</legend><div id="sv-chek" class="sv-chek"></div>
+        <small class="mut">${t("Ajan an wè sèlman sèvis li a. Admin ak responsab kès yo wè tout sèvis yo.")}</small></fieldset>
       <p class="err-msg" id="err" role="alert"></p>
       <button class="btn pri" type="submit" ${navigator.onLine ? "" : "disabled"}>Kreye kont lan</button>
     </form>`;
   const lis = document.getElementById("lis");
+  let sevis = [];
+  try { sevis = (await api.select("grandon_sevis?select=kod,non&aktif=is.true&order=kod")) || []; } catch { /* offline */ }
+  const nonSv = (k) => sevis.find((x) => x.kod === k)?.non || k;
+  document.getElementById("sv-chek").innerHTML = sevis.map((x) => `<label class="chk"><input type="checkbox" name="sevis" value="${h(x.kod)}" ${x.kod === (C.SEVIS || "grandon") ? "checked" : ""}><span data-brut>${h(x.non)}</span></label>`).join("");
   const charge = async () => {
     try {
       const { ajan } = await api.kont({ aksyon: "lis" });
       lis.innerHTML = ajan.map((a) => `<div class="row col">
         <div><b>${h(a.nom)}</b> <span class="badge ${a.actif ? "ok" : "mut"}">${a.actif ? WOL[a.role] : "Dezaktive"}</span>
+          ${["admin", "kesye"].includes(a.role) ? `<span class="badge mut">${t("Tout sèvis")}</span>` : (a.sevis || ["grandon"]).map((k) => `<span class="badge info" data-brut>${h(nonSv(k))}</span>`).join(" ")}
           <div class="mut sm">${h(a.telephone.replace(/^509(\d{4})(\d{4})$/, "$1 $2"))}</div></div>
-        ${a.user_id === moi.id ? `<div class="mut sm">${t("Se ou (ou pa ka chanje pwòp wòl ou)")}</div>` : `<div class="btns"><button class="btn sm" data-wol="${h(a.telephone)}" data-wol-a="${h(a.role)}" data-non="${h(a.nom)}">${t("Chanje wòl")}</button><button class="btn sm" data-mp="${h(a.telephone)}">Nouvo modpas</button>
+        ${a.user_id === moi.id ? `<div class="mut sm">${t("Se ou (ou pa ka chanje pwòp wòl ou)")}</div>` : `<div class="btns"><button class="btn sm" data-wol="${h(a.telephone)}" data-wol-a="${h(a.role)}" data-non="${h(a.nom)}">${t("Chanje wòl")}</button>${["admin", "kesye"].includes(a.role) || sevis.length < 2 ? "" : `<button class="btn sm" data-sv="${h(a.telephone)}" data-sv-a="${h((a.sevis || ["grandon"]).join(","))}" data-non="${h(a.nom)}">${t("Sèvis")}</button>`}<button class="btn sm" data-mp="${h(a.telephone)}">Nouvo modpas</button>
           <button class="btn sm ${a.actif ? "danger" : ""}" data-ak="${a.actif ? "desactiver" : "reactiver"}" data-tel="${h(a.telephone)}">${a.actif ? "Dezaktive" : "Reaktive"}</button></div>`}
       </div>`).join("") || `<p class="empty">Pa gen ajan.</p>`;
       lis.querySelectorAll("[data-wol]").forEach((b) => (b.onclick = async () => {
@@ -2565,6 +2572,13 @@ async function viewAjan() {
         const avètisman = avan === "agent" ? t("Kont kliyan li yo ap rete atache avè l, men yo p ap parèt sou non l nan Ekip la toutotan li pa ajan.") : "";
         if (!(await ui.ask({ titre: `${b.dataset.non}: ${t(WOL[avan])} → ${t(WOL[nouvo])}?`, tekst: `${t("Nouvo wòl la ap aplike sou aplikasyon li nan pwochen senkronizasyon an.")} ${avètisman}`, ok: "Chanje wòl" }))) return;
         try { await api.kont({ aksyon: "wol", telefon: b.dataset.wol, wol: nouvo }); toast(`${b.dataset.non}: ${t(WOL[nouvo])} ✓`, "ok"); charge(); }
+        catch (e) { toast(t(e.message), "err"); }
+      }));
+      lis.querySelectorAll("[data-sv]").forEach((b) => (b.onclick = async () => {
+        const r = await ui.askChek({ titre: `${t("Sèvis")} · ${b.dataset.non}`, tekst: t("Moun nan wè sèlman sèvis ki tcheke yo."),
+          opsyon: sevis.map((x) => [x.kod, x.non]), chwa: b.dataset.svA.split(",") });
+        if (!r) return;
+        try { await api.kont({ aksyon: "sevis", telefon: b.dataset.sv, sevis: r }); toast(`${b.dataset.non}: ${r.map(nonSv).join(", ")} ✓`, "ok"); charge(); }
         catch (e) { toast(t(e.message), "err"); }
       }));
       lis.querySelectorAll("[data-mp]").forEach((b) => (b.onclick = async () => {
@@ -2589,9 +2603,11 @@ async function viewAjan() {
     if (v.non.trim().length < 2) return (err.textContent = "Mete non moun nan.");
     if (!api.telefon8(v.tel)) return (err.textContent = "Telefòn nan dwe gen 8 chif.");
     if (v.modpas.length < 8) return (err.textContent = "Modpas la dwe gen omwen 8 karaktè.");
+    const svChwa = [...f.querySelectorAll("input[name=sevis]:checked")].map((x) => x.value);
+    if (sevis.length && !svChwa.length && !["admin", "kesye"].includes(v.wol)) return (err.textContent = t("Chwazi omwen yon sèvis."));
     const b = f.querySelector("button[type=submit]"); b.disabled = true;
     try {
-      await api.kont({ aksyon: "creer", non: v.non.trim(), telefon: api.telefon8(v.tel), wol: v.wol, modpas: v.modpas });
+      await api.kont({ aksyon: "creer", non: v.non.trim(), telefon: api.telefon8(v.tel), wol: v.wol, modpas: v.modpas, sevis: svChwa.length ? svChwa : [C.SEVIS || "grandon"] });
       toast(`Kont ${v.non.trim()} kreye. Li konekte ak ${api.telefon8(v.tel)} + modpas la.`, "ok", 6000);
       f.reset(); err.textContent = ""; charge();
     } catch (e2) { err.textContent = e2.message; }

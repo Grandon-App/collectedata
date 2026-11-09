@@ -1,6 +1,8 @@
 // Konfigirasyon PRODIKSYON. Kle "publishable" la fèt pou l parèt nan aplikasyon an;
 // se règ RLS yo nan baz la ki pwoteje done yo. Kopi tès la (tes/) gen pwòp config.js pa l.
 window.GRANDON_CONFIG = {
+  SEVIS: "grandon",  // sèvis sit la (grandon_sevis.kod): sèvè a montre sèlman done sèvis sa a
+  NON: "Grandon", // non mak la nan aplikasyon an
   ANVIWONMAN: "", // "" = prodiksyon
   SUPABASE_URL: "https://fdsuyqbscrnityotpmbc.supabase.co",
   SUPABASE_KEY: "sb_publishable_a6JkadFn9ctIdCw7kBTPPw_7guHvavF",

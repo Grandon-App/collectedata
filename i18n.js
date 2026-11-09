@@ -284,16 +284,21 @@ export function setLang(l) {
 }
 document.documentElement.lang = lang;
 
+// Non mak sit la (config NON). Tèks aplikasyon an ekri ak «Grandon»: sou yon lòt sit, non an ranplase.
+const MAK = (typeof window !== "undefined" && window.GRANDON_CONFIG?.NON) || "Grandon";
+const markOk = MAK === "Grandon";
+const mak = (str) => (markOk ? str : str.replace(/Grandon/g, MAK));
 export function t(s) {
-  if (lang !== "fr" || s == null) return s;
+  if (s == null || (lang !== "fr" && markOk)) return s;
   const str = String(s);
-  if (FR[str.trim()] !== undefined) return str.replace(str.trim(), FR[str.trim()]);
-  return str.replace(RE, (m) => FR[m] ?? m);
+  if (lang !== "fr") return mak(str);
+  if (FR[str.trim()] !== undefined) return mak(str.replace(str.trim(), FR[str.trim()]));
+  return mak(str.replace(RE, (m) => FR[m] ?? m));
 }
 
 const ATTRS = ["placeholder", "aria-label", "title", "alt"];
 function traduireNoeud(root) {
-  if (lang !== "fr" || !root) return;
+  if ((lang !== "fr" && markOk) || !root) return;
   const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
     acceptNode: (n) => (n.parentElement?.closest("script,style,[data-brut]") ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT),
   });
@@ -307,7 +312,7 @@ function traduireNoeud(root) {
 // Tradui tout sa ki parèt nan paj la, menm sa ki ajoute apre (rezilta rechèch, toast…).
 export function demarrerTraduction() {
   const obs = new MutationObserver((muts) => {
-    if (lang !== "fr") return;
+    if (lang !== "fr" && markOk) return;
     obs.disconnect();
     for (const m of muts) {
       if (m.type === "characterData") { const v = t(m.target.nodeValue); if (v !== m.target.nodeValue) m.target.nodeValue = v; }
