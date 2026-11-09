@@ -52,6 +52,7 @@ export const badgeKont = (k) => !k._actif ? `<span class="badge mut">Fini</span>
   : k._jodiPeman ? (k._jodi >= Number(k.montant_plan || 0) ? `<span class="badge ok">Peye jodi a</span>` : `<span class="badge info">Peman jodi a</span>`) : `<span class="badge ok">Aktif</span>`;
 export const badgeDm = (dm) => dm._error ? `<span class="badge err">Erè sync</span>` : dm._pending ? `<span class="badge pend">Poko voye</span>`
   : dm.statut === "approuvee" ? `<span class="badge ok">Apwouve</span>` : dm.statut === "refusee" ? `<span class="badge err">Refize</span>`
+  : dm.statut === "otorizasyon" ? `<span class="badge warn">VIP · an atant manadjè</span>`
   : `<span class="badge warn">An atant otorizasyon</span>`;
 
 // Tranzaksyon

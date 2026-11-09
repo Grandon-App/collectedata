@@ -33,6 +33,14 @@ export const ajouteMwa = (iso, n) => {
   t.setUTCDate(Math.min(d, fen)); // menm jan ak Postgres: 31 jan + 1 mwa = 28/29 fev
   return t.toISOString().slice(0, 10);
 };
+// Kanè ak yon kantite vèsman fiks (sèvis Epargne: 120): jou apre n-yèm jou peman an (jou ferye pa konte).
+export function finVesman(debut, jours, n, feries = new Set()) {
+  if (!debut || !jours?.length || !n) return null;
+  let d = debut, k = 0;
+  for (let i = 0; i < 4000; i++, d = ajouteJou(d, 1)) if (jours.includes(isoJou(d)) && !feries.has(d) && ++k >= n) return ajouteJou(d, 1);
+  return d;
+}
+
 // Konbyen jou peman ant de dat (enklizif), dapre jou ki chwazi yo.
 // Jou ferye yo pa konte. Dimanch konte sèlman pou kliyan ki chwazi l (frekans 7×, oswa dimanch nan jou peman l yo).
 export function joursPeman(debut, fin, jours, feries = new Set()) {
@@ -219,11 +227,13 @@ const EXEC = {
       p_id: p.id, p_id_personne: p.id_personne, p_duree: p.duree, p_frequence: p.frequence, p_jours: p.jours,
       p_montant: p.montant, p_date_debut: p.date_debut, ...gpsArgs(p.gps), p_capture_le: p.capture_le, p_appareil: p.appareil,
       p_no_compte: p.no_compte || null,
+      ...(p.tip_plan || p.plan_lib ? { p_tip_plan: p.tip_plan || "regilye", p_plan_lib: !!p.plan_lib } : {}),
     });
     await db.put("comptes", {
       id_compte_epargne: p.id, no_compte: r.no_compte, id_personne: p.id_personne, solde_actuel: 0, montant_plan: p.montant,
       duree_mois: p.duree, frequence_semaine: p.frequence, jours_paiement: p.jours, date_debut: p.date_debut,
-      date_fin: ajouteMwa(p.date_debut, p.duree), depo_an_atant: 0,
+      date_fin: r.date_fin || p.date_fin || ajouteMwa(p.date_debut, p.duree), depo_an_atant: 0,
+      tip_plan: p.tip_plan || "regilye", plan_lib: !!p.plan_lib, nb_vesman: p.nb_vesman || null,
       created_by: api.getSession()?.user?.id, created_at: p.capture_le,
     });
   },
@@ -358,6 +368,8 @@ export async function pull() {
   ]);
   try { // non ajan yo (manadjè yo wè tout moun; yon ajan wè sèlman pa l)
     const pa = await api.select("grandon_paramet?select=kle,vale").catch(() => null); // lè operasyon, elatriye
+    const sv = await api.select(`grandon_sevis?kod=eq.${C.SEVIS || "grandon"}&select=kod,non,vesman,plan_lib_min,gen_vip`).catch(() => null);
+    if (sv) await db.meta("sevis_cfg", sv[0] || null);
     if (pa) await db.meta("paramet", Object.fromEntries(pa.map((x) => [x.kle, x.vale])));
     const aj = await api.select("grandon_ajan?select=user_id,nom,role,actif");
     await db.meta("ajans", Object.fromEntries(aj.map((x) => [x.user_id, x.nom])));
@@ -414,10 +426,11 @@ export async function model() {
       M.comptes.set(p.id, {
         id_compte_epargne: p.id, no_compte: p.no_compte || null, id_personne: p.id_personne, solde_actuel: 0, montant_plan: p.montant,
         duree_mois: p.duree, frequence_semaine: p.frequence, jours_paiement: p.jours, date_debut: p.date_debut,
-        date_fin: ajouteMwa(p.date_debut, p.duree), depo_an_atant: 0, created_at: p.capture_le, created_by: "moi", ...pend });
+        date_fin: p.date_fin || ajouteMwa(p.date_debut, p.duree), depo_an_atant: 0, created_at: p.capture_le, created_by: "moi",
+        tip_plan: p.tip_plan || "regilye", plan_lib: !!p.plan_lib, nb_vesman: p.nb_vesman || null, ...pend });
     if (o.kind === "demande")
       M.demandes.set(p.id, { id: p.id, type: p.type, id_compte_epargne: p.compte, id_compte_dest: p.compte_dest || null, montant: p.montant,
-        note: p.note, agent_id: "moi", capture_le: p.capture_le, statut: "en_attente", ...pend });
+        note: p.note, agent_id: "moi", capture_le: p.capture_le, statut: M.comptes.get(p.compte)?.tip_plan === "vip" ? "otorizasyon" : "en_attente", ...pend });
     if (o.kind === "modif_demann")
       M.modif.set(p.id, { id: p.id, kind: p.kind, operasyon: p.operasyon, ref_id: p.ref, chan: p.chan || null, rezon: p.rezon, agent_id: "moi",
         kreye_le: p.kreye_le, statut: "an_atant", ...pend });
