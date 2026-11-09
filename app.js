@@ -30,7 +30,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "4.50";
+const APP_VERSION = "4.51";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin", kesye: "Responsab kès" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
@@ -1773,8 +1773,8 @@ function freNot(k, fs) {
   if (fs.deja) return `<p class="note ok-note fre-not">✓ ${t("Frais sèvis la pran")} (${t(fs.regim === "nouveau" ? "Nouveau Frais" : "Frais Auto")}).</p>`;
   const btn = `<button type="button" class="btn sm pri" data-fre="${h(k.id_compte_epargne)}">${t("Pran frais sèvis la")} · ${gd(fs.montan)}</button>`;
   if (fs.regim === "auto") return `<div class="note info-note fre-not"><p><b>${t("Frais Auto")}</b> · ${t("Frais sèvis")} ${gd(fs.montan)}: ${t("pran l lè kliyan an fè yon retrè oswa lè kanè a kraze.")}</p>${btn}</div>`;
-  if (fs.elijib) return `<div class="note warn fre-not"><p><b>${t("Nouveau Frais")}</b> · ${t("Kont lan elijib: pran prelevman frais sèvis la")} (${gd(fs.montan)}).</p>${btn}</div>`;
-  return `<p class="note info-note fre-not"><b>${t("Nouveau Frais")}</b> · ${t("Frais sèvis")} ${gd(fs.montan)} · ${t("elijib lè")}: ${fs.kondisyon}.</p>`;
+  if (fs.elijib) return `<div class="note warn fre-not"><p><b>${t("Nouveau Frais")}</b> · ${t("Kont lan elijib: asire w prelevman frais sèvis la fèt")} (${gd(fs.montan)}).</p>${btn}</div>`;
+  return `<div class="note info-note fre-not"><p><b>${t("Nouveau Frais")}</b> · ${t("Frais sèvis")} ${gd(fs.montan)}. ${t("Ou ka pran l depi kounye a; li vin obligatwa pou swivi lè kont lan elijib")} (${fs.kondisyon}).</p>${btn}</div>`;
 }
 const brancheFre = (M, cfg) => $app.querySelectorAll("[data-fre]").forEach((b) => (b.onclick = () => {
   const k = M.comptes.get(b.dataset.fre); const fs = freSevis(k, cfg); if (!fs) return;
@@ -2084,7 +2084,6 @@ async function viewTxNew(compteId) {
       if (!fsTx) return (err.textContent = t("Frais sèvis pa aplike pou kont sa a."));
       if (fsTx.deja) return (err.textContent = t("Frais sèvis la deja pran sou kont sa a."));
       if (m !== fsTx.montan) return (err.textContent = `${t("Frais sèvis la se")} ${gd(fsTx.montan)}.`);
-      if (fsTx.regim === "nouveau" && !fsTx.elijib) return (err.textContent = `${t("Kont lan poko elijib pou prelevman frais sèvis la")} (${fsTx.kondisyon}).`);
     }
     if (typ === "V" && !f.dest.value) return (err.textContent = t("Chwazi kont ki resevwa viman an."));
     // Balans kanè yo obligatwa: tranzaksyon an pa ka konfime san yo.
