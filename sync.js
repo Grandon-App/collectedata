@@ -390,7 +390,21 @@ export async function pull() {
 // ---------- Modèl lokal: done sèvè + sa ki nan file a ----------
 export const jouTx = (t) => (t._pending || t._local_date ? jouLokal(new Date(t.date_transaction)) : String(t.date_transaction).slice(0, 10));
 
+// Frais sèvis (sèvis Epargne): eta pou chak kont (alèt «Frais sèvis» lè kont lan elijib epi frais la poko pran).
+function freEta(k, cfg, today) {
+  if (!cfg?.fre_sevis || k._pending) return null;
+  const kreye = jouLokal(new Date(k.date_kreye || k.created_at || `${k.date_debut}T12:00:00Z`));
+  const plan = Number(k.montant_plan || 0);
+  const depo = k._txs.filter((x) => txKind(x) === "depo" && x.validation_status === "confirmed" && !x._pending);
+  const som = depo.reduce((a, x) => a + Number(x.montant || 0), 0);
+  const deja = k._txs.some((x) => x.type_transaction === "FL" && x.type_frais === "Frais service" && x.validation_status !== "rejected");
+  const elijib = k.plan_lib ? som >= Number(cfg.fre_lib_elijib) : depo.length >= 3 || som >= 3 * plan;
+  return { regim: kreye >= cfg.fre_dat ? "nouveau" : "auto", montan: k.plan_lib ? Number(cfg.fre_lib) : plan, n: depo.length, som, deja, elijib,
+    pou: kreye >= cfg.fre_dat && elijib && !deja && k._actif !== false && today >= k.date_debut };
+}
+
 export async function model() {
+  const cfgSv = await db.meta("sevis_cfg");
   const [clients, comptes, txs, outbox, plans, feries, suivis, demandes, alet, modif] = await Promise.all(
     ["clients", "comptes", "transactions", "outbox", "plans", "feries", "suivis", "demandes", "alet", "modif"].map((s) => db.all(s)));
   const M = {
@@ -504,6 +518,7 @@ export async function model() {
     k._mwaPlan = Math.min(k._kolekMwa, k._mwaPrevu);
     k._mwaDwe = Math.max(0, k._mwaPrevu - k._kolekMwa);
     k._dots = semenDots(k, M.feries, today);
+    k._fre = freEta(k, cfgSv, today);
     // Alèt manadjè yo: eta a evalye isit la (menm offline). fermen: fèmen manyèlman · oto: kondisyon an rive.
     for (const a of k._alet) {
       const depoApre = k._txs.some((t) => txKind(t) === "depo" && t.validation_status !== "rejected" && new Date(t.date_transaction) >= new Date(a.kreye_le));

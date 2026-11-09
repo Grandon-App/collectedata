@@ -1,7 +1,7 @@
 // Service worker: kenbe aplikasyon an sou telefòn nan pou l louvri san entènèt.
 // Chanje VERSION chak fwa ou pibliye yon nouvo vèsyon.
 const CFG = self.GRANDON_SW || { baz: "", lokal: null, non: "prod" };
-const VERSION = `grandon-ajan-v62-${CFG.non}`;
+const VERSION = `grandon-ajan-v63-${CFG.non}`;
 const SHELL_BAZ = [
   "./", "index.html", "app.css", "look-a.css", "look-b.css", "look-c.css",
   "app.js", "db.js", "api.js", "sync.js", "config.js", "ui.js", "i18n.js", "taxonomy.js", "fmt.js",

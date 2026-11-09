@@ -10,6 +10,7 @@ export const PWOBLEM = [
   { k: "adres", l: "Adrès vid", oto: true, f: (c) => vid(c.adresse) },
   { k: "pyes", l: "Pa gen nimewo pyès idantite", oto: true, f: (c) => vid(c.numero_piece) },
   { k: "kal", l: "Kont san jou peman", oto: true, f: (c, k) => !k.frequence_semaine },
+  { k: "fre", l: "Frais sèvis pou pran", oto: true, kont: true, sevis: true, f: (c, k) => !!k._fre?.pou },
   { k: "foto_move", l: "Foto a pa bon" },
   { k: "biznis_move", l: "Kote biznis la pa bon" },
   { k: "tel_move", l: "Telefòn nan pa bon" },

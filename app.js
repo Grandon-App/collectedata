@@ -30,7 +30,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "4.51";
+const APP_VERSION = "4.52";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin", kesye: "Responsab kès" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
@@ -292,6 +292,9 @@ function aletAktif(M, M0) {
   const mete = (a, k) => { if (!wè.has(a.id) && a._eta === "aktif") { wè.add(a.id); l.push({ ...a, k }); } };
   for (const k of M.comptes.values()) for (const a of k._alet) mete(a, k);
   for (const k of M0.comptes.values()) for (const a of k._alet) if (a.tip === "rapel" && mwenSe(a.kreye_pa)) mete(a, k);
+  for (const k of M.comptes.values()) if (k._fre?.pou && !k._alet.some((a) => a.pwoblem === "fre" && a._eta === "aktif"))
+    mete({ id: `fre-${k.id_compte_epargne}`, sistem: true, nivo: "enpotan", tit: "Frais sèvis", _eta: "aktif", _anReta: false,
+      mesaj: `${t("Kont lan elijib: pran prelevman frais sèvis la")} (${gd(k._fre.montan)}).` }, k);
   const NV = ["ijan", "enpotan", "info"];
   return l.sort((a, b) => b._anReta - a._anReta || String(a.dele || "9999").localeCompare(String(b.dele || "9999")) || NV.indexOf(a.nivo) - NV.indexOf(b.nivo));
 }
@@ -316,6 +319,8 @@ async function avètiAlet() {
   for (const k of M.comptes.values()) {
     if (!mwenSe(k.created_by)) continue;
     for (const a of k._alet) if (a._eta === "aktif" && !mwenSe(a.kreye_pa) && !a._pending) l.push({ ...a, k, cle: a._anReta ? `${a.id}:reta` : a.id });
+    if (k._fre?.pou) l.push({ id: `fre-${k.id_compte_epargne}`, k, cle: `fre-${k.id_compte_epargne}`, tit: t("Frais sèvis pou pran"), nivo: "enpotan",
+      mesaj: t("Kont sa yo elijib: pran prelevman frais sèvis la."), _anReta: false });
   }
   let vu = []; try { vu = JSON.parse(localStorage.getItem(ALET_VU) || "[]"); } catch { /* */ }
   const nouvo = l.filter((a) => !vu.includes(a.cle));
@@ -417,9 +422,10 @@ async function viewAlet() {
   for (const k of [...aktif].sort((a, b) => String(b.date_debut).localeCompare(String(a.date_debut)))) if (!parKliyan.has(k.id_personne)) parKliyan.set(k.id_personne, k);
   const alets = [...M.comptes.values()].flatMap((k) => k._alet.map((a) => ({ ...a, k })));
   const aAktif = alets.filter((a) => a._eta === "aktif");
-  const kontPw = (p) => p.oto ? (p.k === "kal" ? aktif : [...parKliyan.values()]).filter((k) => genPwoblem(p.k, M.clients.get(k.id_personne), k))
+  const kontPw = (p) => p.oto ? (p.k === "kal" || p.kont ? aktif : [...parKliyan.values()]).filter((k) => genPwoblem(p.k, M.clients.get(k.id_personne), k))
     : [...new Map(aAktif.filter((a) => a.pwoblem === p.k).map((a) => [a.k.id_compte_epargne, a.k])).values()];
-  const pw = PWOBLEM.map((p) => {
+  const genFre = [...M.comptes.values()].some((k) => k._fre);
+  const pw = PWOBLEM.filter((p) => !p.sevis || genFre).map((p) => {
     const tout = kontPw(p), kont = tout.filter(nanF);
     const al = aAktif.filter((a) => a.pwoblem === p.k && nanF(a.k));
     const parA = new Map(); for (const k of kont) parA.set(ajanK(k), (parA.get(ajanK(k)) || 0) + 1);
@@ -1588,6 +1594,9 @@ function aletYo(k, { tout = false } = {}) {
   if (k._actif && k._aRekipere > 0)
     l.push({ id: `sys-${k.id_compte_epargne}`, sistem: true, k, nivo: k._anReta >= 3 ? "ijan" : "enpotan", tit: "Rekouvreman",
       mesaj: `${t("Kliyan an dwe")} ${F.rekipere(k._aRekipere, k._anReta)}. ${t("Fè l peye anvan l ale pi lwen.")}`, _eta: "aktif" });
+  if (k._fre?.pou && !k._alet.some((a) => a.pwoblem === "fre" && a._eta === "aktif"))
+    l.push({ id: `fre-${k.id_compte_epargne}`, sistem: true, k, nivo: "enpotan", tit: "Frais sèvis",
+      mesaj: `${t("Kont lan elijib: pran prelevman frais sèvis la")} (${gd(k._fre.montan)}).`, _eta: "aktif" });
   for (const a of k._alet) if (tout || a._eta === "aktif") l.push({ ...a, k });
   return l.sort((a, b) => (a._eta !== "aktif") - (b._eta !== "aktif") || ["ijan", "enpotan", "info"].indexOf(a.nivo) - ["ijan", "enpotan", "info"].indexOf(b.nivo));
 }
