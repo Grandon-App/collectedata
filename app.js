@@ -30,7 +30,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "4.49";
+const APP_VERSION = "4.50";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin", kesye: "Responsab kès" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
@@ -1752,6 +1752,35 @@ const gpsBouton = (c) => (!c || c.gps_lat != null || estKesye() ? "" : `<div cla
   <button type="button" class="btn sm pri" data-gps-aktive>${t("Mwen nan biznis la: aktive GPS")}</button></div>`);
 const brancheGpsBouton = (c) => $app.querySelectorAll("[data-gps-aktive]").forEach((b) => (b.onclick = () => proposeGps(c, { bouton: true })));
 
+// Frais sèvis (sèvis Epargne): yon «men» = plan an (Lib: fre_lib). Nouveau Frais (kont depi fre_dat): elijib apre 3 depo valide
+// oswa depo valide ≥ 3× plan (Lib: ≥ fre_lib_elijib). Frais Auto (anvan fre_dat): ajan an pran l lè kliyan an fè retrè oswa kanè a kraze.
+let fePrefill = null;
+function freSevis(k, cfg) {
+  if (!cfg?.fre_sevis || !k || k._pending) return null;
+  const kreye = S.jouLokal(new Date(k.date_kreye || k.created_at || `${k.date_debut}T12:00:00Z`));
+  const plan = Number(k.montant_plan || 0);
+  const depo = (k._txs || []).filter((x) => S.txKind(x) === "depo" && x.validation_status === "confirmed" && !x._pending);
+  const som = depo.reduce((a, x) => a + Number(x.montant || 0), 0);
+  return {
+    regim: kreye >= cfg.fre_dat ? "nouveau" : "auto", montan: k.plan_lib ? Number(cfg.fre_lib) : plan, n: depo.length, som,
+    deja: (k._txs || []).some((x) => x.type_transaction === "FL" && x.type_frais === "Frais service" && x.validation_status !== "rejected"),
+    elijib: k.plan_lib ? som >= Number(cfg.fre_lib_elijib) : depo.length >= 3 || som >= 3 * plan,
+    kondisyon: k.plan_lib ? `${t("depo valide")} ${gd(som)} / ${gd(cfg.fre_lib_elijib)}` : `${depo.length}/3 ${t("depo valide")} ${t("oswa")} ${gd(som)} / ${gd(3 * plan)}`,
+  };
+}
+function freNot(k, fs) {
+  if (!fs) return "";
+  if (fs.deja) return `<p class="note ok-note fre-not">✓ ${t("Frais sèvis la pran")} (${t(fs.regim === "nouveau" ? "Nouveau Frais" : "Frais Auto")}).</p>`;
+  const btn = `<button type="button" class="btn sm pri" data-fre="${h(k.id_compte_epargne)}">${t("Pran frais sèvis la")} · ${gd(fs.montan)}</button>`;
+  if (fs.regim === "auto") return `<div class="note info-note fre-not"><p><b>${t("Frais Auto")}</b> · ${t("Frais sèvis")} ${gd(fs.montan)}: ${t("pran l lè kliyan an fè yon retrè oswa lè kanè a kraze.")}</p>${btn}</div>`;
+  if (fs.elijib) return `<div class="note warn fre-not"><p><b>${t("Nouveau Frais")}</b> · ${t("Kont lan elijib: pran prelevman frais sèvis la")} (${gd(fs.montan)}).</p>${btn}</div>`;
+  return `<p class="note info-note fre-not"><b>${t("Nouveau Frais")}</b> · ${t("Frais sèvis")} ${gd(fs.montan)} · ${t("elijib lè")}: ${fs.kondisyon}.</p>`;
+}
+const brancheFre = (M, cfg) => $app.querySelectorAll("[data-fre]").forEach((b) => (b.onclick = () => {
+  const k = M.comptes.get(b.dataset.fre); const fs = freSevis(k, cfg); if (!fs) return;
+  fePrefill = { compte: k.id_compte_epargne, montan: fs.montan }; go(`#/tx/nouvo/${k.id_compte_epargne}`);
+}));
+
 // ---------- Chwazi ----------
 async function viewPick(kind) {
   const M = await S.model();
@@ -1953,6 +1982,7 @@ async function viewCycle(id) {
   $app.innerHTML = `<div id="cycle">${L().parts.cycleTop(ctx)}
   ${man && !k._pending ? `<a class="btn block cycle-mod" href="#/cycle/${h(k.id_compte_epargne)}/modifye">${ICO.modifye || ""}<span>${t("Modifye cycle a")}</span></a>` : ""}
   ${gpsBouton(c)}
+  ${freNot(k, freSevis(k, await db.meta("sevis_cfg")))}
   ${k.tip_plan === "vip" || k.plan_lib ? `<p class="note info-note kont-tip">${k.tip_plan === "vip" ? `<b>VIP</b> · ${t("Retrè ak viman bezwen otorizasyon yon manadjè anvan responsab kès la.")}` : ""}${k.tip_plan === "vip" && k.plan_lib ? "<br>" : ""}${k.plan_lib ? `<b>${t("Plan Lib")}</b> · ${t("Kliyan an bay sa l vle, men pa mwens pase")} ${gd(k.montant_plan)}.` : ""}</p>` : ""}
   ${man && !k._pending ? `<div class="card potfey-k"><div class="grow"><span class="mut sm">${t("Ajan pòtfèy")}</span><b data-brut>${h(nomAjan(k.created_by) || t("San ajan"))}</b></div>
     <button type="button" class="btn sm" id="chanje-ajan">${t("Chanje ajan")}</button></div>` : ""}
@@ -1967,6 +1997,7 @@ async function viewCycle(id) {
   <div class="list">${k._txs.map((x) => liTx(M, x, { kliyan: false, bouton: true })).join("") || `<p class="empty">Poko gen tranzaksyon.</p>`}</div></div>`;
   document.getElementById("papeye")?.addEventListener("click", () => paPeye(k, c));
   document.getElementById("chanje-ajan")?.addEventListener("click", () => chanjeAjanPòtfèy(k, c));
+  brancheFre(M, await db.meta("sevis_cfg"));
   brancheGpsBouton(c);
   $app.querySelectorAll("[data-tx]").forEach((b) => (b.onclick = () => aksyonTx(M, b.dataset.tx)));
   brancherAlet(M);
@@ -1982,6 +2013,7 @@ async function viewTxNew(compteId) {
   const k = M.comptes.get(compteId);
   const c = k && M.clients.get(k.id_personne);
   if (!k) { $app.innerHTML = `<a href="#/epay" class="back">‹ Epay</a><p class="empty">Cycle la pa jwenn.</p>`; return; }
+  const fsTx = freSevis(k, await db.meta("sevis_cfg"));
   const plan = Number(k.montant_plan || 0);
   const lòt = [...M.comptes.values()].filter((x) => x.id_compte_epargne !== compteId && x.no_compte)
     .sort((a, b) => non(M.clients.get(a.id_personne)).localeCompare(non(M.clients.get(b.id_personne))));
@@ -1995,7 +2027,8 @@ async function viewTxNew(compteId) {
       ${TIP_TX.map(([v, l], i) => `<label><input type="radio" name="type" value="${v}" ${i === 0 ? "checked" : ""}><span>${l}</span></label>`).join("")}</div></fieldset>
     <p class="note info-note" id="oto" hidden>Sa a bezwen otorizasyon responsab kès la. Peye kliyan an sèlman lè demann lan apwouve.<br><b>Se sèlman kòb responsab kès la deja valide ki ka retire: depo ki poko valide pa konte.</b></p>
     ${k.tip_plan === "vip" ? `<p class="note warn" id="oto-vip" hidden><b>${t("Kont VIP")}</b> · ${t("Yon manadjè dwe otorize retrè sa a anvan responsab kès la ka valide l.")}</p>` : ""}
-    <label id="l-fre" hidden>Tip frè *<select name="type_frais"><option value="">Chwazi…</option>${TYPES_FRE.map((x) => opt(x, "")).join("")}</select></label>
+    <label id="l-fre" hidden>Tip frè *<select name="type_frais"><option value="">Chwazi…</option>${TYPES_FRE.filter((x) => x !== "Frais service" || fsTx).map((x) => opt(x, "")).join("")}</select></label>
+    ${fsTx && !fsTx.deja && fsTx.regim === "auto" ? `<div class="note warn" id="fre-retre" hidden><p><b>${t("Frais Auto")}</b> · ${t("Frais sèvis la poko pran sou kont sa a")} (${gd(fsTx.montan)}). ${t("Pran l anvan retrè a.")}</p><button type="button" class="btn sm pri" id="fre-mete">${t("Pran frais sèvis la")} · ${gd(fsTx.montan)}</button></div>` : ""}
     <label id="l-dest" hidden>Kont ki resevwa viman an *<select name="dest"><option value="">Chwazi…</option>${lòt.map((x) => `<option value="${x.id_compte_epargne}">${h(non(M.clients.get(x.id_personne)))} · ${h(x.no_compte)}</option>`).join("")}</select></label>
     <label>Montan (goud) *<input name="montant" type="number" inputmode="decimal" min="1" step="any" required value="${plan || ""}"></label>
     <p class="mut sm" id="hint"></p>
@@ -2008,6 +2041,10 @@ async function viewTxNew(compteId) {
   </form>`;
   brancheGpsBouton(c);
   const woutTx = location.hash;
+  const metFre = () => { // prelevman frais sèvis: tip «Frè», «Frais service», montan fiks
+    f.querySelector('input[name="type"][value="FL"]').checked = true; maj();
+    f.type_frais.value = "Frais service"; f.montant.value = fsTx.montan; f.montant.readOnly = true; f.montant.dispatchEvent(new Event("input"));
+  };
   montreAlet(M, [k]).then(() => location.hash === woutTx && proposeGps(c));
   const f = document.getElementById("f");
   const maj = () => {
@@ -2015,6 +2052,8 @@ async function viewTxNew(compteId) {
     document.getElementById("oto").hidden = !(tp === "R" || tp === "V");
     if (document.getElementById("oto-vip")) document.getElementById("oto-vip").hidden = !(tp === "R" || tp === "V");
     document.getElementById("l-fre").hidden = tp !== "FL";
+    if (document.getElementById("fre-retre")) document.getElementById("fre-retre").hidden = tp !== "R";
+    if (tp !== "FL") f.montant.readOnly = false;
     document.getElementById("l-dest").hidden = tp !== "V";
     document.getElementById("go").textContent = t(tp === "R" || tp === "V" ? "Voye demann lan" : "Anrejistre");
     document.getElementById("hint").textContent = tp === "D" ? `${t("Minimòm plan an")}: ${gd(plan)}${k._jodi ? ` · ${t("deja peye jodi a")}: ${gd(k._jodi)}` : ""}${S.isoJou(S.jodi()) === 6 && k.jours_paiement?.includes(7) ? ` · ${t("Pòtay la fèmen dimanch: kliyan an ka peye pou dimanch lan jodi a")} (${gd(plan * 2)} ${t("an tout")})` : ""}`
@@ -2022,6 +2061,9 @@ async function viewTxNew(compteId) {
   };
   f.querySelectorAll('input[name="type"]').forEach((r) => (r.onchange = () => { f.montant.value = r.value === "D" ? plan || "" : ""; maj(); }));
   maj();
+  f.type_frais.onchange = () => { if (f.type_frais.value === "Frais service" && fsTx) { f.montant.value = fsTx.montan; f.montant.readOnly = true; } else f.montant.readOnly = false; };
+  document.getElementById("fre-mete")?.addEventListener("click", metFre);
+  if (fePrefill?.compte === k.id_compte_epargne && fsTx) { metFre(); fePrefill = null; }
   // Si balans avan an ak montan an la, kalkile balans apre a.
   const autoApre = () => {
     const av = f.solde_avant.value, m = Number(f.montant.value);
@@ -2038,6 +2080,12 @@ async function viewTxNew(compteId) {
     if (!(m > 0)) return (err.textContent = t("Mete montan an."));
     if (typ === "D" && k.plan_lib && m < Number(k.montant_plan || 0)) return (err.textContent = `${t("Plan Lib: depo a dwe omwen")} ${gd(k.montant_plan)}.`);
     if (typ === "FL" && !f.type_frais.value) return (err.textContent = t("Chwazi tip frè a."));
+    if (typ === "FL" && f.type_frais.value === "Frais service") {
+      if (!fsTx) return (err.textContent = t("Frais sèvis pa aplike pou kont sa a."));
+      if (fsTx.deja) return (err.textContent = t("Frais sèvis la deja pran sou kont sa a."));
+      if (m !== fsTx.montan) return (err.textContent = `${t("Frais sèvis la se")} ${gd(fsTx.montan)}.`);
+      if (fsTx.regim === "nouveau" && !fsTx.elijib) return (err.textContent = `${t("Kont lan poko elijib pou prelevman frais sèvis la")} (${fsTx.kondisyon}).`);
+    }
     if (typ === "V" && !f.dest.value) return (err.textContent = t("Chwazi kont ki resevwa viman an."));
     // Balans kanè yo obligatwa: tranzaksyon an pa ka konfime san yo.
     for (const [chan, mesaj] of [["solde_avant", "Mete balans kanè a avan."], ["solde", "Mete balans kanè a apre."]]) {

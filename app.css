@@ -677,3 +677,7 @@ html[data-look] .login h1.wordmark::after { content: ""; position: absolute; lef
 /* Logo mak la sou bann lan: pa gen kad, pa gen fon (logo a an blan + vèt, transparan) */
 html[data-look] .login .login-logo img { border: 0; border-radius: 0; box-shadow: none; background: none; padding: 0; width: min(300px, 72vw); filter: drop-shadow(0 2px 6px rgba(0, 0, 0, .18)); }
 html[data-look] .brand .brand-logo { background: none; padding: 0; border-radius: 0; width: 28px; height: 28px; }
+/* Frais sèvis */
+.fre-not { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+.fre-not p { margin: 0; }
+.ok-note { background: var(--ok-bg, #e5f4ea); color: var(--ok, #1b7340); border-radius: 12px; padding: 10px 14px; }

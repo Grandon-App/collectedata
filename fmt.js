@@ -59,7 +59,7 @@ export const badgeDm = (dm) => dm._error ? `<span class="badge err">Erè sync</s
 export const LABEL_TX = { depo: "Depo", retre: "Retrè", fre: "Frè", viman_out: "Viman voye", viman_in: "Viman resevwa", lot: "Tranzaksyon" };
 export const SIY = (kind) => (kind === "depo" || kind === "viman_in" ? "+" : "−");
 export const KLAS = (kind) => (kind === "depo" || kind === "viman_in" ? "in" : kind === "fre" ? "fee" : "out");
-export const TYPES_FRE = ["Frais carnet", "Frais d'ouverture", "Frais de gestion", "Pénalité", "Autre"];
+export const TYPES_FRE = ["Frais carnet", "Frais d'ouverture", "Frais de gestion", "Frais service", "Pénalité", "Autre"];
 export const MOTIFS = [["repase", "Kliyan an di pou m repase"], ["pa_la", "Kliyan an pa la jodi a"], ["pa_gen_kob", "Kliyan an di li pa gen kòb jodi a"],
   ["refize", "Kliyan an refize peye"], ["fenmen", "Biznis la fèmen"], ["malad", "Kliyan an malad"], ["lot", "Lòt rezon"]];
 export const motifLabel = (m) => (MOTIFS.find(([v]) => v === m) || [m, "Lòt rezon"])[1];

@@ -368,7 +368,7 @@ export async function pull() {
   ]);
   try { // non ajan yo (manadjè yo wè tout moun; yon ajan wè sèlman pa l)
     const pa = await api.select("grandon_paramet?select=kle,vale").catch(() => null); // lè operasyon, elatriye
-    const sv = await api.select(`grandon_sevis?kod=eq.${C.SEVIS || "grandon"}&select=kod,non,vesman,plan_lib_min,gen_vip`).catch(() => null);
+    const sv = await api.select(`grandon_sevis?kod=eq.${C.SEVIS || "grandon"}&select=kod,non,vesman,plan_lib_min,gen_vip,fre_sevis,fre_dat,fre_lib,fre_lib_elijib`).catch(() => null);
     if (sv) await db.meta("sevis_cfg", sv[0] || null);
     if (pa) await db.meta("paramet", Object.fromEntries(pa.map((x) => [x.kle, x.vale])));
     const aj = await api.select("grandon_ajan?select=user_id,nom,role,actif");
