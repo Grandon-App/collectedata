@@ -681,3 +681,12 @@ html[data-look] .brand .brand-logo { background: none; padding: 0; border-radius
 .fre-not { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
 .fre-not p { margin: 0; }
 .ok-note { background: var(--ok-bg, #e5f4ea); color: var(--ok, #1b7340); border-radius: 12px; padding: 10px 14px; }
+/* Logo mak la: vèsyon blan sou fon fonse (bann ble, mòd nwa), vèsyon koulè sou fon klè (look B klè) */
+.mak-koule { display: none; }
+html[data-look="b"]:not([data-theme="dark"]) .login-logo .mak-blan, html[data-look="b"]:not([data-theme="dark"]) .brand .mak-blan { display: none; }
+html[data-look="b"]:not([data-theme="dark"]) .login-logo .mak-koule, html[data-look="b"]:not([data-theme="dark"]) .brand .mak-koule { display: inline-block; }
+html[data-look="b"]:not([data-theme="dark"]) .login-logo img.mak-koule { filter: none; }
+@media (prefers-color-scheme: dark) {
+  html[data-look="b"]:not([data-theme="light"]) .login-logo .mak-blan, html[data-look="b"]:not([data-theme="light"]) .brand .mak-blan { display: inline-block; }
+  html[data-look="b"]:not([data-theme="light"]) .login-logo .mak-koule, html[data-look="b"]:not([data-theme="light"]) .brand .mak-koule { display: none; }
+}
