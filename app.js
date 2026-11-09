@@ -30,7 +30,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "4.55";
+const APP_VERSION = "4.56";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin", kesye: "Responsab kès" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
@@ -1041,13 +1041,13 @@ function koleLè(M, x) { // [lè, ti dat] pou kolòn agòch la
   const j = S.jouTx(x);
   return [lèKout(x.date_transaction) || "—", j === M.today ? t("jodi a") : j === S.ajouteJou(M.today, -1) ? t("yè") : datKout(j)];
 }
-// Cycle fini men kliyan an toujou gen kòb oswa li kontinye depoze: ajan an dwe toujou jwenn kont lan.
-const finiAktif = (k) => !k._actif && !k._pending && !!k.date_fin && ((Number(k._solde) || 0) > 0 || (k._txs || []).some((x) => S.jouTx(x) >= k.date_fin) || k._depots > 0);
+// Cycle fini men kont lan toujou gen kòb: ajan an dwe toujou jwenn li.
+const finiAktif = (k) => !k._actif && !k._pending && !!k.date_fin && (k.gen_kob === true || (Number(k._solde) || 0) > 0 || (k._local || 0) > 0);
 function seksyonFini(M, swiviJodi) {
   const l = [...M.comptes.values()].filter(finiAktif).sort((a, b) => String(b.date_fin).localeCompare(String(a.date_fin)));
   if (!l.length) return "";
   return `<section class="tx-seksyon kx-fini"><h2>${t("Cycle fini")} <small>${l.length}</small></h2>
-    <p class="mut sm">${t("Cycle sa yo fini, men kliyan an toujou gen kòb sou kont lan oswa l kontinye depoze. Yon manadjè ka lonje cycle a («Modifye cycle a»).")}</p>
+    <p class="mut sm">${t("Cycle sa yo fini, men kliyan an toujou gen kòb sou kont lan. Yon manadjè ka lonje cycle a («Modifye cycle a»).")}</p>
     <div class="list tx-lis">${l.map((k) => rowKont(M, k, swiviJodi).replace('<span class="txr-t">', `<span class="txr-t"><span class="badge mut">${t("Fini")} ${datFr(k.date_fin)}</span> `)).join("")}</div></section>`;
 }
 function rowKont(M, k, swiviJodi) {
