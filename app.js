@@ -30,7 +30,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "4.52";
+const APP_VERSION = "4.53";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin", kesye: "Responsab kès" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
@@ -1856,7 +1856,7 @@ async function viewCycleNew(idPersonne, kontId = null) {
       <p class="mut sm" id="dim-not" hidden>${t("Kliyan sa a peye dimanch tou: pou li, dimanch pa jou konje.")}</p>
     </fieldset>
     <label>Plan * <small class="mut">(minimòm chak fwa li peye)</small>
-      <select name="plan">${cfg?.plan_lib_min ? `<option value="lib" selected>${t("Lib")} (${t("minimòm")} ${gd(cfg.plan_lib_min)} ${t("pa depo")})</option>` : ""}${plans.map((p) => `<option value="${p}" ${p === planDef && !cfg?.plan_lib_min ? "selected" : ""}>${gd(p)}</option>`).join("")}</select></label>
+      <select name="plan">${kMod ? "" : `<option value="" selected disabled>${t("Chwazi plan an…")}</option>`}${cfg?.plan_lib_min ? `<option value="lib">${t("Lib")} (${t("minimòm")} ${gd(cfg.plan_lib_min)} ${t("pa depo")})</option>` : ""}${plans.map((p) => `<option value="${p}" ${kMod && p === planDef ? "selected" : ""}>${gd(p)}</option>`).join("")}</select></label>
     ${cfg?.gen_vip ? `<fieldset class="field"><legend>${t("Kalite kont")} *</legend><div class="seg s2">
       <label><input type="radio" name="tip" value="regilye" checked><span>${t("Regilye")}</span></label>
       <label><input type="radio" name="tip" value="vip"><span>VIP</span></label></div>
