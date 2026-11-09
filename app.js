@@ -30,7 +30,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "4.54";
+const APP_VERSION = "4.55";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin", kesye: "Responsab kès" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
@@ -1041,6 +1041,15 @@ function koleLè(M, x) { // [lè, ti dat] pou kolòn agòch la
   const j = S.jouTx(x);
   return [lèKout(x.date_transaction) || "—", j === M.today ? t("jodi a") : j === S.ajouteJou(M.today, -1) ? t("yè") : datKout(j)];
 }
+// Cycle fini men kliyan an toujou gen kòb oswa li kontinye depoze: ajan an dwe toujou jwenn kont lan.
+const finiAktif = (k) => !k._actif && !k._pending && !!k.date_fin && ((Number(k._solde) || 0) > 0 || (k._txs || []).some((x) => S.jouTx(x) >= k.date_fin) || k._depots > 0);
+function seksyonFini(M, swiviJodi) {
+  const l = [...M.comptes.values()].filter(finiAktif).sort((a, b) => String(b.date_fin).localeCompare(String(a.date_fin)));
+  if (!l.length) return "";
+  return `<section class="tx-seksyon kx-fini"><h2>${t("Cycle fini")} <small>${l.length}</small></h2>
+    <p class="mut sm">${t("Cycle sa yo fini, men kliyan an toujou gen kòb sou kont lan oswa l kontinye depoze. Yon manadjè ka lonje cycle a («Modifye cycle a»).")}</p>
+    <div class="list tx-lis">${l.map((k) => rowKont(M, k, swiviJodi).replace('<span class="txr-t">', `<span class="txr-t"><span class="badge mut">${t("Fini")} ${datFr(k.date_fin)}</span> `)).join("")}</div></section>`;
+}
 function rowKont(M, k, swiviJodi) {
   const c = M.clients.get(k.id_personne) || {}, id = k.id_compte_epargne, plan = Number(k.montant_plan || 0);
   const ok = k._jodi >= plan, fb = swiviJodi.get(id), dx = dennyeDepo(k), [lèD, jouD] = koleLè(M, dx);
@@ -1196,7 +1205,7 @@ async function viewEpay() {
   const pouJodi = [...M.comptes.values()].filter((k) => k._jodiPeman).sort((a, b) => (a._jodi >= a.montant_plan) - (b._jodi >= b.montant_plan));
   const aktif = [...M.comptes.values()].filter((k) => k._actif)
     .sort((a, b) => non(M.clients.get(a.id_personne)).localeCompare(non(M.clients.get(b.id_personne))));
-  const aktifTout = [...M0.comptes.values()].filter((k) => k._actif);
+  const aktifTout = [...M0.comptes.values()].filter((k) => k._actif || finiAktif(k));
   const ekKont = { sk, M0, tout: aktifTout, chwa: chwaPòtfèy(M0, { sk, tout: "Tout kliyan" }) };
   const P = L().parts;
   const rowsKont = () => {
@@ -1210,7 +1219,7 @@ async function viewEpay() {
     ...ctxBase(M), isoJou: S.isoJou(M.today), ong: ongEpay, ongs, stats: st, filt: filtKont, q: filtEpay, nJodi: pouJodi.length, nKont: aktif.length, nEnAtant: enAtant.length,
     jodiHtml: pouJodi.map((k) => P.kontRow(ctxKontRow(M, k, "jodi", swiviJodi))).join(""), kontHtml: rowsKont(),
     txHtml: "", demannHtml: "", validHtml: "", fidbakHtml: "", fidbakFilt: "", fidbakVid: "", nFidbak: 0, filtFb: filtFidbak,
-    kontSeksyon: ongEpay === "kont" ? seksyonKont(M, aktif, swiviJodi, st, ekKont) : "", fidbakSeksyon: "",
+    kontSeksyon: ongEpay === "kont" ? seksyonKont(M, aktif, swiviJodi, st, ekKont) + seksyonFini(M, swiviJodi) : "", fidbakSeksyon: "",
   };
   if (ongEpay === "fidbak") {
     const lis = swivis.filter((x) => (filtFidbak === "jodi" ? jouSwivi(x) === M.today : filtFidbak === "semen" ? jouSwivi(x) >= semenDe : true));
