@@ -670,3 +670,7 @@ html[data-look] .login h1.wordmark::after { content: ""; position: absolute; lef
   .pw-b .btn { flex: 1 1 0; }
 }
 .pw-sou small { font-size: .8rem; font-weight: 400; }
+/* Mak sit la (config LOGO / LOGO_IKON): logo enstitisyon an olye logo tèks la */
+.brand .brand-logo { width: 30px; height: 30px; object-fit: contain; background: #fff; border-radius: 8px; padding: 3px; }
+.login-logo { margin: 24px auto 4px; display: flex; justify-content: center; }
+.login-logo img { width: min(260px, 70vw); height: auto; border-radius: 14px; background: #fff; padding: 8px 12px; }

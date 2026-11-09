@@ -1,7 +1,7 @@
 // Service worker: kenbe aplikasyon an sou telefòn nan pou l louvri san entènèt.
 // Chanje VERSION chak fwa ou pibliye yon nouvo vèsyon.
 const CFG = self.GRANDON_SW || { baz: "", lokal: null, non: "prod" };
-const VERSION = `grandon-ajan-v55-${CFG.non}`;
+const VERSION = `grandon-ajan-v56-${CFG.non}`;
 const SHELL_BAZ = [
   "./", "index.html", "app.css", "look-a.css", "look-b.css", "look-c.css",
   "app.js", "db.js", "api.js", "sync.js", "config.js", "ui.js", "i18n.js", "taxonomy.js", "fmt.js",
@@ -11,7 +11,7 @@ const SHELL_BAZ = [
   "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png", "icons/icon-maskable-512.png",
 ];
 // Fichye lokal yo (index, config, manifest) rete kote service worker la ye; lòt yo soti nan CFG.baz.
-const SHELL = SHELL_BAZ.map((u) => (!CFG.lokal || CFG.lokal.includes(u) ? u : CFG.baz + u));
+const SHELL = [...SHELL_BAZ.map((u) => (!CFG.lokal || CFG.lokal.includes(u) ? u : CFG.baz + u)), ...(CFG.plis || [])]; // plis: fichye mak sit la (logo, koulè)
 // Kopi tès la (tes/) gen pwòp service worker li: prodiksyon pa janm reponn pou li.
 const SOU_TES = CFG.non === "prod" ? ["tes/", "ep-tes/"].map((x) => new URL(x, self.registration.scope).pathname) : null;
 const CACHE_FOTO = "grandon-foto";

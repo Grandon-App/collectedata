@@ -30,7 +30,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "4.44";
+const APP_VERSION = "4.45";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin", kesye: "Responsab kès" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
@@ -95,7 +95,7 @@ async function updateBar() {
   const on = navigator.onLine;
   $bar.hidden = false;
   $bar.innerHTML = `
-    <a href="#/" class="brand"><span class="brand-t wordmark">Grandon</span> ${C.ANVIWONMAN ? `<small>${h(C.ANVIWONMAN)}</small>` : ""}</a>
+    <a href="#/" class="brand">${C.LOGO_IKON ? `<img class="brand-logo" src="${h(C.LOGO_IKON)}" alt="" width="30" height="30">` : ""}<span class="brand-t wordmark">Grandon</span> ${C.ANVIWONMAN ? `<small>${h(C.ANVIWONMAN)}</small>` : ""}</a>
     <a href="#/senk" class="net ${on ? "on" : "off"}" aria-label="Senkronizasyon: ${on ? "anliy" : "offline"}, ${pend} poko voye, ${err} erè">
       <span class="dot"></span>${on ? "Anliy" : "Offline"}
       ${S.isRunning() ? `<span class="spin" aria-hidden="true"></span>` : ""}
@@ -148,7 +148,7 @@ if (document.fonts?.ready) document.fonts.ready.then(mezireBar).catch(() => {});
 function viewLogin(expired) {
   $app.innerHTML = `
   <section class="login">
-    <h1 class="wordmark">Grandon</h1>
+    ${C.LOGO ? `<h1 class="login-logo"><img src="${h(C.LOGO)}" alt="Grandon"></h1>` : `<h1 class="wordmark">Grandon</h1>`}
     <p class="mut">Aplikasyon ajan ${C.ANVIWONMAN ? `· ${h(C.ANVIWONMAN)}` : ""}</p>
     <div class="lang-sw" role="group" aria-label="Lang"><button type="button" data-lang="ht" class="${getLang() === "ht" ? "on" : ""}" data-brut>Kreyòl</button><button type="button" data-lang="fr" class="${getLang() === "fr" ? "on" : ""}" data-brut>Français</button></div>
     ${expired ? `<p class="note warn">Sesyon w fini. Konekte ankò: done ki sou telefòn nan ap rete.</p>` : ""}
