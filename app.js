@@ -30,7 +30,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "4.67";
+const APP_VERSION = "4.68";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin", kesye: "Responsab kès" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
@@ -1313,10 +1313,13 @@ async function viewRapo() {
   const poko = txs.filter((x) => x._pending).length;
   const nonJou = sipèvizè ? () => (D === M.today ? "Jodi a" : D === S.ajouteJou(M.today, -1) ? "Yè" : datFr(D)) : (n) => (n === 0 ? "Jodi a" : n === 1 ? "Yè" : "Avan-yè");
   // Swivi kliyan jou sa a: peye / fidbak / poko wè (sèlman jodi a gen sans pou "poko wè")
-  const jodiKont = [...M.comptes.values()].filter((k) => k._actif && k.jours_paiement?.includes(S.isoJou(D)) && k.date_debut <= D && !M.feries.has(D) && (!sipèvizè || mwen(k)));
+  // Sèlman kliyan pòtfèy la ki te dwe peye jou sa a (jou peman yo, cycle la te kòmanse epi li poko fini, pa jou ferye).
+  const jodiKont = [...M.comptes.values()].filter((k) => !k._pending && k.jours_paiement?.includes(S.isoJou(D)) && k.date_debut <= D && (!k.date_fin || D < k.date_fin)
+    && !M.feries.has(D) && (D !== M.today || k._actif) && mwen(k));
   const peyeJou = jodiKont.filter((k) => k._joursPeye.has(D)).length;
-  const fidbakJou = new Set([...M.suivis.values()].filter((x) => S.jouLokal(new Date(x.capture_le)) === D && (!sipèvizè || mwen(x))).map((x) => x.id_compte_epargne));
+  const fidbakJou = new Set([...M.suivis.values()].filter((x) => S.jouLokal(new Date(x.capture_le)) === D).map((x) => x.id_compte_epargne));
   const fidbakN = jodiKont.filter((k) => !k._joursPeye.has(D) && fidbakJou.has(k.id_compte_epargne)).length;
+  const pokoWe = jodiKont.filter((k) => !k._joursPeye.has(D) && !fidbakJou.has(k.id_compte_epargne));
   const ctx = {
     ...ctxBase(M), isoJou: S.isoJou(D), i: jouRapo, D, nonJou,
     jou: jou.map((date, i) => ({ i, date, label: nonJou(i), on: i === jouRapo })),
@@ -1330,9 +1333,20 @@ async function viewRapo() {
     const det = detayRapo(M, D, mwen);
     Object.assign(ctx, { jou: [], i: 0, txTit: t("Detay chak ribrik"), txHtml: det.html, nTx: det.n });
   }
-  $app.innerHTML = `<div id="rapo">${sipèvizè ? baRapo(M) : ""}${L().parts.rapo(ctx)}${genKredi ? rapoKredi(M, krPe, krPen, sipèvizè && !rapoF.ajan, sipèvizè) : ""}</div>`;
+  $app.innerHTML = `<div id="rapo">${sipèvizè ? baRapo(M) : ""}${L().parts.rapo(ctx)}${rapoPokoWe(M, pokoWe, D, sipèvizè && !rapoF.ajan)}${genKredi ? rapoKredi(M, krPe, krPen, sipèvizè && !rapoF.ajan, sipèvizè) : ""}</div>`;
   if (sipèvizè) brancheBaRapo(M);
   $app.querySelectorAll("[data-j]").forEach((b) => (b.onclick = () => { jouRapo = Number(b.dataset.j); viewRapo().then(() => requestAnimationFrame(() => $app.querySelector(`[data-j="${jouRapo}"]`)?.focus({ preventScroll: true }))); }));
+}
+
+// Rapò: kliyan ki te dwe peye jou a, ki poko peye epi ki pa gen fidbak (ajan an poko wè yo).
+function rapoPokoWe(M, l, D, montreAjan) {
+  const nAj = (k) => nonAjan(k.created_by);
+  const ls = [...l].sort((a, b) => (montreAjan ? nAj(a).localeCompare(nAj(b), "fr") : 0) || non(M.clients.get(a.id_personne)).localeCompare(non(M.clients.get(b.id_personne)), "fr"));
+  return `<details class="rb card rapo-poko" id="rapo-poko" ${ls.length ? "open" : ""}><summary><b>${t("Kliyan poko wè")}</b><span class="mut sm">${ls.length} · ${t("pa peye, pa gen fidbak")}</span></summary>
+    <div class="list tx-lis">${ls.map((k) => { const c = M.clients.get(k.id_personne) || {}, tel = String(c.telephone || "").replace(/\D/g, "");
+      return `<div class="row txr"><a class="txr-main lnk" href="#/cycle/${h(k.id_compte_epargne)}"><span class="txr-t"><b>${d(non(c))}</b>${k._anReta > 0 ? ` <span class="badge err">${k._anReta} ${t("an reta")}</span>` : ""}</span>
+        <span class="mut sm">${d(k.no_compte || "")} · plan ${gd(k.montant_plan || 0)}${montreAjan ? ` · <span data-brut>${h(nAj(k))}</span>` : ""}</span></a>
+        ${tel.length >= 8 ? `<a class="btn sm" href="tel:${h(tel)}">${t("Rele")}</a>` : ""}</div>`; }).join("") || `<p class="empty">${t(D === M.today ? "Tout kliyan jodi a wè deja." : "Tout kliyan jou sa a te wè.")}</p>`}</div></details>`;
 }
 
 // Rapò: seksyon Kredi (peman, penalite, vèsman apre kanè a), pou ajan Grandon ak ajan Epargne.
