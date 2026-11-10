@@ -709,3 +709,7 @@ html[data-look="b"]:not([data-theme="dark"]) .login-logo img.mak-koule { filter:
 .rapo-kr { margin-top: 18px; }
 .rapo-kr .kes-sum { margin-top: 8px; }
 .rapo-poko { margin-top: 14px; }
+.row.pokor { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; }
+.pokor-m { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.pokor-tel { width: auto; white-space: nowrap; }
+@media (min-width: 1024px) { #rapo-poko .tx-lis { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 14px; } }

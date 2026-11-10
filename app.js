@@ -30,7 +30,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "4.68";
+const APP_VERSION = "4.69";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin", kesye: "Responsab kès" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
@@ -1344,9 +1344,9 @@ function rapoPokoWe(M, l, D, montreAjan) {
   const ls = [...l].sort((a, b) => (montreAjan ? nAj(a).localeCompare(nAj(b), "fr") : 0) || non(M.clients.get(a.id_personne)).localeCompare(non(M.clients.get(b.id_personne)), "fr"));
   return `<details class="rb card rapo-poko" id="rapo-poko" ${ls.length ? "open" : ""}><summary><b>${t("Kliyan poko wè")}</b><span class="mut sm">${ls.length} · ${t("pa peye, pa gen fidbak")}</span></summary>
     <div class="list tx-lis">${ls.map((k) => { const c = M.clients.get(k.id_personne) || {}, tel = String(c.telephone || "").replace(/\D/g, "");
-      return `<div class="row txr"><a class="txr-main lnk" href="#/cycle/${h(k.id_compte_epargne)}"><span class="txr-t"><b>${d(non(c))}</b>${k._anReta > 0 ? ` <span class="badge err">${k._anReta} ${t("an reta")}</span>` : ""}</span>
+      return `<div class="row pokor"><a class="pokor-m lnk" href="#/cycle/${h(k.id_compte_epargne)}"><span class="txr-t"><b>${d(non(c))}</b>${k._anReta > 0 ? ` <span class="badge err">${k._anReta} ${t("an reta")}</span>` : ""}</span>
         <span class="mut sm">${d(k.no_compte || "")} · plan ${gd(k.montant_plan || 0)}${montreAjan ? ` · <span data-brut>${h(nAj(k))}</span>` : ""}</span></a>
-        ${tel.length >= 8 ? `<a class="btn sm" href="tel:${h(tel)}">${t("Rele")}</a>` : ""}</div>`; }).join("") || `<p class="empty">${t(D === M.today ? "Tout kliyan jodi a wè deja." : "Tout kliyan jou sa a te wè.")}</p>`}</div></details>`;
+        ${tel.length >= 8 ? `<a class="btn sm pokor-tel" href="tel:${h(tel)}" aria-label="${h(t("Rele"))} ${h(non(c))}">📞 ${t("Rele")}</a>` : ""}</div>`; }).join("") || `<p class="empty">${t(D === M.today ? "Tout kliyan jodi a wè deja." : "Tout kliyan jou sa a te wè.")}</p>`}</div></details>`;
 }
 
 // Rapò: seksyon Kredi (peman, penalite, vèsman apre kanè a), pou ajan Grandon ak ajan Epargne.
