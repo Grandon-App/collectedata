@@ -187,7 +187,7 @@ export function rapo(ctx) {
   <div class="band rapo-h">
     <h1>Rapò</h1>
     <div class="jr" role="tablist" aria-label="Jou">${jou.map((x) => `<button type="button" role="tab" aria-selected="${x.on}" class="jchip ${x.on ? "on" : ""}" data-j="${x.i}">${x.label}<small>${datKout(x.date)}</small></button>`).join("")}</div>
-    ${K("kach", "Kach nan men pou remèt nan kès", kpi.kach, gd(kpi.kach), `Depo − retrè peye · ${t("frè ak viman pa ladan l")}`, "main")}
+    ${K("kach", "Kach nan men pou remèt nan kès", kpi.kach, gd(kpi.kach), `${kpi.kachTxt || `Depo − retrè peye · ${t("frè ak viman pa ladan l")}`}`, "main")}
   </div>
   <div class="rapo-g">
   <div class="kpis">

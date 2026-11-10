@@ -119,7 +119,7 @@ export function rapo(ctx) {
     ${K("cycles", "Cycle kreye", kpi.cycles, kpi.cycles, t(nonJou(i)).toLowerCase())}
     ${K("papeye", "Kliyan ki pa peye", kpi.swivi, kpi.swivi, t("fidbak anrejistre"))}
     ${K("demann", "Demann an atant", kpi.dmAtant, kpi.dmAtant, t("retrè / viman"))}
-    ${K("kach", "Kach nan men pou remèt nan kès", kpi.kach, gd(kpi.kach), `Depo − retrè peye · ${t("frè ak viman pa ladan l")}`, "main")}
+    ${K("kach", "Kach nan men pou remèt nan kès", kpi.kach, gd(kpi.kach), `${kpi.kachTxt || `Depo − retrè peye · ${t("frè ak viman pa ladan l")}`}`, "main")}
   </div>
   ${poko ? `<p class="note warn">${poko} tranzaksyon poko voye: yo konte nan rapò a, men sèvè a poko resevwa yo.</p>` : ""}
   <h2>${ctx.txTit || "Tranzaksyon mwen yo"} <small class="mut">(${ctx.nTx})</small></h2>

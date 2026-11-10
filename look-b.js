@@ -221,7 +221,7 @@ export function rapo(ctx) {
     <span>Kach pou remèt nan kès</span>
     <b class="${kpi.kach < 0 ? "neg" : ""}">${gd(kpi.kach)}</b>
     <div class="kp"><i>+${gn(kpi.depo)} depo</i><i>−${gn(kpi.retre)} retrè</i></div>
-    <small>Depo − retrè peye · ${t("frè ak viman pa ladan l")}</small>
+    <small>${kpi.kachTxt || `Depo − retrè peye · ${t("frè ak viman pa ladan l")}`}</small>
   </div>
   <div class="rlist">
     <div class="rl" data-kpi="depo" data-val="${kpi.depo}"><div class="ri g">${ICO.monte}</div><div class="grow"><b>Depo ankese</b><div class="mut sm">${kpi.nDepo} depo${kpi.nDeklare ? ` · ${gd(kpi.deklare)} ${t("balans deklare")}` : ""}</div></div><b class="rv in">${gd(kpi.depo)}</b></div>

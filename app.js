@@ -30,7 +30,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "4.65";
+const APP_VERSION = "4.66";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin", kesye: "Responsab kès" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
@@ -1301,6 +1301,11 @@ async function viewRapo() {
   const dep = par("depo"), ret = par("retre"), fre = par("fre"), vim = par("viman_out");
   const depo = sum(dep), retre = sum(ret);
   const deklare = txs.reduce((a, x) => a + Number(x.solde_declare || 0), 0);
+  // Kredi (peman ak penalite ajan an ankese jou sa a): kach li tou.
+  const krTx = (M.kredi || []).flatMap((k) => k._txTout.map((y) => ({ ...y, _k: k }))).filter((y) => y.validation_status !== "rejected" && mwen(y) && S.jouKreTx(y) === D)
+    .sort((a, b) => String(b.capture_le || b.date_transaction).localeCompare(String(a.capture_le || a.date_transaction)));
+  const krPe = krTx.filter((y) => y.type_transaction === "Paiement"), krPen = krTx.filter((y) => y.type_transaction === "Penalite");
+  const genKredi = (M.kredi || []).length > 0 || krTx.length > 0;
   const nDeklare = txs.filter((x) => x.solde_declare != null && x.solde_declare !== "").length;
   const cycles = [...M.comptes.values()].filter((k) => mwen(k) && k.created_at && S.jouLokal(new Date(k.created_at)) === D).length;
   const swivi = [...M.suivis.values()].filter((x) => mwen(x) && S.jouLokal(new Date(x.capture_le)) === D).length;
@@ -1316,7 +1321,8 @@ async function viewRapo() {
     ...ctxBase(M), isoJou: S.isoJou(D), i: jouRapo, D, nonJou,
     jou: jou.map((date, i) => ({ i, date, label: nonJou(i), on: i === jouRapo })),
     kpi: { depo, nDepo: dep.length, retre, nRetre: ret.length, fre: sum(fre), nFre: fre.length, vim: sum(vim), nVim: vim.length,
-      deklare, nDeklare, cycles, swivi, dmAtant, kach: depo - retre },
+      deklare, nDeklare, cycles, swivi, dmAtant, kach: depo - retre + (genKredi ? sum(krPe) + sum(krPen) : 0),
+      ...(genKredi ? { kachTxt: `${t("Depo + peman kredi + penalite − retrè peye")} · ${t("frè ak viman pa ladan l")}` } : {}) },
     swiviStats: { total: jodiKont.length, peye: peyeJou, fidbak: fidbakN, pokoWe: Math.max(0, jodiKont.length - peyeJou - fidbakN) },
     parLe: S.kolekParLe(txs), poko, txHtml: txs.map((x) => liTx(M, x)).join(""), nTx: txs.length,
   };
@@ -1324,9 +1330,29 @@ async function viewRapo() {
     const det = detayRapo(M, D, mwen);
     Object.assign(ctx, { jou: [], i: 0, txTit: t("Detay chak ribrik"), txHtml: det.html, nTx: det.n });
   }
-  $app.innerHTML = `<div id="rapo">${sipèvizè ? baRapo(M) : ""}${L().parts.rapo(ctx)}</div>`;
+  $app.innerHTML = `<div id="rapo">${sipèvizè ? baRapo(M) : ""}${L().parts.rapo(ctx)}${genKredi ? rapoKredi(M, krPe, krPen, sipèvizè && !rapoF.ajan) : ""}</div>`;
   if (sipèvizè) brancheBaRapo(M);
   $app.querySelectorAll("[data-j]").forEach((b) => (b.onclick = () => { jouRapo = Number(b.dataset.j); viewRapo().then(() => requestAnimationFrame(() => $app.querySelector(`[data-j="${jouRapo}"]`)?.focus({ preventScroll: true }))); }));
+}
+
+// Rapò: seksyon Kredi (peman, penalite, vèsman apre kanè a), pou ajan Grandon ak ajan Epargne.
+function rapoKredi(M, pe, pen, montreAjan) {
+  const sum = (l) => l.reduce((a, x) => a + Number(x.montant || 0), 0);
+  const vs = pe.filter((y) => y.versement_apres != null);
+  const nVs = Math.round(vs.reduce((a, y) => a + (Number(y.versement_apres) - Number(y.versement_avant || 0)), 0) * 100) / 100;
+  const row = (y) => { const c = M.clients.get(y._k.id_personne), p = y.type_transaction === "Penalite";
+    return `<div class="row txr"><span class="txr-le"><b class="mono">${lèKout(y.capture_le || y.date_transaction) || "—"}</b></span>
+      <span class="txr-main"><span class="txr-t"><b>${d(non(c))}</b> <span class="badge ${p ? "err" : "info"}">${t(p ? "Penalite" : "Peman kredi")}</span> ${p ? "" : etaKreTx(y)}</span>
+        <span class="mut sm"><a class="lnk" href="#/kredi/${h(y._k.id_compte_credit)}">${d(y._k.no_compte || "")}</a>${montreAjan ? ` · <span data-brut>${h(nonAjan(y.created_by))}</span>` : ""}</span>
+        ${y.versement_apres != null ? `<span class="sm">${t("Vèsman avan")} <b>${Number(y.versement_avant)}</b> → ${t("vèsman apre")} <b>${Number(y.versement_apres)}</b></span>` : ""}</span>
+      <span class="txr-mon"><b class="in">+${gd(y.montant)}</b></span></div>`; };
+  return `<section class="rapo-kr" id="rapo-kredi"><div class="txj-h"><h2>${t("Kredi")}</h2><span class="mut sm">${pe.length + pen.length} ${t("tranzaksyon")}</span></div>
+    <div class="kes-sum">
+      <div class="card kes-k" data-kpi="kredi_peman" data-val="${sum(pe)}"><span>${t("Peman kredi")}</span><b class="in">${gd(sum(pe))}</b><small>${pe.length} ${t("peman")}</small></div>
+      <div class="card kes-k" data-kpi="kredi_penalite" data-val="${sum(pen)}"><span>${t("Penalite")}</span><b class="in">${gd(sum(pen))}</b><small>${pen.length} ${t("penalite ankese")}</small></div>
+      <div class="card kes-k" data-kpi="kredi_vesman" data-val="${nVs}"><span>${t("Vèsman")}</span><b>${nVs}</b><small>${t("vèsman sou kanè yo")}</small></div>
+    </div>
+    <div class="list tx-lis">${[...pe, ...pen].sort((a, b) => String(b.capture_le || b.date_transaction).localeCompare(String(a.capture_le || a.date_transaction))).map(row).join("") || `<p class="empty">${t("Pa gen tranzaksyon kredi jou sa a.")}</p>`}</div></section>`;
 }
 
 // ---------- Chan okipasyon (komen pou nouvo kliyan ak modifye) ----------

@@ -221,7 +221,7 @@ export function rapo(ctx) {
     <div class="kach" data-kpi="kach" data-val="${kpi.kach}">
       <span>Kach pou remèt nan kès</span>
       ${mG(kpi.kach, kpi.kach < 0 ? "err-t" : "gold")}
-      <small>Depo − retrè peye · ${t("frè ak viman pa ladan l")}</small>
+      <small>${kpi.kachTxt || `Depo − retrè peye · ${t("frè ak viman pa ladan l")}`}</small>
     </div>
     <div class="card ledger">
       ${L("depo", "Depo ankese", kpi.depo, kpi.depo ? `<b class="mono in">+${gn(kpi.depo)}</b>` : `<b class="mono mut">0</b>`, `<span class="mono">${kpi.nDepo}</span>`)}
