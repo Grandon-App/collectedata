@@ -690,3 +690,12 @@ html[data-look="b"]:not([data-theme="dark"]) .login-logo img.mak-koule { filter:
   html[data-look="b"]:not([data-theme="light"]) .login-logo .mak-blan, html[data-look="b"]:not([data-theme="light"]) .brand .mak-blan { display: inline-block; }
   html[data-look="b"]:not([data-theme="light"]) .login-logo .mak-koule, html[data-look="b"]:not([data-theme="light"]) .brand .mak-koule { display: none; }
 }
+
+/* Kredi */
+.kr-moun { margin: 4px 0 8px; }
+.kr-moun .row { width: 100%; text-align: left; border: 0; background: none; cursor: pointer; }
+.kr-kont { display: flex; flex-direction: column; gap: 6px; }
+.kredi-dl { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 210px), 1fr)); gap: 10px 18px; margin: 0; }
+.kredi-dl div { display: flex; flex-direction: column; gap: 2px; }
+.kredi-dl dt { font-size: .78rem; opacity: .7; }
+.kredi-dl dd { margin: 0; font-variant-numeric: tabular-nums; }

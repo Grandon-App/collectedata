@@ -374,6 +374,8 @@ export async function pull() {
     const aj = await api.select("grandon_ajan?select=user_id,nom,role,actif");
     await db.meta("ajans", Object.fromEntries(aj.map((x) => [x.user_id, x.nom])));
     await db.meta("ekip", aj.map((x) => ({ user_id: x.user_id, nom: x.nom, role: x.role, actif: x.actif })));
+    const kr = await api.selectAll("grandon_v_kredi?select=*&order=created_at.desc").catch(() => null); // kredi (sèvis sit la)
+    if (kr) await db.meta("kredi", kr);
   } catch { /* administratè (imèl): pa gen liy grandon_ajan pou yo */ }
   await db.replaceAll("feries", feries);
   await db.replaceAll("suivis", suivis);
