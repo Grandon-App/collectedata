@@ -248,6 +248,14 @@ const EXEC = {
         date_transaction: p.capture_le, capture_le: p.capture_le, validation_status: r.statut || "pending", created_by: api.getSession()?.user?.id, _local: true }]);
   },
 
+  // Fidbak «Pa peye» sou yon kredi.
+  async kredi_suivi(p) {
+    await api.rpc("grandon_kredi_suivi", { p_id: p.id, p_credit: p.credit, p_motif: p.motif, p_note: p.note || null, ...gpsArgs(p.gps), p_capture_le: p.capture_le });
+    const l = (await db.meta("kredi_fb")) || [];
+    if (!l.some((x) => x.id === p.id))
+      await db.meta("kredi_fb", [{ id: p.id, id_compte_credit: p.credit, motif: p.motif, note: p.note || null, agent_id: api.getSession()?.user?.id, capture_le: p.capture_le }, ...l]);
+  },
+
   // Penalite kredi ajan an ankese (konfime touswit; li parèt nan Kès la).
   async kredi_penalite(p) {
     const r = await api.rpc("grandon_kredi_penalite", { p_id: p.id, p_credit: p.credit, p_montant: p.montant, ...gpsArgs(p.gps),
@@ -398,6 +406,8 @@ export async function pull() {
     if (kr) await db.meta("kredi", kr);
     const krt = kr ? await api.selectAll("grandon_v_kredi_tx?select=*&order=date_transaction").catch(() => null) : null; // peman kredi yo
     if (krt) await db.meta("kredi_tx", krt);
+    const krs = kr ? await api.selectAll("grandon_v_kredi_suivis?select=*&order=capture_le.desc").catch(() => null) : null; // fidbak «Pa peye» kredi yo
+    if (krs) await db.meta("kredi_fb", krs);
   } catch { /* administratè (imèl): pa gen liy grandon_ajan pou yo */ }
   await db.replaceAll("feries", feries);
   await db.replaceAll("suivis", suivis);
