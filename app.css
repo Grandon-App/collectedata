@@ -713,3 +713,4 @@ html[data-look="b"]:not([data-theme="dark"]) .login-logo img.mak-koule { filter:
 .pokor-m { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .pokor-tel { width: auto; white-space: nowrap; }
 @media (min-width: 1024px) { #rapo-poko .tx-lis { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 14px; } }
+.jours.j6 { grid-template-columns: repeat(6, 1fr); }

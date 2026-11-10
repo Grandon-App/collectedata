@@ -30,7 +30,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "4.69";
+const APP_VERSION = "4.70";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin", kesye: "Responsab kès" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
@@ -1865,10 +1865,12 @@ const brancheFre = (M, cfg) => $app.querySelectorAll("[data-fre]").forEach((b) =
 
 // ---------- Kredi: yon kredi konekte ak yon kont epay kliyan an; ranbousman chak jou (lendi a samdi, san jou ferye) ----------
 const TIP_KREDI = ["Credit Cash", "Konfyans", "Electromenager", "Lekol Ptit", "Loyer"];
-const kalkKredi = (montan, duree, taux, peman, debut, feries) => {
+const FREK_KREDI = [1, 2, 3, 6];
+const JOU_DEFO_KREDI = { 1: [1], 2: [1, 4], 3: [1, 3, 5], 6: [1, 2, 3, 4, 5, 6] };
+const kalkKredi = (montan, duree, taux, peman, debut, feries, jours = [1, 2, 3, 4, 5, 6]) => {
   const final = Math.round(montan * (1 + (taux / 100) * duree) * 100) / 100;
   const n = peman > 0 ? Math.ceil(final / peman) : 0;
-  const fin = debut && n ? S.ajouteJou(S.finVesman(debut, [1, 2, 3, 4, 5, 6], n, feries), -1) : null;
+  const fin = debut && n && jours.length ? S.ajouteJou(S.finVesman(debut, [...jours].sort(), n, feries), -1) : null;
   return { final, n, fin, penalite: Math.round(peman * 0.2 * 100) / 100 };
 };
 // Done kredi yo (sync.model kalkile yo: peman, reta, penalite, fidbak).
@@ -1895,7 +1897,7 @@ async function viewKredi() {
       return `<div class="row kxr${x._peJodi ? " kxr-ok" : ""}" data-kredi="${h(x.id_compte_credit)}">
         <span class="txr-le" title="${h(t("Dènye peman"))}"><b class="mono">${dn ? lèKout(dn.capture_le || dn.date_transaction) || "—" : "—"}</b><small>${dn ? (dj === M.today ? t("jodi a") : datKout(dj)) : t("okenn")}</small></span>
         <a class="kxr-main lnk" href="#/kredi/${h(x.id_compte_credit)}"><span class="txr-t"><b>${d(non(c))}</b> ${badjKredi(x)}</span>
-        <span class="mut sm">${d(x.no_compte || "")} · ${gd(x.paiement_journalier)}/${t("jou")} · ${t("fen")} ${datFr(x.date_fin)}</span>
+        <span class="mut sm">${d(x.no_compte || "")} · ${gd(x.paiement_journalier)}/${t("vèsman")} · ${x._jours.length}×/sem (${lisJou(x._jours)}) · ${t("fen")} ${datFr(x.date_fin)}</span>
         <span class="sm">${t("Prete")} <b>${gd(x.montant_prete)}</b> · ${t("rete")} <b>${gd(x.montant_restant)}</b> / ${gd(x.montant_final)}${x._reta ? ` · <span class="err-t">${t("reta")} ${gd(x._reta)}</span>` : ""}</span>
         <span class="kxr-bar" aria-hidden="true"><i style="width:${pc}%"></i></span></a>
         ${!estKesye() && x._rete > 0 ? `<span class="kxr-ak">${x._peJodi ? `<b class="in">✓ ${gd(x._peJodi)}</b>` : ""}<a class="btn sm${x._peJodi ? "" : " pri"}" href="#/kredi/${h(x.id_compte_credit)}/peye">${t("Peye")}</a>${x._jodi && !x._peJodi && !x._fbJodi ? `<button type="button" class="btn sm" data-kr-papeye="${h(x.id_compte_credit)}">${t("Pa peye")}</button>` : ""}</span>` : ""}</div>`; }).join("") || `<p class="empty">${t("Poko gen kredi.")}</p>`}</div></div>`;
@@ -1921,7 +1923,8 @@ async function viewKrediFich(id) {
   if (!x) { $app.innerHTML = `<a href="#/kredi" class="back">‹ ${t("Kredi")}</a><p class="empty">${t("Kredi sa a pa sou telefòn nan.")}</p>`; return; }
   const c = M.clients.get(x.id_personne);
   const dl = [["Kliyan", d(non(c))], ["Kont epay", d(x.no_compte_epargne || "")], ["Montan prete", gd(x.montant_prete)], ["Dire", `${x.duree_credit_mois} ${t("mwa")}`],
-    ["To enterè", `${x.taux_interet}% ${t("pa mwa")}`], ["Kapital final", `<b>${gd(x.montant_final)}</b>`], ["Peman jounalye", gd(x.paiement_journalier)],
+    ["To enterè", `${x.taux_interet}% ${t("pa mwa")}`], ["Kapital final", `<b>${gd(x.montant_final)}</b>`], ["Montan pa vèsman", gd(x.paiement_journalier)],
+    ["Kalandriye peman", `${x._jours.length}× / ${t("semèn")} · ${lisJou(x._jours)}`],
     ["Kantite vèsman", String(x.nb_vesman)], ["Dat kòmansman", datFr(x.date_debut)], ["Dat fen", datFr(x.date_fin)], ["Penalite pa jou (20%)", gd(x.penalite_jou)],
     ["Deja peye (valide)", gd(x.paiement_cumule)], ["An atant validasyon", gd(x._atant)], ["Rete pou ranbouse", `<b>${gd(x._rete)}</b>`],
     ["Reta", x._reta ? `<b class="err-t">${gd(x._reta)}</b> (${x._jouReta} ${t("jou")})` : t("Okenn")],
@@ -1977,7 +1980,7 @@ async function viewKrediPeye(id, pen = false) {
   $app.innerHTML = `${back}<h1>${t("Tranzaksyon kredi")}</h1>${tipKreTx(x, "peye")}
   <form id="f" class="card form" novalidate>
     <p><b>${d(non(c))}</b> · ${d(x.no_compte || "")}</p>
-    <p class="mut sm">${t("Peman jounalye")} ${gd(pj)} · ${t("rete")} ${gd(x._rete)}${x._reta ? ` · <span class="err-t">${t("reta")} ${gd(x._reta)} (${x._jouReta} ${t("jou")})</span>` : ""}</p>
+    <p class="mut sm">${t("Montan pa vèsman")} ${gd(pj)} · ${lisJou(x._jours)} · ${t("rete")} ${gd(x._rete)}${x._reta ? ` · <span class="err-t">${t("reta")} ${gd(x._reta)} (${x._jouReta} ${t("jou")})</span>` : ""}</p>
     <div class="chips">${sij.map(([l, v]) => `<button type="button" class="chip" data-kr-m="${v}">${h(l)}<small>${gd(v)}</small></button>`).join("")}</div>
     <label>${t("Montan (goud)")} *<input name="montant" type="number" inputmode="decimal" min="1" step="any" value="${Math.min(pj, x._rete)}" required></label>
     <div class="grid2">
@@ -2100,10 +2103,16 @@ async function viewKrediNouvo() {
       <label>${t("Montan l ap prete a")} *<input name="montan" type="number" inputmode="decimal" min="1" step="any" required></label>
       <label>${t("Dire")} *<select name="duree">${Array.from({ length: 24 }, (_, i) => i + 1).map((m) => `<option value="${m}">${m} ${t("mwa")}</option>`).join("")}</select></label>
       <label>${t("To enterè")} (% ${t("pa mwa")}) *<input name="taux" type="number" inputmode="numeric" min="0" max="100" step="1" required></label>
-      <label>${t("Peman jounalye")} *<input name="peman" type="number" inputmode="decimal" min="1" step="any" required></label>
+      <label>${t("Montan pa vèsman")} *<input name="peman" type="number" inputmode="decimal" min="1" step="any" required></label>
       <label>${t("Dat kòmansman")} *<input name="debut" type="date" value="${demen}" required></label>
       <label>${t("Tip kredi")}<select name="tip"><option value="">—</option>${TIP_KREDI.map((x) => `<option>${h(x)}</option>`).join("")}</select></label>
     </div>
+    <fieldset class="field"><legend>${t("Frekans")} * <small class="mut">(${t("kantite fwa pa semèn")})</small></legend>
+      <div class="seg s4" id="kr-freq">${FREK_KREDI.map((n) => `<label><input type="radio" name="freq" value="${n}" ${n === 6 ? "checked" : ""}><span>${n}×</span></label>`).join("")}</div>
+    </fieldset>
+    <fieldset class="field"><legend>${t("Jou peman yo")} * <small class="mut" id="jou-hint"></small></legend>
+      <div class="jours j6" id="jours">${[1, 2, 3, 4, 5, 6].map((j) => `<label><input type="checkbox" name="jou" value="${j}"><span>${JOU_KOUT[j]}</span></label>`).join("")}</div>
+    </fieldset>
     <div class="recap" id="recap" aria-live="polite"></div>
     <p class="err-msg" id="err" role="alert"></p>
     <button class="btn pri" type="submit">${t("Kreye kredi a")}</button>
@@ -2125,18 +2134,35 @@ async function viewKrediNouvo() {
       <span><b>${d(k.no_compte || "")}</b> · plan ${gd(k.montant_plan)} ${k._actif ? "" : `<span class="badge mut">${t("Fini")}</span>`}</span></label>`).join("") || `<p class="err-msg">${t("Kliyan sa a pa gen kont epay.")}</p>`;
   };
   document.getElementById("kr-q").oninput = () => { kliyan = null; document.getElementById("kr-kont-f").hidden = true; rannMoun(); };
+  // Kalandriye: frekans + jou peman (lendi a samdi), menm jan ak cycle epay yo.
+  let freq = 6, jours = [...JOU_DEFO_KREDI[6]];
+  const boxes = [...f.querySelectorAll('input[name="jou"]')];
+  const syncBoxes = () => {
+    boxes.forEach((b) => (b.checked = jours.includes(Number(b.value))));
+    const rest = freq - jours.length;
+    document.getElementById("jou-hint").textContent = rest > 0 ? `(${t("chwazi")} ${rest} ${t("ankò")})` : `(${freq} ${t("jou")})`;
+  };
+  f.querySelectorAll('input[name="freq"]').forEach((r) => (r.onchange = () => { freq = Number(r.value); jours = [...JOU_DEFO_KREDI[freq]]; syncBoxes(); recap(); }));
+  boxes.forEach((b) => (b.onchange = () => {
+    const j = Number(b.value);
+    if (b.checked) {
+      if (jours.length >= freq) { if (freq === 1) jours = []; else { b.checked = false; toast(`${t("Ou deja chwazi")} ${freq} ${t("jou. Retire youn anvan.")}`, "err", 2500); return; } }
+      jours.push(j);
+    } else jours = jours.filter((x) => x !== j);
+    syncBoxes(); recap();
+  }));
   const val = () => ({ montan: Number(f.montan.value), duree: Number(f.duree.value), taux: Number(f.taux.value), peman: Number(f.peman.value), debut: f.debut.value });
   const recap = () => {
     const v = val();
-    const ok = v.montan > 0 && v.peman > 0 && f.taux.value !== "" && v.debut;
-    const r = ok ? kalkKredi(v.montan, v.duree, v.taux, v.peman, v.debut, M.feries) : null;
+    const ok = v.montan > 0 && v.peman > 0 && f.taux.value !== "" && v.debut && jours.length === freq;
+    const r = ok ? kalkKredi(v.montan, v.duree, v.taux, v.peman, v.debut, M.feries, jours) : null;
     document.getElementById("recap").innerHTML = `
       <div><span>${t("Kapital final")}</span><b>${r ? gd(r.final) : "—"}</b><small class="mut">${r ? `${gd(v.montan)} × (1 + ${v.taux}% × ${v.duree})` : ""}</small></div>
       <div><span>${t("Kantite vèsman")}</span><b>${r ? r.n : "—"}</b><small class="mut">${r ? `${gd(r.final)} ÷ ${gd(v.peman)}` : ""}</small></div>
-      <div><span>${t("Dat fen")}</span><b>${r?.fin ? datFr(r.fin) : "—"}</b><small class="mut">${t("san dimanch ni jou ferye")}</small></div>
-      <div><span>${t("Penalite pa jou")}</span><b>${r ? gd(r.penalite) : "—"}</b><small class="mut">20% ${t("peman jounalye a")}</small></div>`;
+      <div><span>${t("Dat fen")}</span><b>${r?.fin ? datFr(r.fin) : "—"}</b><small class="mut">${jours.length === freq ? `${lisJou([...jours].sort())} · ` : ""}${t("san jou ferye")}</small></div>
+      <div><span>${t("Penalite pa jou peman")}</span><b>${r ? gd(r.penalite) : "—"}</b><small class="mut">20% ${t("montan pa vèsman an")}</small></div>`;
   };
-  f.oninput = recap; recap();
+  f.oninput = recap; syncBoxes(); recap();
   f.onsubmit = async (e) => {
     e.preventDefault();
     const err = document.getElementById("err"); const v = val();
@@ -2145,19 +2171,21 @@ async function viewKrediNouvo() {
     if (!kont) return (err.textContent = t("Chwazi kont epay ki lye ak kredi a."));
     if (!(v.montan > 0)) return (err.textContent = t("Mete montan kredi a."));
     if (f.taux.value === "" || !(v.taux >= 0 && v.taux <= 100) || !Number.isInteger(v.taux)) return (err.textContent = t("Mete to enterè a (0 a 100, san vigil)."));
-    if (!(v.peman > 0)) return (err.textContent = t("Mete peman jounalye a."));
+    if (!(v.peman > 0)) return (err.textContent = t("Mete montan pa vèsman an."));
     if (!v.debut) return (err.textContent = t("Mete dat kòmansman an."));
-    const r = kalkKredi(v.montan, v.duree, v.taux, v.peman, v.debut, M.feries);
-    if (v.peman > r.final) return (err.textContent = t("Peman jounalye a pa ka pi gwo pase kapital final la."));
+    if (jours.length !== freq) return (err.textContent = `${t("Chwazi egzakteman")} ${freq} ${t("jou peman.")}`);
+    const js = [...jours].sort();
+    const r = kalkKredi(v.montan, v.duree, v.taux, v.peman, v.debut, M.feries, js);
+    if (v.peman > r.final) return (err.textContent = t("Montan pa vèsman an pa ka pi gwo pase kapital final la."));
     if (!navigator.onLine) return (err.textContent = t("Fòk ou gen entènèt pou kreye yon kredi."));
     const k = M.comptes.get(kont);
     if (!(await ui.ask({ titre: "Kreye kredi sa a?", ok: "Kreye kredi a", foto: kliyan.photo_url, detay: [
       ["Kliyan", non(kliyan)], ["Kont epay", k?.no_compte || ""], ["Montan prete", gd(v.montan)], ["Dire", `${v.duree} ${t("mwa")}`], ["To enterè", `${v.taux}% ${t("pa mwa")}`],
-      ["Kapital final", gd(r.final)], ["Peman jounalye", gd(v.peman)], ["Kantite vèsman", String(r.n)], ["Dat kòmansman", datFr(v.debut)], ["Dat fen", datFr(r.fin)],
+      ["Kapital final", gd(r.final)], ["Montan pa vèsman", gd(v.peman)], ["Kalandriye peman", `${freq}× · ${lisJou(js)}`], ["Kantite vèsman", String(r.n)], ["Dat kòmansman", datFr(v.debut)], ["Dat fen", datFr(r.fin)],
       ["Penalite pa jou", gd(r.penalite)]] }))) return;
     const b = f.querySelector("button[type=submit]"); b.disabled = true;
     try {
-      const res = await api.rpc("grandon_kredi_kreye", { p_id: S.uuid(), p_compte: kont, p_montant: v.montan, p_duree: v.duree, p_taux: v.taux, p_paiement: v.peman, p_date_debut: v.debut, p_tip: f.tip.value || null });
+      const res = await api.rpc("grandon_kredi_kreye", { p_id: S.uuid(), p_compte: kont, p_montant: v.montan, p_duree: v.duree, p_taux: v.taux, p_paiement: v.peman, p_date_debut: v.debut, p_tip: f.tip.value || null, p_jours: js });
       await S.pull();
       toast(`${t("Kredi a kreye")} · ${res.no_compte} ✓`, "ok", 5000);
       go(`#/kredi/${res.id}`);

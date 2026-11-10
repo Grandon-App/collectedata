@@ -595,20 +595,22 @@ function kreModel(M, l, txs0, fbs0, gras, moiId) {
     const pj = Number(x.paiement_journalier) || 0, final = Number(x.montant_final) || 0, paye = Number(x.paiement_cumule) || 0;
     const atant = tx.filter((y) => y.validation_status === "pending").reduce((a, y) => a + Number(y.montant || 0), 0);
     const rete = Math.max(Math.round((final - paye - atant) * 100) / 100, 0);
-    const nDwe = Math.min(joursPeman(x.date_debut, ajouteJou(M.today, -1), JOU_KREDI, M.feries), Number(x.nb_vesman) || 0);
+    // Kalandriye kredi a (jou peman yo); kredi ki pa genyen: lendi a samdi.
+    const jours = Array.isArray(x.jours_paiement) && x.jours_paiement.length ? x.jours_paiement.map(Number) : JOU_KREDI;
+    const nDwe = Math.min(joursPeman(x.date_debut, ajouteJou(M.today, -1), jours, M.feries), Number(x.nb_vesman) || 0);
     const reta = Math.max(Math.round((Math.min(nDwe * pj, final) - paye - atant) * 100) / 100, 0);
-    const jodi = rete > 0 && M.today >= x.date_debut && JOU_KREDI.includes(isoJou(M.today)) && !M.feries.has(M.today);
+    const jodi = rete > 0 && M.today >= x.date_debut && jours.includes(isoJou(M.today)) && !M.feries.has(M.today);
     const peJodi = tx.filter((y) => y.validation_status !== "rejected" && jouKreTx(y) === M.today).reduce((a, y) => a + Number(y.montant || 0), 0);
     // Penalite: apre dat fen + jou gras yo, chak jou peman kliyan an toujou dwe = 20% peman jounalye a.
     const penDe = x.date_fin ? ajouteJou(x.date_fin, gras + 1) : null;
     const dPe = tx.find((y) => y.validation_status === "confirmed");
     const penA = final - paye > 0 ? M.today : dPe ? jouKreTx(dPe) : null;
-    const penJou = penDe && penA ? joursPeman(penDe, penA, JOU_KREDI, M.feries) : 0;
+    const penJou = penDe && penA ? joursPeman(penDe, penA, jours, M.feries) : 0;
     const penPaJou = Math.round(pj * 0.2 * 100) / 100, penTotal = Math.round(penJou * penPaJou * 100) / 100;
     const penPeye = Number(x.penalites || 0) + tout.filter((y) => y.type_transaction === "Penalite" && (y._pending || y._local)).reduce((a, y) => a + Number(y.montant || 0), 0);
     const fb = fbs.filter((y) => y.id_compte_credit === x.id_compte_credit).sort((a, b) => String(b.capture_le).localeCompare(String(a.capture_le)));
     const fbJodi = fb.find((y) => jouLokal(new Date(y.capture_le)) === M.today) || null;
-    return { ...x, _fb: fb, _fbJodi: fbJodi, _tx: tx, _txTout: tout, _atant: atant, _rete: rete, _reta: reta, _jouReta: pj ? Math.ceil(reta / pj - 1e-9) : 0, _jodi: jodi, _peJodi: peJodi, _fini: final > 0 && paye >= final,
+    return { ...x, _jours: jours, _fb: fb, _fbJodi: fbJodi, _tx: tx, _txTout: tout, _atant: atant, _rete: rete, _reta: reta, _jouReta: pj ? Math.ceil(reta / pj - 1e-9) : 0, _jodi: jodi, _peJodi: peJodi, _fini: final > 0 && paye >= final,
       _gras: gras, _penDe: penDe, _penJou: penJou, _penPaJou: penPaJou, _penTotal: penTotal, _penPeye: penPeye, _penDu: Math.max(Math.round((penTotal - penPeye) * 100) / 100, 0),
       _depaseFen: !!x.date_fin && M.today > x.date_fin && rete > 0 };
   });
