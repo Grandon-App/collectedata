@@ -30,7 +30,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "4.59";
+const APP_VERSION = "4.60";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin", kesye: "Responsab kès" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
@@ -1841,17 +1841,21 @@ async function viewKredi() {
   const som = (xs, f) => xs.reduce((a, x) => a + (Number(f(x)) || 0), 0);
   const jodi = aktif.filter((x) => x._jodi), reta = aktif.filter((x) => x._jouReta);
   $app.innerHTML = `<div id="kredi"><div class="page-head"><h1>${t("Kredi")}</h1>${estManager() ? `<a class="btn pri" href="#/kredi/nouvo">＋ ${t("Nouvo kredi")}</a>` : ""}</div>
-    <div class="kes-sum">
+    <div class="kes-sum kes-sum4">
       <div class="card kes-k"><span>${t("Kredi aktif")}</span><b>${aktif.length}</b><small>${l.length} ${t("an tout")}</small></div>
       <div class="card kes-k"><span>${t("Pou ankese jodi a")}</span><b>${jodi.filter((x) => !x._peJodi).length}</b><small>${t("peye jodi a")} ${gd(som(l, (x) => x._peJodi))}</small></div>
       <div class="card kes-k"><span>${t("An reta")}</span><b class="${reta.length ? "out" : ""}">${reta.length}</b><small>${gd(som(reta, (x) => x._reta))}</small></div>
       <div class="card kes-k"><span>${t("Rete pou ranbouse")}</span><b>${gd(som(l, (x) => x.montant_restant))}</b><small>${t("deja peye")} ${gd(som(l, (x) => x.paiement_cumule))}</small></div>
     </div>
     <div class="list tx-lis">${l.map((x) => { const c = M.clients.get(x.id_personne); const pc = Number(x.montant_final) ? Math.round((Number(x.paiement_cumule) / Number(x.montant_final)) * 100) : 0;
-      return `<a class="row kxr" href="#/kredi/${h(x.id_compte_credit)}" data-kredi="${h(x.id_compte_credit)}"><span class="kxr-main"><span class="txr-t"><b>${d(non(c))}</b> ${badjKredi(x)}</span>
+      const dn = x._tx.find((y) => y.validation_status !== "rejected"), dj = dn && jouKreTx(dn);
+      return `<div class="row kxr${x._peJodi ? " kxr-ok" : ""}" data-kredi="${h(x.id_compte_credit)}">
+        <span class="txr-le" title="${h(t("Dènye peman"))}"><b class="mono">${dn ? lèKout(dn.capture_le || dn.date_transaction) || "—" : "—"}</b><small>${dn ? (dj === M.today ? t("jodi a") : datKout(dj)) : t("okenn")}</small></span>
+        <a class="kxr-main lnk" href="#/kredi/${h(x.id_compte_credit)}"><span class="txr-t"><b>${d(non(c))}</b> ${badjKredi(x)}</span>
         <span class="mut sm">${d(x.no_compte || "")} · ${gd(x.paiement_journalier)}/${t("jou")} · ${t("fen")} ${datFr(x.date_fin)}</span>
         <span class="sm">${t("Prete")} <b>${gd(x.montant_prete)}</b> · ${t("rete")} <b>${gd(x.montant_restant)}</b> / ${gd(x.montant_final)}${x._reta ? ` · <span class="err-t">${t("reta")} ${gd(x._reta)}</span>` : ""}</span>
-        <span class="kxr-bar" aria-hidden="true"><i style="width:${pc}%"></i></span></span></a>`; }).join("") || `<p class="empty">${t("Poko gen kredi.")}</p>`}</div></div>`;
+        <span class="kxr-bar" aria-hidden="true"><i style="width:${pc}%"></i></span></a>
+        ${!estKesye() && x._rete > 0 ? `<span class="kxr-ak">${x._peJodi ? `<b class="in">✓ ${gd(x._peJodi)}</b>` : ""}<a class="btn sm${x._peJodi ? "" : " pri"}" href="#/kredi/${h(x.id_compte_credit)}/peye">${t("Peye")}</a></span>` : ""}</div>`; }).join("") || `<p class="empty">${t("Poko gen kredi.")}</p>`}</div></div>`;
 }
 const etaKreTx = (y) => y._err ? `<span class="badge err">${t("Erè")}</span>` : y._pending ? `<span class="badge mut">${t("Poko voye")}</span>`
   : y.validation_status === "pending" ? `<span class="badge warn">${t("An atant validasyon")}</span>` : y.validation_status === "rejected" ? `<span class="badge err">${t("Rejte ✗")}</span>` : `<span class="badge ok">${t("Valide ✓")}</span>`;

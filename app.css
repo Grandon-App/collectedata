@@ -511,6 +511,7 @@ html[data-look] .chips.filt.kx-filt .chip { flex: 0 0 auto; min-width: max-conte
 
 /* Kès (responsab kès) */
 .kes-sum { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: 12px; }
+.kes-sum.kes-sum4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .kes-k { display: flex; flex-direction: column; gap: 2px; padding: 12px; min-width: 0; }
 .kes-k span { font-size: .78rem; color: var(--mut); font-weight: 600; }
 .kes-k b { font-size: 1.2rem; overflow-wrap: anywhere; }
@@ -558,6 +559,8 @@ details.rb > .list { padding: 0 10px 10px; }
 @media (max-width: 560px) {
   .kes-sum { grid-template-columns: 1fr 1fr; }
   .kes-sum .kes-k:first-child { grid-column: 1 / -1; }
+  .kes-sum.kes-sum4 { grid-template-columns: 1fr 1fr; }
+  .kes-sum.kes-sum4 .kes-k:first-child { grid-column: auto; }
 }
 @media (min-width: 1024px) {
   #kes .row.txr, details.rb .row.txr { grid-template-columns: 64px minmax(0, 1fr) auto; }
