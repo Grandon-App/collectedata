@@ -245,7 +245,17 @@ const EXEC = {
     const l = (await db.meta("kredi_tx")) || [];
     if (!l.some((x) => x.id_transaction_credit === p.id))
       await db.meta("kredi_tx", [...l, { id_transaction_credit: p.id, id_compte_credit: p.credit, no_compte: r.no_compte, type_transaction: "Paiement", montant: p.montant,
-        date_transaction: p.capture_le, capture_le: p.capture_le, validation_status: r.statut || "pending", created_by: api.getSession()?.user?.id }]);
+        date_transaction: p.capture_le, capture_le: p.capture_le, validation_status: r.statut || "pending", created_by: api.getSession()?.user?.id, _local: true }]);
+  },
+
+  // Penalite kredi ajan an ankese (konfime touswit; li parèt nan Kès la).
+  async kredi_penalite(p) {
+    const r = await api.rpc("grandon_kredi_penalite", { p_id: p.id, p_credit: p.credit, p_montant: p.montant, ...gpsArgs(p.gps),
+      p_capture_le: p.capture_le, p_appareil: p.appareil, p_note: p.note || null });
+    const l = (await db.meta("kredi_tx")) || [];
+    if (!l.some((x) => x.id_transaction_credit === p.id))
+      await db.meta("kredi_tx", [...l, { id_transaction_credit: p.id, id_compte_credit: p.credit, no_compte: r.no_compte, type_transaction: "Penalite", montant: p.montant,
+        date_transaction: p.capture_le, capture_le: p.capture_le, validation_status: "confirmed", created_by: api.getSession()?.user?.id, _local: true }]);
   },
 
   async tx(p) {
