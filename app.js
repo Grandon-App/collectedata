@@ -30,7 +30,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "4.66";
+const APP_VERSION = "4.67";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin", kesye: "Responsab kès" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
@@ -1330,13 +1330,13 @@ async function viewRapo() {
     const det = detayRapo(M, D, mwen);
     Object.assign(ctx, { jou: [], i: 0, txTit: t("Detay chak ribrik"), txHtml: det.html, nTx: det.n });
   }
-  $app.innerHTML = `<div id="rapo">${sipèvizè ? baRapo(M) : ""}${L().parts.rapo(ctx)}${genKredi ? rapoKredi(M, krPe, krPen, sipèvizè && !rapoF.ajan) : ""}</div>`;
+  $app.innerHTML = `<div id="rapo">${sipèvizè ? baRapo(M) : ""}${L().parts.rapo(ctx)}${genKredi ? rapoKredi(M, krPe, krPen, sipèvizè && !rapoF.ajan, sipèvizè) : ""}</div>`;
   if (sipèvizè) brancheBaRapo(M);
   $app.querySelectorAll("[data-j]").forEach((b) => (b.onclick = () => { jouRapo = Number(b.dataset.j); viewRapo().then(() => requestAnimationFrame(() => $app.querySelector(`[data-j="${jouRapo}"]`)?.focus({ preventScroll: true }))); }));
 }
 
 // Rapò: seksyon Kredi (peman, penalite, vèsman apre kanè a), pou ajan Grandon ak ajan Epargne.
-function rapoKredi(M, pe, pen, montreAjan) {
+function rapoKredi(M, pe, pen, montreAjan, sanLis = false) {
   const sum = (l) => l.reduce((a, x) => a + Number(x.montant || 0), 0);
   const vs = pe.filter((y) => y.versement_apres != null);
   const nVs = Math.round(vs.reduce((a, y) => a + (Number(y.versement_apres) - Number(y.versement_avant || 0)), 0) * 100) / 100;
@@ -1352,7 +1352,7 @@ function rapoKredi(M, pe, pen, montreAjan) {
       <div class="card kes-k" data-kpi="kredi_penalite" data-val="${sum(pen)}"><span>${t("Penalite")}</span><b class="in">${gd(sum(pen))}</b><small>${pen.length} ${t("penalite ankese")}</small></div>
       <div class="card kes-k" data-kpi="kredi_vesman" data-val="${nVs}"><span>${t("Vèsman")}</span><b>${nVs}</b><small>${t("vèsman sou kanè yo")}</small></div>
     </div>
-    <div class="list tx-lis">${[...pe, ...pen].sort((a, b) => String(b.capture_le || b.date_transaction).localeCompare(String(a.capture_le || a.date_transaction))).map(row).join("") || `<p class="empty">${t("Pa gen tranzaksyon kredi jou sa a.")}</p>`}</div></section>`;
+    ${sanLis ? `<p class="mut sm">${t("Detay yo nan «Detay chak ribrik»: Peman kredi, Penalite kredi, Vèsman deklare (kredi).")}</p>` : `<div class="list tx-lis">${[...pe, ...pen].sort((a, b) => String(b.capture_le || b.date_transaction).localeCompare(String(a.capture_le || a.date_transaction))).map(row).join("") || `<p class="empty">${t("Pa gen tranzaksyon kredi jou sa a.")}</p>`}</div>`}</section>`;
 }
 
 // ---------- Chan okipasyon (komen pou nouvo kliyan ak modifye) ----------
@@ -2913,6 +2913,30 @@ function detayRapo(M, D, pa) {
   const cyc = [...M.comptes.values()].filter((k) => pa(k) && k.created_at && S.jouLokal(new Date(k.created_at)) === D);
   const fb = [...M.suivis.values()].filter((x) => pa(x) && S.jouLokal(new Date(x.capture_le)) === D).sort((a, b) => String(a.capture_le).localeCompare(String(b.capture_le)));
   const dmJ = [...M.demandes.values()].filter((x) => pa(x) && x.capture_le && S.jouLokal(new Date(x.capture_le)) === D);
+  // Ribrik kredi yo: peman, penalite, vèsman deklare (kanè), kliyan kredi ki pa peye.
+  let krRib = "", krN = 0;
+  if ((M.kredi || []).length) {
+    const kt = M.kredi.flatMap((k) => k._txTout.map((y) => ({ ...y, _k: k }))).filter((y) => pa(y) && S.jouKreTx(y) === D)
+      .sort((a, b) => String(a.capture_le || a.date_transaction).localeCompare(String(b.capture_le || b.date_transaction)));
+    const kfb = M.kredi.flatMap((k) => k._fb.map((y) => ({ ...y, _k: k }))).filter((y) => pa(y) && S.jouLokal(new Date(y.capture_le)) === D);
+    const okK = (l) => l.filter((y) => y.validation_status !== "rejected");
+    const kPe = kt.filter((y) => y.type_transaction === "Paiement"), kPen = kt.filter((y) => y.type_transaction === "Penalite"), kVs = kPe.filter((y) => y.versement_apres != null);
+    const rowK = (y) => { const c = M.clients.get(y._k.id_personne);
+      return `<div class="row txr${y.validation_status === "rejected" ? " txr-anile" : ""}"><span class="txr-le"><b class="mono">${lèKout(y.capture_le || y.date_transaction) || "—"}</b></span>
+        <span class="txr-main"><span class="txr-t"><b>${d(non(c))}</b> ${y.type_transaction === "Penalite" ? "" : etaKreTx(y)}</span>
+          <span class="mut sm"><a class="lnk" href="#/kredi/${h(y._k.id_compte_credit)}">${d(y._k.no_compte || "")}</a>${ajanTxt(y.created_by)}</span>
+          ${y.versement_apres != null ? `<span class="mut sm">${t("vèsman avan")} ${Number(y.versement_avant)} → ${t("vèsman apre")} ${Number(y.versement_apres)}</span>` : ""}
+          ${y.validation_status === "rejected" && y.validation_note ? `<span class="sm err-t">${t("Rezon")}: ${d(y.validation_note)}</span>` : ""}</span>
+        <span class="txr-mon"><b class="in">+${gd(y.montant)}</b></span></div>`; };
+    krRib = seksyon("kredi_peman", "Peman kredi", kPe, rowK, sumMon(okK(kPe)))
+      + seksyon("kredi_penalite", "Penalite kredi", kPen, rowK, sumMon(okK(kPen)))
+      + `<details class="rb card" data-rb="kredi_vesman" ${kVs.length ? "open" : ""}><summary><b>${t("Vèsman deklare (kredi)")}</b><span class="mut sm">${kVs.length} · ${Math.round(okK(kVs).reduce((a, y) => a + Number(y.versement_apres) - Number(y.versement_avant || 0), 0) * 100) / 100} ${t("vèsman")}</span></summary>
+        <div class="list tx-lis">${kVs.map(rowK).join("") || `<p class="empty">${t("Anyen.")}</p>`}</div></details>`
+      + seksyon("kredi_papeye", "Kliyan kredi ki pa peye", kfb, (x) => `<div class="row txr"><span class="txr-le"><b class="mono">${lèKout(x.capture_le) || "—"}</b></span>
+        <span class="txr-main"><span class="txr-t"><b>${d(non(M.clients.get(x._k.id_personne)))}</b> <span class="badge warn">${t(MOTIF_KOUT[x.motif] || "Lòt")}</span></span>
+        <span class="mut sm">${t(motifLabel(x.motif))} · <a class="lnk" href="#/kredi/${h(x._k.id_compte_credit)}">${d(x._k.no_compte || "")}</a>${ajanTxt(x.agent_id)}</span>${x.note ? `<span class="sm">«${d(x.note)}»</span>` : ""}</span></div>`);
+    krN = kt.length + kfb.length;
+  }
   const html = seksyon("depo", "Depo ankese", dep, rowT, sumMon(ok(dep)))
     + seksyon("retre", "Retrè peye", ret, rowT, sumMon(ok(ret)))
     + seksyon("fre", "Frè", fre, rowT, sumMon(ok(fre)))
@@ -2923,8 +2947,9 @@ function detayRapo(M, D, pa) {
     + seksyon("papeye", "Kliyan ki pa peye", fb, (x) => `<div class="row txr"><span class="txr-le"><b class="mono">${lèKout(x.capture_le) || "—"}</b></span>
         <span class="txr-main"><span class="txr-t"><b>${d(nmK(x.id_compte_epargne))}</b> <span class="badge warn">${t(MOTIF_KOUT[x.motif] || "Lòt")}</span> ${estManager() ? badjKontwol(x) : ""}</span>
         <span class="mut sm">${t(motifLabel(x.motif))}${ajanTxt(x.agent_id)}</span>${x.note ? `<span class="sm">«${d(x.note)}»</span>` : ""}</span></div>`)
-    + seksyon("demann", "Demann retrè ak viman", dmJ, (x) => liDemande(M, x));
-  return { html, n: txJ.length + cyc.length + fb.length + dmJ.length };
+    + seksyon("demann", "Demann retrè ak viman", dmJ, (x) => liDemande(M, x))
+    + krRib;
+  return { html, n: txJ.length + cyc.length + fb.length + dmJ.length + krN };
 }
 
 // ---------- Istorik modifikasyon pa jou (manadjè) ----------
