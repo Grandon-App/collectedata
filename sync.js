@@ -238,6 +238,16 @@ const EXEC = {
     });
   },
 
+  // Peman jounalye yon kredi (an atant jiskaske responsab kès la valide l).
+  async kredi_peye(p) {
+    const r = await api.rpc("grandon_kredi_peye", { p_id: p.id, p_credit: p.credit, p_montant: p.montant, ...gpsArgs(p.gps),
+      p_capture_le: p.capture_le, p_appareil: p.appareil, p_note: p.note || null });
+    const l = (await db.meta("kredi_tx")) || [];
+    if (!l.some((x) => x.id_transaction_credit === p.id))
+      await db.meta("kredi_tx", [...l, { id_transaction_credit: p.id, id_compte_credit: p.credit, no_compte: r.no_compte, type_transaction: "Paiement", montant: p.montant,
+        date_transaction: p.capture_le, capture_le: p.capture_le, validation_status: r.statut || "pending", created_by: api.getSession()?.user?.id }]);
+  },
+
   async tx(p) {
     const r = await api.rpc("grandon_transaction", {
       p_id: p.id, p_compte: p.compte, p_type: p.type, p_montant: p.montant, p_solde_declare: p.solde_declare ?? null,
@@ -376,6 +386,8 @@ export async function pull() {
     await db.meta("ekip", aj.map((x) => ({ user_id: x.user_id, nom: x.nom, role: x.role, actif: x.actif })));
     const kr = await api.selectAll("grandon_v_kredi?select=*&order=created_at.desc").catch(() => null); // kredi (sèvis sit la)
     if (kr) await db.meta("kredi", kr);
+    const krt = kr ? await api.selectAll("grandon_v_kredi_tx?select=*&order=date_transaction").catch(() => null) : null; // peman kredi yo
+    if (krt) await db.meta("kredi_tx", krt);
   } catch { /* administratè (imèl): pa gen liy grandon_ajan pou yo */ }
   await db.replaceAll("feries", feries);
   await db.replaceAll("suivis", suivis);
