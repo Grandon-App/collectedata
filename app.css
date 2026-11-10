@@ -703,3 +703,6 @@ html[data-look="b"]:not([data-theme="dark"]) .login-logo img.mak-koule { filter:
 .kredi-dl div { display: flex; flex-direction: column; gap: 2px; }
 .kredi-dl dt { font-size: .78rem; opacity: .7; }
 .kredi-dl dd { margin: 0; font-variant-numeric: tabular-nums; }
+#kr-tip { margin: 4px 0 12px; }
+#kr-tip .tab { flex: 1; text-align: center; text-decoration: none; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+#kr-tip .tab small { font-weight: 500; }

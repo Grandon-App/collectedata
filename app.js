@@ -30,7 +30,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "4.64";
+const APP_VERSION = "4.65";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin", kesye: "Responsab kès" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
@@ -1928,13 +1928,13 @@ async function viewKrediPeye(id, pen = false) {
   if (pen) return viewKrediPenalite(M, x);
   const c = M.clients.get(x.id_personne), pj = Number(x.paiement_journalier) || 0;
   const back = `<a href="#/kredi/${h(id)}" class="back">‹ ${d(x.no_compte || t("Kredi"))}</a>`;
-  if (x._rete <= 0) { $app.innerHTML = `${back}<p class="empty">${t("Pa gen anyen ki rete pou peye sou kredi sa a (peman an atant yo konte).")}</p>`; return; }
+  if (x._rete <= 0) { $app.innerHTML = `${back}<h1>${t("Tranzaksyon kredi")}</h1>${tipKreTx(x, "peye")}<p class="empty">${t("Pa gen anyen ki rete pou peye sou kredi sa a (peman an atant yo konte).")}</p>`; return; }
   // Vèsman avan: dènye «vèsman apre» ki sou kanè a (dènye peman), oswa sa ki deja peye ÷ peman jounalye a.
   const dPe = x._tx.find((y) => y.validation_status !== "rejected" && y.versement_apres != null);
   const vAvan = dPe ? Number(dPe.versement_apres) : pj ? Math.round(((Number(x.paiement_cumule) || 0) + x._atant) / pj * 100) / 100 : 0;
   const sij = [[t("1 jou"), Math.min(pj, x._rete)], ...(x._reta ? [[`${t("Reta")} + ${t("jodi a")}`, Math.min(x._reta + pj, x._rete)]] : []), [t("Tout sa ki rete"), x._rete]]
     .filter((v, i, a) => a.findIndex((w) => w[1] === v[1]) === i);
-  $app.innerHTML = `${back}<h1>${t("Peman kredi")}</h1>
+  $app.innerHTML = `${back}<h1>${t("Tranzaksyon kredi")}</h1>${tipKreTx(x, "peye")}
   <form id="f" class="card form" novalidate>
     <p><b>${d(non(c))}</b> · ${d(x.no_compte || "")}</p>
     <p class="mut sm">${t("Peman jounalye")} ${gd(pj)} · ${t("rete")} ${gd(x._rete)}${x._reta ? ` · <span class="err-t">${t("reta")} ${gd(x._reta)} (${x._jouReta} ${t("jou")})</span>` : ""}</p>
@@ -1979,12 +1979,15 @@ async function viewKrediPeye(id, pen = false) {
     go(`#/kredi/${x.id_compte_credit}`);
   };
 }
+// Tip tranzaksyon sou paj peman kredi a: vèsman (peman) oswa penalite.
+const tipKreTx = (x, akt) => `<div class="tabs" role="tablist" id="kr-tip">${[["peye", t("Peman (vèsman)"), x._rete > 0 ? gd(x._rete) : ""], ["penalite", t("Penalite"), x._penDu > 0 ? gd(x._penDu) : t("okenn")]]
+  .map(([k, l, n]) => `<a role="tab" class="tab ${akt === k ? "on" : ""}" aria-selected="${akt === k}" data-kr-tip="${k}" href="#/kredi/${h(x.id_compte_credit)}/${k}">${l}${n ? ` <small class="mut">${n}</small>` : ""}</a>`).join("")}</div>`;
 async function viewKrediPenalite(M, x) {
   const c = M.clients.get(x.id_personne), id = x.id_compte_credit;
   const back = `<a href="#/kredi/${h(id)}" class="back">‹ ${d(x.no_compte || t("Kredi"))}</a>`;
-  if (x._penDu <= 0) { $app.innerHTML = `${back}<p class="empty">${t("Kliyan sa a pa dwe penalite.")}</p>`; return; }
+  if (x._penDu <= 0) { $app.innerHTML = `${back}<h1>${t("Tranzaksyon kredi")}</h1>${tipKreTx(x, "penalite")}<p class="empty">${t("Kliyan sa a pa dwe penalite.")}${x._penDe ? ` ${t("Penalite kòmanse")} ${datFr(x._penDe)} (${t("dat fen")} + ${x._gras} ${t("jou gras")}).` : ""}</p>`; return; }
   const sij = [[t("1 jou"), Math.min(x._penPaJou, x._penDu)], [t("Tout penalite a"), x._penDu]].filter((v, i, a) => a.findIndex((w) => w[1] === v[1]) === i);
-  $app.innerHTML = `${back}<h1>${t("Ankese penalite")}</h1>
+  $app.innerHTML = `${back}<h1>${t("Tranzaksyon kredi")}</h1>${tipKreTx(x, "penalite")}
   <form id="f" class="card form" novalidate>
     <p><b>${d(non(c))}</b> · ${d(x.no_compte || "")}</p>
     <p class="mut sm">${t("Dat fen")} ${datFr(x.date_fin)} + ${x._gras} ${t("jou gras")} · ${x._penJou} ${t("jou")} × ${gd(x._penPaJou)} = ${gd(x._penTotal)} · ${t("deja ankese")} ${gd(x._penPeye)}</p>
