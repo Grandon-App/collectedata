@@ -30,7 +30,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "4.70";
+const APP_VERSION = "4.71";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin", kesye: "Responsab kès" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
@@ -1934,6 +1934,7 @@ async function viewKrediFich(id) {
     ...(x.type_compte_credit ? [["Tip kredi", d(x.type_compte_credit)]] : [])];
   $app.innerHTML = `<a href="#/kredi" class="back">‹ ${t("Kredi")}</a><div class="page-head"><h1>${d(x.no_compte || t("Kredi"))}</h1>
       <span class="kr-ak">${!estKesye() && x._penDu > 0 ? `<a class="btn danger" id="kr-pen" href="#/kredi/${h(x.id_compte_credit)}/penalite">${t("Ankese penalite")}</a>` : ""}
+      ${estManager() && !x._fini ? `<a class="btn" id="kr-kal" href="#/kredi/${h(x.id_compte_credit)}/kalandriye">${t("Modifye kalandriye")}</a>` : ""}
       ${!estKesye() && x._rete > 0 && !x._peJodi && !x._fbJodi && x._jodi ? `<button type="button" class="btn" id="kr-papeye">${t("Pa peye")}</button>` : ""}
       ${!estKesye() && x._rete > 0 ? `<a class="btn pri" id="kr-peye" href="#/kredi/${h(x.id_compte_credit)}/peye">＋ ${t("Anrejistre yon peman")}</a>` : ""}</span></div>
     <p>${badjKredi(x)}</p>
@@ -2053,6 +2054,72 @@ async function viewKrediPenalite(M, x) {
     await S.enqueue("kredi_penalite", { id: S.uuid(), credit: id, montant: m, gps: await getGps(5000), capture_le: new Date().toISOString(), appareil: S.appareil() });
     toast(t("Penalite a anrejistre."), "ok", 4000);
     go(`#/kredi/${id}`);
+  };
+}
+// Manadjè: modifye kalandriye peman yon kredi (frekans + jou). Dat fen an rekalkile ak vèsman ki rete yo, apati jodi a.
+async function viewKrediKalandriye(id) {
+  const M = await S.model();
+  const x = (await kreDone(M)).find((k) => k.id_compte_credit === id);
+  if (!x) return go("#/kredi");
+  const c = M.clients.get(x.id_personne), pj = Number(x.paiement_journalier) || 0;
+  const rete = Math.max((Number(x.montant_final) || 0) - (Number(x.paiement_cumule) || 0), 0), n = pj ? Math.ceil(rete / pj - 1e-9) : 0;
+  const de = M.today > x.date_debut ? M.today : x.date_debut;
+  let jours = [...x._jours], freq = FREK_KREDI.includes(jours.length) ? jours.length : 6;
+  $app.innerHTML = `<a href="#/kredi/${h(id)}" class="back">‹ ${d(x.no_compte || t("Kredi"))}</a><h1>${t("Modifye kalandriye peman")}</h1>
+  <form id="f" class="card form" novalidate>
+    <p><b>${d(non(c))}</b> · ${d(x.no_compte || "")}</p>
+    <p class="mut sm">${t("Kalandriye kounye a")}: <b>${x._jours.length}× · ${lisJou(x._jours)}</b> · ${t("dat fen")} ${datFr(x.date_fin)}</p>
+    <fieldset class="field"><legend>${t("Frekans")} * <small class="mut">(${t("kantite fwa pa semèn")})</small></legend>
+      <div class="seg s4" id="kr-freq">${FREK_KREDI.map((m) => `<label><input type="radio" name="freq" value="${m}" ${m === freq ? "checked" : ""}><span>${m}×</span></label>`).join("")}</div>
+    </fieldset>
+    <fieldset class="field"><legend>${t("Jou peman yo")} * <small class="mut" id="jou-hint"></small></legend>
+      <div class="jours j6" id="jours">${[1, 2, 3, 4, 5, 6].map((j) => `<label><input type="checkbox" name="jou" value="${j}"><span>${JOU_KOUT[j]}</span></label>`).join("")}</div>
+    </fieldset>
+    <label>${t("Rezon")} <small class="mut">(${t("opsyonèl")})</small><input name="rezon" maxlength="200" autocomplete="off"></label>
+    <div class="recap" id="recap" aria-live="polite"></div>
+    <p class="err-msg" id="err" role="alert"></p>
+    <button class="btn pri" type="submit">${t("Anrejistre nouvo kalandriye a")}</button>
+  </form>`;
+  const f = document.getElementById("f");
+  const boxes = [...f.querySelectorAll('input[name="jou"]')];
+  const finNouvo = () => (n > 0 && jours.length ? S.ajouteJou(S.finVesman(de, [...jours].sort(), n, M.feries), -1) : x.date_fin);
+  const recap = () => {
+    boxes.forEach((b) => (b.checked = jours.includes(Number(b.value))));
+    const rest = freq - jours.length;
+    document.getElementById("jou-hint").textContent = rest > 0 ? `(${t("chwazi")} ${rest} ${t("ankò")})` : `(${freq} ${t("jou")})`;
+    const ok = jours.length === freq;
+    document.getElementById("recap").innerHTML = `
+      <div><span>${t("Nouvo kalandriye")}</span><b>${ok ? `${freq}× · ${lisJou([...jours].sort())}` : "—"}</b></div>
+      <div><span>${t("Vèsman ki rete")}</span><b>${n}</b><small class="mut">${gd(rete)} ÷ ${gd(pj)}</small></div>
+      <div><span>${t("Nouvo dat fen")}</span><b>${ok ? datFr(finNouvo()) : "—"}</b><small class="mut">${t("avan")}: ${datFr(x.date_fin)}</small></div>`;
+  };
+  f.querySelectorAll('input[name="freq"]').forEach((r) => (r.onchange = () => { freq = Number(r.value); jours = [...JOU_DEFO_KREDI[freq]]; recap(); }));
+  boxes.forEach((b) => (b.onchange = () => {
+    const j = Number(b.value);
+    if (b.checked) {
+      if (jours.length >= freq) { if (freq === 1) jours = []; else { b.checked = false; toast(`${t("Ou deja chwazi")} ${freq} ${t("jou. Retire youn anvan.")}`, "err", 2500); return; } }
+      jours.push(j);
+    } else jours = jours.filter((v) => v !== j);
+    recap();
+  }));
+  recap();
+  f.onsubmit = async (e) => {
+    e.preventDefault();
+    const err = document.getElementById("err");
+    if (jours.length !== freq) return (err.textContent = `${t("Chwazi egzakteman")} ${freq} ${t("jou peman.")}`);
+    const js = [...jours].sort();
+    if (js.join() === [...x._jours].sort().join()) return (err.textContent = t("Kalandriye a pa chanje."));
+    if (!navigator.onLine) return (err.textContent = t("Fòk ou gen entènèt pou modifye kalandriye a."));
+    if (!(await ui.ask({ titre: "Modifye kalandriye peman an?", ok: "Modifye l", foto: c?.photo_url, detay: [["Kliyan", non(c)], ["Kredi", x.no_compte || ""],
+      ["Avan", `${x._jours.length}× · ${lisJou(x._jours)}`], ["Apre", `${js.length}× · ${lisJou(js)}`], ["Vèsman ki rete", String(n)],
+      ["Dat fen", `${datFr(x.date_fin)} → ${datFr(finNouvo())}`]] }))) return;
+    const b = f.querySelector("button[type=submit]"); b.disabled = true;
+    try {
+      const r = await api.rpc("grandon_kredi_kalandriye_modifye", { p_credit: id, p_jours: js, p_rezon: f.rezon.value.trim() || null });
+      await S.pull();
+      toast(`${t("Kalandriye a modifye")} · ${t("dat fen")} ${datFr(r?.date_fin || finNouvo())} ✓`, "ok", 5000);
+      go(`#/kredi/${id}`);
+    } catch (e2) { b.disabled = false; err.textContent = t(e2.message); }
   };
 }
 // Responsab kès: peman kredi an atant yo.
@@ -3142,7 +3209,7 @@ async function viewAjan() {
 }
 
 // ---------- Routè ----------
-const FORM = /^#\/(kredi\/nouvo|kredi\/[\w-]+\/(?:peye|penalite)|kliyan\/nouvo|kliyan\/[\w-]+\/modifye|cycle\/nouvo|cycle\/[\w-]+\/modifye|tx\/nouvo|ajan|modpas)/;
+const FORM = /^#\/(kredi\/nouvo|kredi\/[\w-]+\/(?:peye|penalite|kalandriye)|kliyan\/nouvo|kliyan\/[\w-]+\/modifye|cycle\/nouvo|cycle\/[\w-]+\/modifye|tx\/nouvo|ajan|modpas)/;
 async function render() {
   const r = location.hash || "#/";
   const kreL = await db.meta("kredi");
@@ -3177,6 +3244,7 @@ async function render() {
   if (r === "#/kredi/nouvo") return estManager() ? viewKrediNouvo() : go("#/");
   if ((m = r.match(/^#\/kredi\/([\w-]+)\/peye$/))) return viewKrediPeye(m[1]);
   if ((m = r.match(/^#\/kredi\/([\w-]+)\/penalite$/))) return viewKrediPeye(m[1], true);
+  if ((m = r.match(/^#\/kredi\/([\w-]+)\/kalandriye$/))) return estManager() ? viewKrediKalandriye(m[1]) : go("#/kredi");
   if ((m = r.match(/^#\/kredi\/([\w-]+)$/))) return viewKrediFich(m[1]);
   if (r === "#/rapo") return viewRapo();
   if (r === "#/kat") { const M = await S.model(); ajans = (await db.meta("ajans")) || {}; return KAT.viewKat({ $app, M, man: estManager(), moi, ajans, getGps, toast }); }
