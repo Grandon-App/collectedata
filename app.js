@@ -30,7 +30,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "4.62";
+const APP_VERSION = "4.63";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin", kesye: "Responsab kès" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
@@ -295,6 +295,7 @@ function aletAktif(M, M0) {
   const mete = (a, k) => { if (!wè.has(a.id) && a._eta === "aktif") { wè.add(a.id); l.push({ ...a, k }); } };
   for (const k of M.comptes.values()) for (const a of k._alet) mete(a, k);
   for (const k of M0.comptes.values()) for (const a of k._alet) if (a.tip === "rapel" && mwenSe(a.kreye_pa)) mete(a, k);
+  for (const k of M.comptes.values()) for (const a of aletKredi(k)) mete(a, k);
   for (const k of M.comptes.values()) if (k._fre?.pou && !k._alet.some((a) => a.pwoblem === "fre" && a._eta === "aktif"))
     mete({ id: `fre-${k.id_compte_epargne}`, sistem: true, nivo: "enpotan", tit: "Frais sèvis", _eta: "aktif", _anReta: false,
       mesaj: `${t("Kont lan elijib: pran prelevman frais sèvis la")} (${gd(k._fre.montan)}).` }, k);
@@ -306,7 +307,7 @@ function seksyonAletTablo(M, M0) {
   const l = aletAktif(M, M0);
   if (!l.length) return "";
   const nReta = l.filter((a) => a._anReta).length;
-  const rann = (a) => `<div class="alet-tr">${liAlet(a, { man: estManager() }).replace('<div class="grow">', `<div class="grow"><a class="alet-kl" href="#/cycle/${h(a.k.id_compte_epargne)}">${d(non(M0.clients.get(a.k.id_personne)))} · ${d(a.k.no_compte || "")}</a><br>`)}</div>`;
+  const rann = (a) => `<div class="alet-tr">${liAlet(a, { man: estManager() }).replace('<div class="grow">', `<div class="grow"><a class="alet-kl" href="${lyenAlet(a)}">${d(non(M0.clients.get(a.k.id_personne)))} · ${d(a.kredi?.no_compte || a.k.no_compte || "")}</a><br>`)}</div>`;
   const prem = l.slice(0, 6), rès = l.slice(6);
   return `<section class="alet-tablo" id="alet-tablo"><div class="txj-h"><h2>${t("Alèt ak rapèl")} <small>${l.length}</small></h2>${nReta ? `<span class="badge err">${nReta} ${t("an reta")}</span>` : ""}</div>
     <div class="list">${prem.map(rann).join("")}</div>
@@ -324,6 +325,7 @@ async function avètiAlet() {
     for (const a of k._alet) if (a._eta === "aktif" && !mwenSe(a.kreye_pa) && !a._pending) l.push({ ...a, k, cle: a._anReta ? `${a.id}:reta` : a.id });
     if (k._fre?.pou) l.push({ id: `fre-${k.id_compte_epargne}`, k, cle: `fre-${k.id_compte_epargne}`, tit: t("Frais sèvis pou pran"), nivo: "enpotan",
       mesaj: t("Kont sa yo elijib: pran prelevman frais sèvis la."), _anReta: false });
+    for (const a of aletKredi(k)) l.push({ ...a, tit: t(a.tit), mesaj: null, cle: a.id });
   }
   let vu = []; try { vu = JSON.parse(localStorage.getItem(ALET_VU) || "[]"); } catch { /* */ }
   const nouvo = l.filter((a) => !vu.includes(a.cle));
@@ -341,7 +343,7 @@ async function avètiAlet() {
     html: [...gr.values()].map(({ a, n, kl }) => `<div class="row alet ${h(a.nivo)}"><div class="grow"><b>${d(a.tit)}</b> <span class="badge ${a._anReta ? "err" : "mut"}">${n} ${t("kliyan")}</span>
       ${a.dele ? `<span class="badge ${a._anReta ? "err" : "warn"}">${t("Dèlè")} ${datFr(a.dele)}${a._anReta ? ` · ${t("an reta")}` : ""}</span>` : ""}
       ${a.mesaj ? `<div class="sm alet-m">${d(a.mesaj)}</div>` : ""}
-      <div class="sm">${kl.slice(0, 8).map((x) => `<a href="#/cycle/${h(x.k.id_compte_epargne)}">${d(non(M0.clients.get(x.k.id_personne)))}</a>`).join(" · ")}${kl.length > 8 ? ` · +${kl.length - 8}` : ""}</div></div></div>`).join("") });
+      <div class="sm">${kl.slice(0, 8).map((x) => `<a href="${lyenAlet(x)}">${d(non(M0.clients.get(x.k.id_personne)))}</a>`).join(" · ")}${kl.length > 8 ? ` · +${kl.length - 8}` : ""}</div></div></div>`).join("") });
   try { localStorage.setItem(ALET_VU, JSON.stringify([...new Set([...vu, ...nouvo.map((a) => a.cle)])].slice(-3000))); } catch { /* */ }
   avètiOuvè = false;
 }
@@ -425,10 +427,10 @@ async function viewAlet() {
   for (const k of [...aktif].sort((a, b) => String(b.date_debut).localeCompare(String(a.date_debut)))) if (!parKliyan.has(k.id_personne)) parKliyan.set(k.id_personne, k);
   const alets = [...M.comptes.values()].flatMap((k) => k._alet.map((a) => ({ ...a, k })));
   const aAktif = alets.filter((a) => a._eta === "aktif");
-  const kontPw = (p) => p.oto ? (p.k === "kal" || p.kont ? aktif : [...parKliyan.values()]).filter((k) => genPwoblem(p.k, M.clients.get(k.id_personne), k))
+  const kontPw = (p) => p.oto ? (p.kredi ? [...M.comptes.values()].filter((k) => k._kredi?.length) : p.k === "kal" || p.kont ? aktif : [...parKliyan.values()]).filter((k) => genPwoblem(p.k, M.clients.get(k.id_personne), k))
     : [...new Map(aAktif.filter((a) => a.pwoblem === p.k).map((a) => [a.k.id_compte_epargne, a.k])).values()];
   const genFre = [...M.comptes.values()].some((k) => k._fre);
-  const pw = PWOBLEM.filter((p) => !p.sevis || genFre).map((p) => {
+  const pw = PWOBLEM.filter((p) => (!p.sevis || genFre) && (!p.kredi || (M.kredi || []).length)).map((p) => {
     const tout = kontPw(p), kont = tout.filter(nanF);
     const al = aAktif.filter((a) => a.pwoblem === p.k && nanF(a.k));
     const parA = new Map(); for (const k of kont) parA.set(ajanK(k), (parA.get(ajanK(k)) || 0) + 1);
@@ -483,7 +485,7 @@ async function viewAlet() {
         ${g.n - g.regle ? `<div class="btns"><button type="button" class="btn sm" data-kp-fermen="${h(g.id)}">${t("Fèmen kanpay la")}</button></div>` : ""}</div>`; }).join("") || `<p class="empty">${t("Poko gen kanpay.")}</p>`}</div>
     <h2>${t("Lòt alèt ak rapèl aktif")} <small>${lòt.length}</small></h2>
     <div class="chips filt kx-filt" role="group">${[["", "Tout"], ["reta", "An reta"], ["manyel", "Manadjè"], ["rapel", "Rapèl ajan"]].map(([v, l]) => `<button type="button" class="chip ${aletF.lis === v ? "on" : ""}" data-alis="${v}" aria-pressed="${aletF.lis === v}">${t(l)}</button>`).join("")}</div>
-    <div class="list alet-tablo">${lòt.map((a) => `<div class="alet-tr">${liAlet(a, { man: true }).replace('<div class="grow">', `<div class="grow"><a class="alet-kl" href="#/cycle/${h(a.k.id_compte_epargne)}">${d(non(M.clients.get(a.k.id_personne)))} · ${d(a.k.no_compte || "")}</a> <span class="mut sm" data-brut>${h(nonA(ajanK(a.k)))}</span><br>`)}</div>`).join("") || `<p class="empty">${t("Pa gen lòt alèt aktif.")}</p>`}</div></div>`;
+    <div class="list alet-tablo">${lòt.map((a) => `<div class="alet-tr">${liAlet(a, { man: true }).replace('<div class="grow">', `<div class="grow"><a class="alet-kl" href="${lyenAlet(a)}">${d(non(M.clients.get(a.k.id_personne)))} · ${d(a.k.no_compte || "")}</a> <span class="mut sm" data-brut>${h(nonA(ajanK(a.k)))}</span><br>`)}</div>`).join("") || `<p class="empty">${t("Pa gen lòt alèt aktif.")}</p>`}</div></div>`;
   document.getElementById("alet-ajan").onchange = (e) => { aletF.ajan = e.target.value; viewAlet(); };
   $app.querySelectorAll("[data-alis]").forEach((b) => (b.onclick = () => { aletF.lis = b.dataset.alis; viewAlet(); }));
   brancherAlet(M);
@@ -492,8 +494,8 @@ async function viewAlet() {
     box.hidden = !box.hidden;
     b.setAttribute("aria-expanded", String(!box.hidden)); b.textContent = t(box.hidden ? "Wè yo" : "Kache yo");
     if (!box.hidden) box.innerHTML = `<div class="pw-lis">${[...r.kont].sort((x, y) => nonA(ajanK(x)).localeCompare(nonA(ajanK(y)), "fr") || non(M.clients.get(x.id_personne)).localeCompare(non(M.clients.get(y.id_personne)), "fr")).map((k) => { const a = aAktif.find((x) => x.pwoblem === r.p.k && x.k.id_compte_epargne === k.id_compte_epargne);
-      const foto = r.p.k === "foto" || r.p.k === "foto_move";
-      return `<div class="row"><a class="grow lnk" href="${foto ? `#/kliyan/${h(k.id_personne)}` : `#/cycle/${h(k.id_compte_epargne)}`}"><b>${d(non(M.clients.get(k.id_personne)))}</b><div class="mut sm">${d(k.no_compte || "")} · <span data-brut>${h(nonA(ajanK(k)))}</span></div></a>
+      const foto = r.p.k === "foto" || r.p.k === "foto_move", kr = r.p.kredi ? (k._kredi || [])[0] : null;
+      return `<div class="row"><a class="grow lnk" href="${foto ? `#/kliyan/${h(k.id_personne)}` : kr ? `#/kredi/${h(kr.id_compte_credit)}` : `#/cycle/${h(k.id_compte_epargne)}`}"><b>${d(non(M.clients.get(k.id_personne)))}</b><div class="mut sm">${d(kr?.no_compte || k.no_compte || "")} · <span data-brut>${h(nonA(ajanK(k)))}</span></div></a>
         ${a ? `<span class="badge ${a._anReta ? "err" : "warn"}">${t("Alèt")}${a.dele ? ` · ${datFr(a.dele)}` : ""}</span>` : ""}
         ${foto ? `<a class="btn sm pri" href="#/kliyan/${h(k.id_personne)}">📷 ${t("Ajoute foto")}</a>` : ""}</div>`; }).join("")}</div>`;
   }));
@@ -1601,8 +1603,24 @@ async function viewClientEdit(id) {
 // sou paj kliyan an, cycle li oswa depo li, jiskaske pwoblèm lan rezoud.
 const NIVO_ALET = { info: ["Enfòmasyon", "info"], enpotan: ["Enpòtan", "warn"], ijan: ["Ijan", "err"] };
 const FEN_ALET = { manyel: "Fèmen pa yon manadjè", regle: "Fèmen lè pwoblèm lan regle", pa_reta: "Fèmen lè kliyan an pa an reta ankò", depo: "Fèmen lè kliyan an fè yon depo", dat: "Fèmen nan dat" };
-function aletYo(k, { tout = false } = {}) {
+// Alèt sistèm kredi (kredi ki lye ak kont epay la): penalite pou ankese, dat fen depase, reta. Yon sèl pa kredi (sa ki pi grav la).
+function aletKredi(k, idKredi = null) {
   const l = [];
+  for (const x of k._kredi || []) {
+    if (idKredi && x.id_compte_credit !== idKredi) continue;
+    const no = x.no_compte || "";
+    const a = x._penDu > 0 ? { kod: "krp", nivo: "ijan", tit: "Penalite kredi", mesaj: `${t("Kredi")} ${d(no)}: ${t("ankese")} ${gd(x._penDu)} ${t("penalite")} (${x._penJou} ${t("jou")}).` }
+      : x._depaseFen ? { kod: "krf", nivo: "ijan", tit: "Kredi depase dat fen li", mesaj: `${t("Kredi")} ${d(no)}: ${t("dat fen")} ${datFr(x.date_fin)} ${t("pase")}, ${t("rete")} ${gd(x._rete)}. ${t("Penalite kòmanse")} ${datFr(x._penDe)}.` }
+      : x._jouReta > 0 ? { kod: "krr", nivo: x._jouReta >= 3 ? "ijan" : "enpotan", tit: "Kredi an reta", mesaj: `${t("Kredi")} ${d(no)}: ${t("kliyan an dwe")} ${gd(x._reta)} (${x._jouReta} ${t("jou")}).` } : null;
+    if (a) l.push({ ...a, id: `${a.kod}-${x.id_compte_credit}`, sistem: true, kredi: x, k, _eta: "aktif", _anReta: false });
+  }
+  return l;
+}
+// Kredi yon alèt konsène: alèt sistèm kredi, alèt/rapèl sou yon kredi, oswa kanpay pwoblèm kredi (premye kredi kont lan).
+const kredAlet = (a) => a.kredi?.id_compte_credit || a.id_compte_credit || (String(a.pwoblem || "").startsWith("kredi_") ? (a.k?._kredi || [])[0]?.id_compte_credit : null) || null;
+const lyenAlet = (a) => (kredAlet(a) ? `#/kredi/${h(kredAlet(a))}` : `#/cycle/${h(a.k.id_compte_epargne)}`);
+function aletYo(k, { tout = false } = {}) {
+  const l = [...aletKredi(k)];
   if (k._actif && k._aRekipere > 0)
     l.push({ id: `sys-${k.id_compte_epargne}`, sistem: true, k, nivo: k._anReta >= 3 ? "ijan" : "enpotan", tit: "Rekouvreman",
       mesaj: `${t("Kliyan an dwe")} ${F.rekipere(k._aRekipere, k._anReta)}. ${t("Fè l peye anvan l ale pi lwen.")}`, _eta: "aktif" });
@@ -1616,7 +1634,8 @@ function liAlet(a, { man = false, kont = false } = {}) {
   const [nl, kl] = NIVO_ALET[a.nivo] || NIVO_ALET.enpotan;
   const eta = a._eta === "fermen" ? `<span class="badge mut">${t("Fèmen")}</span>` : a._eta === "oto" ? `<span class="badge ok">${t("Rezoud otomatik")}</span>` : "";
   const rapel = a.tip === "rapel";
-  const sous = a.sistem ? t("Alèt sistèm · li disparèt lè kliyan an peye sa l dwe a")
+  const kr = a.kredi || (a.id_compte_credit && (a.k?._kredi || []).find((x) => x.id_compte_credit === a.id_compte_credit));
+  const sous = a.sistem ? t(a.kredi ? "Alèt sistèm kredi · li disparèt lè kliyan an peye sa l dwe a" : "Alèt sistèm · li disparèt lè kliyan an peye sa l dwe a")
     : rapel ? `${t("Rapèl")} · ${nomAjan(a.kreye_pa) || t("Ajan")} · ${lè(a.kreye_le)}`
     : `${nomAjan(a.kreye_pa) || t("Manadjè")} · ${lè(a.kreye_le)} · ${t(FEN_ALET[a.fen_kondisyon] || "")}${a.fen_kondisyon === "dat" && a.fen_dat ? ` ${datFr(a.fen_dat)}` : ""}`;
   const pw = a.pwoblem ? pwoblemPa(a.pwoblem) : null;
@@ -1625,7 +1644,8 @@ function liAlet(a, { man = false, kont = false } = {}) {
   return `<div class="row alet ${h(a.nivo)} ${rapel ? "rapel" : ""} ${a._eta !== "aktif" ? "fini" : ""}" data-alet="${h(a.id)}">
     <div class="grow"><b>${a.sistem ? t(a.tit) : d(a.tit)}</b> ${rapel ? `<span class="badge info">⏰ ${t("Rapèl")}</span>` : `<span class="badge ${kl}">${t(nl)}</span>`} ${dele} ${eta} ${a._pending || a._fermenPending ? `<span class="badge pend">${t("Poko voye")}</span>` : ""}
       ${pw && d(a.tit) !== d(t(pw.l)) ? `<div class="mut sm">${t("Pwoblèm")}: ${t(pw.l)}</div>` : ""}
-      ${kont ? `<div class="mut sm">${d(a.k.no_compte || t("Cycle poko voye"))}</div>` : ""}
+      ${a.id_compte_credit && !a.sistem ? `<div class="mut sm">${t("Kredi")} ${d(kr?.no_compte || "")}</div>` : ""}
+      ${kont && !a.id_compte_credit ? `<div class="mut sm">${d(a.k.no_compte || t("Cycle poko voye"))}</div>` : ""}
       ${a.mesaj ? `<div class="sm alet-m">${a.sistem ? a.mesaj : d(a.mesaj)}</div>` : ""}
       <div class="mut sm">${sous}</div></div>
     ${kaFèmen ? `<button type="button" class="btn sm" data-fermen="${h(a.id)}" data-rapel="${rapel ? 1 : ""}">${t(rapel ? "Dezaktive" : "Fèmen l")}</button>` : ""}</div>`;
@@ -1640,20 +1660,20 @@ function seksyonAlet(ks, man) {
     ${man ? `<button type="button" class="btn sm" data-alet-nouvo="${h(kAktif.id_compte_epargne)}">＋ ${t("Alèt")}</button>` : ""}</div></div>
     <div class="list">${l.map((a) => liAlet(a, { man, kont: ks.length > 1 })).join("") || `<p class="empty">${t("Pa gen alèt sou kliyan sa a.")}</p>`}</div></section>`;
 }
-async function kreyeAlet(M, k) {
+async function kreyeAlet(M, k, kr = null) {
   const c = M.clients.get(k.id_personne) || {};
-  const r = await ui.askAlet({ tekst: `${non(c)} · ${k.no_compte || ""}`, jodi: M.today, pwoblem: PWOBLEM });
+  const r = await ui.askAlet({ tekst: `${non(c)} · ${kr?.no_compte || k.no_compte || ""}`, jodi: M.today, pwoblem: kr ? PWOBLEM.filter((p) => p.kredi || !p.oto) : PWOBLEM });
   if (!r) return;
-  await S.enqueue("alet", { id: S.uuid(), compte: k.id_compte_epargne, ...r, tip: "manyel", kreye_le: new Date().toISOString() }, k._pending ? [k.id_compte_epargne] : []);
+  await S.enqueue("alet", { id: S.uuid(), compte: k.id_compte_epargne, ...r, tip: "manyel", credit: kr?.id_compte_credit || null, kreye_le: new Date().toISOString() }, k._pending ? [k.id_compte_epargne] : []);
   toast("Alèt la kreye.");
   aletDenye = ""; render();
 }
 // Rapèl: nenpòt ajan ka kreye youn sou yon kliyan pou swivi l; se li sèlman (oswa yon manadjè) ki ka dezaktive l.
-async function kreyeRapel(M, k) {
+async function kreyeRapel(M, k, kr = null) {
   const c = M.clients.get(k.id_personne) || {};
-  const r = await ui.askRapel({ tekst: `${non(c)} · ${k.no_compte || ""}`, jodi: M.today });
+  const r = await ui.askRapel({ tekst: `${non(c)} · ${kr?.no_compte || k.no_compte || ""}`, jodi: M.today });
   if (!r) return;
-  await S.enqueue("alet", { id: S.uuid(), compte: k.id_compte_epargne, tit: r.tit, mesaj: null, nivo: "info", fen: "manyel", fen_dat: null, tip: "rapel", dele: r.dele,
+  await S.enqueue("alet", { id: S.uuid(), compte: k.id_compte_epargne, tit: r.tit, mesaj: null, nivo: "info", fen: "manyel", fen_dat: null, tip: "rapel", dele: r.dele, credit: kr?.id_compte_credit || null,
     kreye_le: new Date().toISOString() }, k._pending ? [k.id_compte_epargne] : []);
   toast(t("Rapèl la kreye."));
   aletDenye = location.hash; render();
@@ -1666,17 +1686,18 @@ async function fermenAlet(id, rapel = false) {
   aletDenye = location.hash; render();
 }
 function brancherAlet(M) {
-  $app.querySelectorAll("[data-alet-nouvo]").forEach((b) => (b.onclick = () => kreyeAlet(M, M.comptes.get(b.dataset.aletNouvo))));
-  $app.querySelectorAll("[data-rapel-nouvo]").forEach((b) => (b.onclick = () => kreyeRapel(M, M.comptes.get(b.dataset.rapelNouvo))));
+  const kr = (b) => (b.dataset.kredi ? (M.kredi || []).find((x) => x.id_compte_credit === b.dataset.kredi) : null);
+  $app.querySelectorAll("[data-alet-nouvo]").forEach((b) => (b.onclick = () => kreyeAlet(M, M.comptes.get(b.dataset.aletNouvo), kr(b))));
+  $app.querySelectorAll("[data-rapel-nouvo]").forEach((b) => (b.onclick = () => kreyeRapel(M, M.comptes.get(b.dataset.rapelNouvo), kr(b))));
   $app.querySelectorAll("#alet-sek [data-fermen], .alet-tablo [data-fermen]").forEach((b) => (b.onclick = () => fermenAlet(b.dataset.fermen, !!b.dataset.rapel)));
 }
 // Popup la: yon fwa chak fwa ajan an antre sou paj la (pa lè paj la re-rann pou menm wout la).
 let aletDenye = "";
-async function montreAlet(M, ks) {
+async function montreAlet(M, ks, lisKredi = null) {
   const wout = location.hash;
   if (aletDenye === wout) return;
   aletDenye = wout;
-  const l = ks.flatMap((k) => aletYo(k));
+  const l = lisKredi || ks.flatMap((k) => aletYo(k));
   if (!l.length) return;
   const man = estManager();
   const nivo = l.some((a) => a.nivo === "ijan") ? "ijan" : l.some((a) => a.nivo === "enpotan") ? "enpotan" : "info";
@@ -1685,9 +1706,9 @@ async function montreAlet(M, ks) {
   const r = await ui.aletPopup({ titre: l.length > 1 ? `${l.length} ${t("alèt sou kliyan sa a")}` : t("Alèt sou kliyan sa a"), soutit: non(c), nivo,
     html: l.map((a) => liAlet(a, { man, kont: ks.length > 1 })).join(""), nouvo: man });
   if (r?.fermen) await fermenAlet(r.fermen, M.alet.get(r.fermen)?.tip === "rapel");
-  else if (r?.nouvo) await kreyeAlet(M, ks.find((k) => k._actif) || ks[0]);
+  else if (r?.nouvo) await kreyeAlet(M, ks.find((k) => k._actif) || ks[0], lisKredi ? lisKredi[0]?.kredi || (M.kredi || []).find((x) => x.id_compte_credit === lisKredi[0]?.id_compte_credit) : null);
 }
-addEventListener("hashchange", () => { if (!/^#\/(kliyan|cycle|tx\/nouvo)\//.test(location.hash)) aletDenye = ""; });
+addEventListener("hashchange", () => { if (!/^#\/(kliyan|cycle|tx\/nouvo|kredi)\//.test(location.hash)) aletDenye = ""; });
 
 async function viewClient(id) {
   const M = await S.model();
@@ -1810,43 +1831,9 @@ const kalkKredi = (montan, duree, taux, peman, debut, feries) => {
   const fin = debut && n ? S.ajouteJou(S.finVesman(debut, [1, 2, 3, 4, 5, 6], n, feries), -1) : null;
   return { final, n, fin, penalite: Math.round(peman * 0.2 * 100) / 100 };
 };
-// Peman kredi yo (sèvè + sa ki nan file a) ak eta chak kredi: an atant validasyon, reta, sa ki dwe jodi a.
-const JOU_KREDI = [1, 2, 3, 4, 5, 6];
-const jouKreTx = (x) => (x.capture_le ? S.jouLokal(new Date(x.capture_le)) : String(x.date_transaction || "").slice(0, 10));
-async function kreDone(M) {
-  const l = (await db.meta("kredi")) || [];
-  const gras = Number((((await db.meta("paramet")) || {}).kredi_gras || {}).jou ?? 5);
-  const txs = [...((await db.meta("kredi_tx")) || [])];
-  for (const o of M.outbox) if ((o.kind === "kredi_peye" || o.kind === "kredi_penalite") && !txs.some((x) => x.id_transaction_credit === o.payload.id))
-    txs.push({ id_transaction_credit: o.payload.id, id_compte_credit: o.payload.credit, type_transaction: o.kind === "kredi_penalite" ? "Penalite" : "Paiement", montant: o.payload.montant,
-      date_transaction: o.payload.capture_le, capture_le: o.payload.capture_le, validation_status: o.kind === "kredi_penalite" ? "confirmed" : "pending", created_by: moi?.id, _pending: true, _err: o.status === "error" ? o.error : null });
-  const sòt = (a, b) => String(b.capture_le || b.date_transaction).localeCompare(String(a.capture_le || a.date_transaction));
-  const fbs = [...((await db.meta("kredi_fb")) || [])];
-  for (const o of M.outbox) if (o.kind === "kredi_suivi" && !fbs.some((x) => x.id === o.payload.id))
-    fbs.push({ id: o.payload.id, id_compte_credit: o.payload.credit, motif: o.payload.motif, note: o.payload.note || null, agent_id: moi?.id, capture_le: o.payload.capture_le, _pending: true });
-  return l.map((x) => {
-    const tout = txs.filter((y) => y.id_compte_credit === x.id_compte_credit).sort(sòt);
-    const tx = tout.filter((y) => y.type_transaction === "Paiement");
-    const pj = Number(x.paiement_journalier) || 0, final = Number(x.montant_final) || 0, paye = Number(x.paiement_cumule) || 0;
-    const atant = tx.filter((y) => y.validation_status === "pending").reduce((a, y) => a + Number(y.montant || 0), 0);
-    const rete = Math.max(Math.round((final - paye - atant) * 100) / 100, 0);
-    const nDwe = Math.min(S.joursPeman(x.date_debut, S.ajouteJou(M.today, -1), JOU_KREDI, M.feries), Number(x.nb_vesman) || 0);
-    const reta = Math.max(Math.round((Math.min(nDwe * pj, final) - paye - atant) * 100) / 100, 0);
-    const jodi = rete > 0 && M.today >= x.date_debut && JOU_KREDI.includes(S.isoJou(M.today)) && !M.feries.has(M.today);
-    const peJodi = tx.filter((y) => y.validation_status !== "rejected" && jouKreTx(y) === M.today).reduce((a, y) => a + Number(y.montant || 0), 0);
-    // Penalite: apre dat fen + jou gras yo, chak jou peman kliyan an toujou dwe = 20% peman jounalye a.
-    const penDe = x.date_fin ? S.ajouteJou(x.date_fin, gras + 1) : null;
-    const dPe = tx.find((y) => y.validation_status === "confirmed");
-    const penA = final - paye > 0 ? M.today : dPe ? jouKreTx(dPe) : null;
-    const penJou = penDe && penA ? S.joursPeman(penDe, penA, JOU_KREDI, M.feries) : 0;
-    const penPaJou = Math.round(pj * 0.2 * 100) / 100, penTotal = Math.round(penJou * penPaJou * 100) / 100;
-    const penPeye = Number(x.penalites || 0) + tout.filter((y) => y.type_transaction === "Penalite" && (y._pending || y._local)).reduce((a, y) => a + Number(y.montant || 0), 0);
-    const fb = fbs.filter((y) => y.id_compte_credit === x.id_compte_credit).sort((a, b) => String(b.capture_le).localeCompare(String(a.capture_le)));
-    const fbJodi = fb.find((y) => S.jouLokal(new Date(y.capture_le)) === M.today) || null;
-    return { ...x, _fb: fb, _fbJodi: fbJodi, _tx: tx, _txTout: tout, _atant: atant, _rete: rete, _reta: reta, _jouReta: pj ? Math.ceil(reta / pj - 1e-9) : 0, _jodi: jodi, _peJodi: peJodi, _fini: final > 0 && paye >= final,
-      _gras: gras, _penDe: penDe, _penJou: penJou, _penPaJou: penPaJou, _penTotal: penTotal, _penPeye: penPeye, _penDu: Math.max(Math.round((penTotal - penPeye) * 100) / 100, 0) };
-  });
-}
+// Done kredi yo (sync.model kalkile yo: peman, reta, penalite, fidbak).
+const jouKreTx = S.jouKreTx;
+async function kreDone(M) { return M.kredi || []; }
 const badjKredi = (x) => (x._penDu ? `<span class="badge err">${t("Penalite")} ${gd(x._penDu)}</span>` : "") + (x._fini ? `<span class="badge ok">${t("Fini")}</span>`
   : `${x._jouReta ? `<span class="badge err">${x._jouReta} ${t(x._jouReta > 1 ? "jou reta" : "jou reta")}</span>` : ""}${x._peJodi ? `<span class="badge ok">${t("Peye jodi a ✓")}</span>` : x._fbJodi ? `<span class="badge warn">${t("Pa peye")} · ${t(MOTIF_KOUT[x._fbJodi.motif] || "Lòt")}</span>` : x._jodi ? `<span class="badge warn">${t("Pou peye jodi a")}</span>` : ""}${x._atant ? `<span class="badge mut">${gd(x._atant)} ${t("an atant")}</span>` : ""}`);
 async function viewKredi() {
@@ -1918,6 +1905,19 @@ async function viewKrediFich(id) {
       <span class="txr-main"><span class="txr-t"><span class="badge warn">${t(MOTIF_KOUT[y.motif] || "Lòt")}</span> ${y._pending ? `<span class="badge mut">${t("Poko voye")}</span>` : ""}</span>
         <span class="mut sm">${t(motifLabel(y.motif))} · <span data-brut>${h(nonAjan(y.agent_id))}</span></span>${y.note ? `<span class="sm">«${d(y.note)}»</span>` : ""}</span></div>`).join("") || `<p class="empty">${t("Pa gen fidbak.")}</p>`}</div>`;
   document.getElementById("kr-papeye")?.addEventListener("click", () => krediPaPeye(x, M));
+  // Alèt ak rapèl sou kredi a (mare ak kont epay ki lye ak li a).
+  const k = M.comptes.get(x.id_compte_epargne);
+  if (k && !estKesye()) {
+    const man = estManager();
+    const la = [...aletKredi(k, x.id_compte_credit), ...k._alet.map((a) => ({ ...a, k })).filter((a) => kredAlet(a) === x.id_compte_credit && (man || a._eta === "aktif"))];
+    $app.insertAdjacentHTML("beforeend", `<section class="alet-sek" id="alet-sek"><div class="alet-tit"><h2>${t("Alèt ak rapèl")}</h2><div class="btns">
+      <button type="button" class="btn sm" data-rapel-nouvo="${h(k.id_compte_epargne)}" data-kredi="${h(x.id_compte_credit)}">＋ ${t("Rapèl")}</button>
+      ${man ? `<button type="button" class="btn sm" data-alet-nouvo="${h(k.id_compte_epargne)}" data-kredi="${h(x.id_compte_credit)}">＋ ${t("Alèt")}</button>` : ""}</div></div>
+      <div class="list">${la.map((a) => liAlet(a, { man })).join("") || `<p class="empty">${t("Pa gen alèt sou kredi sa a.")}</p>`}</div></section>`);
+    brancherAlet(M);
+    const aktif = la.filter((a) => a._eta === "aktif");
+    if (aktif.length) montreAlet(M, [k], aktif);
+  }
 }
 async function viewKrediPeye(id, pen = false) {
   if (!(await leOk())) return viewLeFèmen();

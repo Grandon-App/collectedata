@@ -204,10 +204,11 @@ const EXEC = {
     const tip = p.tip || "manyel";
     await api.rpc("grandon_alet_kreye", { p_id: p.id, p_compte: p.compte, p_tit: p.tit, p_mesaj: p.mesaj || null, p_nivo: p.nivo,
       p_fen: p.fen, p_fen_dat: p.fen === "dat" ? p.fen_dat : null, p_kreye_le: p.kreye_le,
-      ...(tip !== "manyel" || p.pwoblem || p.dele ? { p_tip: tip, p_pwoblem: p.pwoblem || null, p_dele: p.dele || null } : {}) });
+      ...(tip !== "manyel" || p.pwoblem || p.dele || p.credit ? { p_tip: tip, p_pwoblem: p.pwoblem || null, p_dele: p.dele || null } : {}),
+      ...(p.credit ? { p_credit: p.credit } : {}) });
     await db.put("alet", { id: p.id, id_compte_epargne: p.compte, tit: p.tit, mesaj: p.mesaj || null, nivo: p.nivo, fen_kondisyon: tip === "rapel" ? "manyel" : p.fen,
       fen_dat: p.fen === "dat" ? p.fen_dat : null, kreye_pa: api.getSession()?.user?.id, kreye_le: p.kreye_le, fermen_le: null,
-      tip, pwoblem: p.pwoblem || null, dele: p.dele || null });
+      tip, pwoblem: p.pwoblem || null, dele: p.dele || null, id_compte_credit: p.credit || null });
   },
 
   async alet_fermen(p) {
@@ -490,7 +491,7 @@ export async function model() {
     if (o.kind === "alet")
       M.alet.set(p.id, { id: p.id, id_compte_epargne: p.compte, tit: p.tit, mesaj: p.mesaj, nivo: p.nivo, fen_kondisyon: p.tip === "rapel" ? "manyel" : p.fen,
         fen_dat: p.fen === "dat" ? p.fen_dat : null, kreye_pa: "moi", kreye_le: p.kreye_le, fermen_le: null,
-        tip: p.tip || "manyel", pwoblem: p.pwoblem || null, dele: p.dele || null, ...pend });
+        tip: p.tip || "manyel", pwoblem: p.pwoblem || null, dele: p.dele || null, id_compte_credit: p.credit || null, ...pend });
     if (o.kind === "alet_fermen" && M.alet.has(p.id)) Object.assign(M.alet.get(p.id), { fermen_le: p.le, fermen_pa: "moi", _fermenPending: true });
     if (o.kind === "suivi")
       M.suivis.set(p.id, { id: p.id, id_compte_epargne: p.compte, motif: p.motif, note: p.note, agent_id: "moi", capture_le: p.capture_le,
@@ -502,6 +503,10 @@ export async function model() {
         type_frais: p.type_frais, note: p.note, created_by: "moi", ...pend });
   }
   const today = jodi();
+  M.today = today;
+  // Kredi yo (si sèvè a gen modil la): eta chak kredi, epi chak kont epay konnen kredi ki lye ak li (alèt, pwoblèm kredi).
+  const [krL, krTx, krFb, krPa] = await Promise.all(["kredi", "kredi_tx", "kredi_fb", "paramet"].map((x) => db.meta(x)));
+  M.kredi = Array.isArray(krL) ? kreModel(M, krL, krTx || [], krFb || [], Number(((krPa || {}).kredi_gras || {}).jou ?? 5), api.getSession()?.user?.id) : [];
   for (const k of M.comptes.values()) Object.assign(k, { _txs: [], _local: 0, _jodi: 0, _depots: 0, _nDepots: 0, _joursPeye: new Set(), _suivis: [], _demandes: [], _kolekMwa: 0, _alet: [] });
   for (const t of M.txs.values()) {
     const k = M.comptes.get(t.id_compte_epargne);
@@ -553,6 +558,7 @@ export async function model() {
     k._mwaDwe = Math.max(0, k._mwaPrevu - k._kolekMwa);
     k._dots = semenDots(k, M.feries, today);
     k._fre = freEta(k, cfgSv, today);
+    k._kredi = M.kredi.filter((x) => x.id_compte_epargne === k.id_compte_epargne && (!x._fini || x._penDu > 0));
     // Alèt manadjè yo: eta a evalye isit la (menm offline). fermen: fèmen manyèlman · oto: kondisyon an rive.
     for (const a of k._alet) {
       const depoApre = k._txs.some((t) => txKind(t) === "depo" && t.validation_status !== "rejected" && new Date(t.date_transaction) >= new Date(a.kreye_le));
@@ -567,6 +573,43 @@ export async function model() {
   }
   M.today = today;
   return M;
+}
+
+// Peman kredi yo (sèvè + sa ki nan file a) ak eta chak kredi: an atant validasyon, reta, sa ki dwe jodi a.
+export const JOU_KREDI = [1, 2, 3, 4, 5, 6];
+export const jouKreTx = (x) => (x.capture_le ? jouLokal(new Date(x.capture_le)) : String(x.date_transaction || "").slice(0, 10));
+function kreModel(M, l, txs0, fbs0, gras, moiId) {
+  const txs = [...txs0];
+  for (const o of M.outbox) if ((o.kind === "kredi_peye" || o.kind === "kredi_penalite") && !txs.some((x) => x.id_transaction_credit === o.payload.id))
+    txs.push({ id_transaction_credit: o.payload.id, id_compte_credit: o.payload.credit, type_transaction: o.kind === "kredi_penalite" ? "Penalite" : "Paiement", montant: o.payload.montant,
+      date_transaction: o.payload.capture_le, capture_le: o.payload.capture_le, validation_status: o.kind === "kredi_penalite" ? "confirmed" : "pending", created_by: moiId, _pending: true, _err: o.status === "error" ? o.error : null });
+  const sòt = (a, b) => String(b.capture_le || b.date_transaction).localeCompare(String(a.capture_le || a.date_transaction));
+  const fbs = [...fbs0];
+  for (const o of M.outbox) if (o.kind === "kredi_suivi" && !fbs.some((x) => x.id === o.payload.id))
+    fbs.push({ id: o.payload.id, id_compte_credit: o.payload.credit, motif: o.payload.motif, note: o.payload.note || null, agent_id: moiId, capture_le: o.payload.capture_le, _pending: true });
+  return l.map((x) => {
+    const tout = txs.filter((y) => y.id_compte_credit === x.id_compte_credit).sort(sòt);
+    const tx = tout.filter((y) => y.type_transaction === "Paiement");
+    const pj = Number(x.paiement_journalier) || 0, final = Number(x.montant_final) || 0, paye = Number(x.paiement_cumule) || 0;
+    const atant = tx.filter((y) => y.validation_status === "pending").reduce((a, y) => a + Number(y.montant || 0), 0);
+    const rete = Math.max(Math.round((final - paye - atant) * 100) / 100, 0);
+    const nDwe = Math.min(joursPeman(x.date_debut, ajouteJou(M.today, -1), JOU_KREDI, M.feries), Number(x.nb_vesman) || 0);
+    const reta = Math.max(Math.round((Math.min(nDwe * pj, final) - paye - atant) * 100) / 100, 0);
+    const jodi = rete > 0 && M.today >= x.date_debut && JOU_KREDI.includes(isoJou(M.today)) && !M.feries.has(M.today);
+    const peJodi = tx.filter((y) => y.validation_status !== "rejected" && jouKreTx(y) === M.today).reduce((a, y) => a + Number(y.montant || 0), 0);
+    // Penalite: apre dat fen + jou gras yo, chak jou peman kliyan an toujou dwe = 20% peman jounalye a.
+    const penDe = x.date_fin ? ajouteJou(x.date_fin, gras + 1) : null;
+    const dPe = tx.find((y) => y.validation_status === "confirmed");
+    const penA = final - paye > 0 ? M.today : dPe ? jouKreTx(dPe) : null;
+    const penJou = penDe && penA ? joursPeman(penDe, penA, JOU_KREDI, M.feries) : 0;
+    const penPaJou = Math.round(pj * 0.2 * 100) / 100, penTotal = Math.round(penJou * penPaJou * 100) / 100;
+    const penPeye = Number(x.penalites || 0) + tout.filter((y) => y.type_transaction === "Penalite" && (y._pending || y._local)).reduce((a, y) => a + Number(y.montant || 0), 0);
+    const fb = fbs.filter((y) => y.id_compte_credit === x.id_compte_credit).sort((a, b) => String(b.capture_le).localeCompare(String(a.capture_le)));
+    const fbJodi = fb.find((y) => jouLokal(new Date(y.capture_le)) === M.today) || null;
+    return { ...x, _fb: fb, _fbJodi: fbJodi, _tx: tx, _txTout: tout, _atant: atant, _rete: rete, _reta: reta, _jouReta: pj ? Math.ceil(reta / pj - 1e-9) : 0, _jodi: jodi, _peJodi: peJodi, _fini: final > 0 && paye >= final,
+      _gras: gras, _penDe: penDe, _penJou: penJou, _penPaJou: penPaJou, _penTotal: penTotal, _penPeye: penPeye, _penDu: Math.max(Math.round((penTotal - penPeye) * 100) / 100, 0),
+      _depaseFen: !!x.date_fin && M.today > x.date_fin && rete > 0 };
+  });
 }
 
 // Lendi semèn yon dat (ISO).
