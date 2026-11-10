@@ -242,11 +242,12 @@ const EXEC = {
   // Peman jounalye yon kredi (an atant jiskaske responsab kès la valide l).
   async kredi_peye(p) {
     const r = await api.rpc("grandon_kredi_peye", { p_id: p.id, p_credit: p.credit, p_montant: p.montant, ...gpsArgs(p.gps),
-      p_capture_le: p.capture_le, p_appareil: p.appareil, p_note: p.note || null });
+      p_capture_le: p.capture_le, p_appareil: p.appareil, p_note: p.note || null, p_vesman_avan: p.vesman_avan ?? null, p_vesman_apre: p.vesman_apre ?? null });
     const l = (await db.meta("kredi_tx")) || [];
     if (!l.some((x) => x.id_transaction_credit === p.id))
       await db.meta("kredi_tx", [...l, { id_transaction_credit: p.id, id_compte_credit: p.credit, no_compte: r.no_compte, type_transaction: "Paiement", montant: p.montant,
-        date_transaction: p.capture_le, capture_le: p.capture_le, validation_status: r.statut || "pending", created_by: api.getSession()?.user?.id, _local: true }]);
+        date_transaction: p.capture_le, capture_le: p.capture_le, validation_status: r.statut || "pending", created_by: api.getSession()?.user?.id, _local: true,
+        versement_avant: p.vesman_avan ?? null, versement_apres: p.vesman_apre ?? null }]);
   },
 
   // Fidbak «Pa peye» sou yon kredi.
@@ -582,7 +583,8 @@ function kreModel(M, l, txs0, fbs0, gras, moiId) {
   const txs = [...txs0];
   for (const o of M.outbox) if ((o.kind === "kredi_peye" || o.kind === "kredi_penalite") && !txs.some((x) => x.id_transaction_credit === o.payload.id))
     txs.push({ id_transaction_credit: o.payload.id, id_compte_credit: o.payload.credit, type_transaction: o.kind === "kredi_penalite" ? "Penalite" : "Paiement", montant: o.payload.montant,
-      date_transaction: o.payload.capture_le, capture_le: o.payload.capture_le, validation_status: o.kind === "kredi_penalite" ? "confirmed" : "pending", created_by: moiId, _pending: true, _err: o.status === "error" ? o.error : null });
+      date_transaction: o.payload.capture_le, capture_le: o.payload.capture_le, validation_status: o.kind === "kredi_penalite" ? "confirmed" : "pending", created_by: moiId, _pending: true, _err: o.status === "error" ? o.error : null,
+      versement_avant: o.payload.vesman_avan ?? null, versement_apres: o.payload.vesman_apre ?? null });
   const sòt = (a, b) => String(b.capture_le || b.date_transaction).localeCompare(String(a.capture_le || a.date_transaction));
   const fbs = [...fbs0];
   for (const o of M.outbox) if (o.kind === "kredi_suivi" && !fbs.some((x) => x.id === o.payload.id))

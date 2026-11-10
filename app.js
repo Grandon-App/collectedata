@@ -30,7 +30,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "4.63";
+const APP_VERSION = "4.64";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin", kesye: "Responsab kès" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
@@ -1898,6 +1898,7 @@ async function viewKrediFich(id) {
     <h2>${t("Peman yo")}</h2>
     <div class="list tx-lis" id="kr-tx">${x._txTout.map((y) => `<div class="row txr${y.validation_status === "rejected" ? " txr-anile" : ""}"><span class="txr-le"><b class="mono">${lèKout(y.capture_le || y.date_transaction) || "—"}</b><small>${datKout(jouKreTx(y))}</small></span>
       <span class="txr-main"><span class="txr-t">${y.type_transaction === "Penalite" ? `<b>${t("Penalite")}</b> ${y._pending ? etaKreTx(y) : ""}` : etaKreTx(y)}</span><span class="mut sm" data-brut>${h(nonAjan(y.created_by))}</span>
+        ${y.versement_apres != null ? `<span class="mut sm">${t("vèsman")} ${Number(y.versement_avant)} → ${Number(y.versement_apres)}</span>` : ""}
         ${y.validation_status === "rejected" && y.validation_note ? `<span class="sm err-t">${t("Rezon")}: ${d(y.validation_note)}</span>` : ""}${y._err ? `<span class="sm err-t">${d(t(y._err))}</span>` : ""}</span>
       <span class="txr-mon"><b class="in">+${gd(y.montant)}</b></span></div>`).join("") || `<p class="empty">${t("Poko gen peman.")}</p>`}</div>
     <h2>${t("Fidbak")}</h2>
@@ -1928,6 +1929,9 @@ async function viewKrediPeye(id, pen = false) {
   const c = M.clients.get(x.id_personne), pj = Number(x.paiement_journalier) || 0;
   const back = `<a href="#/kredi/${h(id)}" class="back">‹ ${d(x.no_compte || t("Kredi"))}</a>`;
   if (x._rete <= 0) { $app.innerHTML = `${back}<p class="empty">${t("Pa gen anyen ki rete pou peye sou kredi sa a (peman an atant yo konte).")}</p>`; return; }
+  // Vèsman avan: dènye «vèsman apre» ki sou kanè a (dènye peman), oswa sa ki deja peye ÷ peman jounalye a.
+  const dPe = x._tx.find((y) => y.validation_status !== "rejected" && y.versement_apres != null);
+  const vAvan = dPe ? Number(dPe.versement_apres) : pj ? Math.round(((Number(x.paiement_cumule) || 0) + x._atant) / pj * 100) / 100 : 0;
   const sij = [[t("1 jou"), Math.min(pj, x._rete)], ...(x._reta ? [[`${t("Reta")} + ${t("jodi a")}`, Math.min(x._reta + pj, x._rete)]] : []), [t("Tout sa ki rete"), x._rete]]
     .filter((v, i, a) => a.findIndex((w) => w[1] === v[1]) === i);
   $app.innerHTML = `${back}<h1>${t("Peman kredi")}</h1>
@@ -1936,22 +1940,41 @@ async function viewKrediPeye(id, pen = false) {
     <p class="mut sm">${t("Peman jounalye")} ${gd(pj)} · ${t("rete")} ${gd(x._rete)}${x._reta ? ` · <span class="err-t">${t("reta")} ${gd(x._reta)} (${x._jouReta} ${t("jou")})</span>` : ""}</p>
     <div class="chips">${sij.map(([l, v]) => `<button type="button" class="chip" data-kr-m="${v}">${h(l)}<small>${gd(v)}</small></button>`).join("")}</div>
     <label>${t("Montan (goud)")} *<input name="montant" type="number" inputmode="decimal" min="1" step="any" value="${Math.min(pj, x._rete)}" required></label>
-    <p class="mut sm">${t("Peman an ap tann responsab kès la valide l anvan li parèt sou balans kredi a.")}</p>
+    <div class="grid2">
+      <label>${t("Vèsman avan (kanè)")} *<input name="vesman_avan" type="number" inputmode="decimal" min="0" step="any" value="${vAvan}" required></label>
+      <label>${t("Vèsman apre (kanè)")} *<input name="vesman_apre" type="number" inputmode="decimal" min="0" step="any" required></label>
+    </div>
+    <p class="mut sm">${t("Chak peman jounalye se 1 vèsman")} (${gd(pj)} = 1). ${t("Peman an ap tann responsab kès la valide l anvan li parèt sou balans kredi a.")}</p>
     <p class="err-msg" id="err" role="alert"></p>
     <button class="btn pri" type="submit">${t("Anrejistre peman an")}</button>
   </form>`;
   const f = document.getElementById("f");
-  $app.querySelectorAll("[data-kr-m]").forEach((b) => (b.onclick = () => (f.montant.value = b.dataset.krM)));
+  const r2 = (v) => Math.round(v * 100) / 100;
+  // Vèsman apre = vèsman avan + montan ÷ peman jounalye (sof si ajan an chanje l limenm).
+  const autoApre = () => { const av = f.vesman_avan.value, m = Number(f.montant.value); if (av === "" || !(m > 0) || !pj || f.vesman_apre.dataset.manuel) return; f.vesman_apre.value = r2(Number(av) + m / pj); };
+  f.montant.addEventListener("input", autoApre); f.vesman_avan.addEventListener("input", autoApre);
+  f.vesman_apre.oninput = () => (f.vesman_apre.dataset.manuel = "1");
+  autoApre();
+  $app.querySelectorAll("[data-kr-m]").forEach((b) => (b.onclick = () => { f.montant.value = b.dataset.krM; autoApre(); }));
   f.onsubmit = async (e) => {
     e.preventDefault();
     const err = document.getElementById("err"), m = Math.round(Number(f.montant.value) * 100) / 100;
     if (!(m > 0)) return (err.textContent = t("Mete montan peman an."));
     if (m > x._rete) return (err.textContent = `${t("Peman an depase sa ki rete sou kredi a")} (${gd(x._rete)}).`);
+    for (const [chan, mesaj] of [["vesman_avan", "Mete vèsman avan an (kanè a)."], ["vesman_apre", "Mete vèsman apre a (kanè a)."]]) {
+      f[chan].removeAttribute("aria-invalid");
+      if (f[chan].value.trim() === "" || !(Number(f[chan].value) >= 0)) { f[chan].setAttribute("aria-invalid", "true"); f[chan].focus(); return (err.textContent = t(mesaj)); }
+    }
+    const va = r2(Number(f.vesman_avan.value)), vp = r2(Number(f.vesman_apre.value));
+    if (!(vp > va)) { f.vesman_apre.setAttribute("aria-invalid", "true"); return (err.textContent = t("Vèsman apre a dwe plis pase vèsman avan an.")); }
     if (!(await leOk())) return montreLeFèmen();
+    const atann = pj ? r2(va + m / pj) : vp;
+    if (Math.abs(atann - vp) > 0.01 && !(await ui.ask({ titre: "Vèsman yo pa koresponn ak montan an", ikon: "!", ok: "Kontinye",
+      detay: [["Montan (goud)", gd(m)], ["Vèsman", `${va} → ${vp}`], ["Vèsman apre dapre montan an", String(atann)]] }))) return;
     if (!(await ui.ask({ titre: "Anrejistre peman kredi sa a?", ok: "Konfime", ikon: "+", foto: c?.photo_url, detay: [["Kliyan", non(c)], ["Kredi", x.no_compte || ""],
-      ["Montan (goud)", gd(m)], ["Rete apre peman an", gd(Math.max(x._rete - m, 0))]] }))) return;
+      ["Montan (goud)", gd(m)], ["Vèsman avan", String(va)], ["Vèsman apre", String(vp)], ["Rete apre peman an", gd(Math.max(x._rete - m, 0))]] }))) return;
     const b = f.querySelector("button[type=submit]"); b.disabled = true;
-    await S.enqueue("kredi_peye", { id: S.uuid(), credit: x.id_compte_credit, montant: m, gps: await getGps(5000), capture_le: new Date().toISOString(), appareil: S.appareil() });
+    await S.enqueue("kredi_peye", { id: S.uuid(), credit: x.id_compte_credit, montant: m, vesman_avan: va, vesman_apre: vp, gps: await getGps(5000), capture_le: new Date().toISOString(), appareil: S.appareil() });
     toast(t("Peman an anrejistre: l ap tann validasyon responsab kès la."), "ok", 5000);
     go(`#/kredi/${x.id_compte_credit}`);
   };
@@ -1993,7 +2016,7 @@ function kesKrediHtml(M, l) {
     <div class="list tx-lis">${l.map(({ y, k }) => { const c = M.clients.get(k.id_personne);
       return `<div class="row kesr" data-kes-kr="${h(y.id_transaction_credit)}"><span class="txr-le"><b class="mono">${lèKout(y.capture_le || y.date_transaction) || "—"}</b><small>${jouKreTx(y) === M.today ? t("jodi a") : datKout(jouKreTx(y))}</small></span>
       <span class="txr-main"><span class="txr-t"><b>${d(non(c))}</b></span><span class="mut sm">${d(k.no_compte || "")} · <span data-brut>${h(nonAjan(y.created_by))}</span></span>
-        <span class="mut sm">${t("rete")} ${gd(k.montant_restant)} / ${gd(k.montant_final)}</span></span>
+        <span class="mut sm">${y.versement_apres != null ? `${t("vèsman")} ${Number(y.versement_avant)} → ${Number(y.versement_apres)} · ` : ""}${t("rete")} ${gd(k.montant_restant)} / ${gd(k.montant_final)}</span></span>
       <span class="kes-mon"><b class="in">+${gd(y.montant)}</b>
         <span class="kes-bt"><button type="button" class="btn sm pri" data-krv="${h(y.id_transaction_credit)}">Valide</button><button type="button" class="btn sm danger" data-krr="${h(y.id_transaction_credit)}">Rejte</button></span></span></div>`; }).join("")}</div>`;
 }
