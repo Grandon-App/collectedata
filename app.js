@@ -856,7 +856,7 @@ async function viewRekouvreman() {
 // Koulè: rezilta a konpare ak objektif la jiska jodi a (ritm mwa a). Vèt ≥ limit vèt · Jòn ≥ limit jòn · Wouj anba.
 const METRIK = {
   mobilizasyon: { non: "Moyenne mobilisation", obj: 40000, dek: "Mwayèn depo ajan an fè pa jou travay nan mwa a (lendi–samdi, san jou ferye). Objektif la monte chak mwa depi dat debi ajan an." },
-  kliyan_nouvo: { non: "Nouvo kliyan mwa a", obj: 30, dek: "Kliyan ajan an ouvri premye kont yo nan mwa a." },
+  kliyan_nouvo: { non: "Nouvo kliyan mwa a", obj: 20, dek: "Kliyan ajan an ouvri premye kont yo nan mwa a." },
   rekouvreman: { non: "Rekouvreman mwa a", obj: 90, dek: "Pousantaj sa kliyan pòtfèy la te dwe peye depi 1ye mwa a ki rantre." },
 };
 const ESKALYE_DEF = () => (C?.SEVIS === "epargne" ? [40000, 75000, 100000] : [40000, 75000, 100000, 125000, 150000, 175000]);
