@@ -30,7 +30,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "4.82";
+const APP_VERSION = "4.83";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin", kesye: "Responsab kès" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
@@ -703,6 +703,83 @@ function chifAjan(M, a, ids) {
   return { a, st, depoAtant: depoAtant.length, depoAtantSom: depoAtant.reduce((s, x) => s + Number(x.montant || 0), 0), pokoWe, dènye };
 }
 
+
+// ---------- Rapò rekouvreman (manadjè / admin) ----------
+// Pou yon mwa: sa kliyan yo te dwe peye (jou peman depi 1ye mwa a oswa debi cycle la, jiska jodi a oswa fen mwa a, san jou ferye) × plan,
+// sa yo peye nan mwa a (depo ki pa rejte), ak sa yo dwe. Pa ajan pòtfèy, ak lis kliyan ki dwe yo. Bouton PDF = enprime / anrejistre an PDF.
+const rekF = { mwa: "", ajan: "" };
+function kalkRekouvreman(M, mwa) {
+  const m1 = `${mwa}-01`, mFen = S.ajouteJou(S.ajouteJou(m1, 32).slice(0, 8) + "01", -1), fen = mFen < M.today ? mFen : M.today;
+  const depo = new Map();
+  for (const x of M.txs.values()) {
+    if (S.txKind(x) !== "depo" || x.validation_status === "rejected") continue;
+    const j = S.jouTx(x); if (j < m1 || j > fen) continue;
+    depo.set(x.id_compte_epargne, (depo.get(x.id_compte_epargne) || 0) + Number(x.montant || 0));
+  }
+  const l = [];
+  for (const k of M.comptes.values()) {
+    const plan = Number(k.montant_plan || 0);
+    if (k._pending || k._kraze || !plan || !k.jours_paiement?.length) continue;
+    const finCycle = k.date_fin ? S.ajouteJou(k.date_fin, -1) : null;
+    const de = k.date_debut > m1 ? k.date_debut : m1, a = finCycle && finCycle < fen ? finCycle : fen;
+    const pv = S.joursPeman(de, a, k.jours_paiement, M.feries) * plan;
+    if (!pv) continue;
+    const ko = depo.get(k.id_compte_epargne) || 0, dwe = Math.max(0, pv - ko);
+    l.push({ k, c: M.clients.get(k.id_personne) || {}, plan, pv, ko, dwe, ves: Math.ceil(dwe / plan) });
+  }
+  return { l, m1, fen };
+}
+async function viewRekouvreman() {
+  if (!estManager()) return go("#/");
+  const M = await S.model();
+  ajans = (await db.meta("ajans")) || {};
+  const { lis, ids } = await ekipAjan(M);
+  const mwaL = [0, 1, 2, 3, 4, 5].map((n) => { const d = new Date(M.today.slice(0, 7) + "-15T12:00:00Z"); d.setUTCMonth(d.getUTCMonth() - n); return d.toISOString().slice(0, 7); });
+  if (!mwaL.includes(rekF.mwa)) rekF.mwa = mwaL[0];
+  const nonMwa = (m) => new Date(m + "-15T12:00:00Z").toLocaleDateString("fr-FR", { month: "long", year: "numeric", timeZone: "UTC" });
+  const { l, m1, fen } = kalkRekouvreman(M, rekF.mwa);
+  const ajanK = (k) => (ids.has(k.created_by) ? k.created_by : SAN_AJAN);
+  const nonA = (id) => lis.find((a) => a.user_id === id)?.nom || (id === SAN_AJAN ? t("San ajan") : ajans[id] || t("Lòt ajan"));
+  const gw = new Map();
+  for (const r of l) { const a = ajanK(r.k); if (rekF.ajan && a !== rekF.ajan) continue; if (!gw.has(a)) gw.set(a, []); gw.get(a).push(r); }
+  const som = (L, f) => L.reduce((s, r) => s + r[f], 0);
+  const tout = [...gw.values()].flat(), Tpv = som(tout, "pv"), Td = som(tout, "dwe"), Trt = Tpv - Td, P = Tpv ? Math.round((Trt / Tpv) * 100) : 0;
+  const kf = konfMetrik(await db.meta("paramet"));
+  const kl = (p) => (p >= kf.objektif.rekouvreman * kf.vet / 100 ? "vet" : p >= kf.objektif.rekouvreman * kf.jon / 100 ? "jon" : "wouj");
+  const ajL = [...gw.entries()].map(([a, L]) => { const pv = som(L, "pv"), d = som(L, "dwe"); return { a, L, pv, d, rt: pv - d, p: pv ? Math.round(((pv - d) / pv) * 100) : 0, dw: L.filter((r) => r.dwe > 0) }; })
+    .sort((x, y) => y.d - x.d);
+  const nDwe = tout.filter((r) => r.dwe > 0).length;
+  const sèvis = C?.SEVIS === "epargne" ? "Epargne" : "Grandon";
+  $app.innerHTML = `<div id="rekouvreman"><a href="#/rapo" class="back no-print">‹ ${t("Rapò")}</a>
+    <div class="page-head"><h1>${t("Rapò rekouvreman")} · <span data-brut>${sèvis}</span></h1></div>
+    <p class="mut">${nonMwa(rekF.mwa)} · ${datFr(m1)} – ${datFr(fen)}${fen === M.today ? ` (${t("jiska jodi a")})` : ""} · ${t("Enprime le")} ${datFr(M.today)}</p>
+    <div class="rek-ch no-print"><label>${t("Mwa")}<select id="rek-mwa">${mwaL.map((m) => `<option value="${m}" ${m === rekF.mwa ? "selected" : ""}>${nonMwa(m)}</option>`).join("")}</select></label>
+      <label>${t("Ajan")}<select id="rek-ajan"><option value="">${t("Tout ajan yo")}</option>${lis.map((a) => `<option value="${h(a.user_id)}" ${a.user_id === rekF.ajan ? "selected" : ""} data-brut>${h(a.nom)}</option>`).join("")}</select></label>
+      <button type="button" class="btn pri" id="rek-pdf">${t("Telechaje PDF")}</button></div>
+    <div class="kes-sum rek-sum">
+      <div class="card kes-k"><span>${t("Kliyan te dwe peye")}</span><b>${gd(Tpv)}</b></div>
+      <div class="card kes-k"><span>${t("Rantre")}</span><b class="in">${gd(Trt)}</b><small>${P}%</small></div>
+      <div class="card kes-k"><span>${t("Poko rantre")}</span><b class="out" id="rek-dwe">${gd(Td)}</b><small>${nDwe} ${t("kliyan ki dwe")} / ${tout.length} ${t("kont")}</small></div>
+    </div>
+    ${ajL.length ? `<section class="card rek-blok"><h2>${t("Pa ajan")}</h2><div class="tbl-wrap"><table class="rek-t"><thead><tr><th>${t("Ajan")}</th><th class="n">${t("Kont")}</th><th class="n">${t("Te dwe peye")}</th><th class="n">${t("Rantre")}</th><th class="n">${t("Poko rantre")}</th><th class="n">%</th><th class="n">${t("Kliyan dwe")}</th></tr></thead>
+      <tbody>${ajL.map((x) => `<tr data-rek-ajan="${h(x.a)}"><th data-brut>${h(nonA(x.a))}</th><td class="n">${x.L.length}</td><td class="n">${gd(x.pv)}</td><td class="n">${gd(x.rt)}</td><td class="n err-t">${gd(x.d)}</td><td class="n"><span class="rek-p m-${kl(x.p)}">${x.p}%</span></td><td class="n">${x.dw.length}</td></tr>`).join("")}</tbody>
+      <tfoot><tr><th>${t("Total")}</th><td class="n">${tout.length}</td><td class="n">${gd(Tpv)}</td><td class="n">${gd(Trt)}</td><td class="n err-t">${gd(Td)}</td><td class="n">${P}%</td><td class="n">${nDwe}</td></tr></tfoot></table></div></section>
+    <h2 class="rek-h2">${t("Kliyan ki dwe, pa ajan")}</h2>
+    ${ajL.filter((x) => x.dw.length).map((x) => `<section class="card rek-blok rek-ajan"><div class="ekip-sek-h"><h3 data-brut>${h(nonA(x.a))}</h3><span class="rek-p m-${kl(x.p)}">${x.p}% ${t("rantre")}</span></div>
+      <p class="mut sm">${x.dw.length} ${t("kliyan dwe sou")} ${x.L.length} ${t("kont")} · <b>${gd(x.d)}</b> ${t("poko rantre")}</p>
+      <div class="tbl-wrap"><table class="rek-t"><thead><tr><th>${t("Kliyan")}</th><th class="n">${t("Plan")}</th><th class="n">${t("Te dwe peye")}</th><th class="n">${t("Peye")}</th><th class="n">${t("Dwe")}</th><th class="n">${t("Vèsman")}</th></tr></thead>
+      <tbody>${x.dw.sort((a, b) => b.dwe - a.dwe).map((r) => `<tr class="rek-r"><td><a href="#/kliyan/${h(r.k.id_personne)}" data-brut>${d(non(r.c))}</a><small>${h(r.k.no_compte || "")}</small></td><td class="n">${gd(r.plan)}</td><td class="n">${gd(r.pv)}</td><td class="n">${gd(r.ko)}</td><td class="n err-t">${gd(r.dwe)}</td><td class="n">${r.ves}</td></tr>`).join("")}</tbody>
+      <tfoot><tr><th>${t("Total")}</th><td></td><td class="n">${gd(som(x.dw, "pv"))}</td><td class="n">${gd(som(x.dw, "ko"))}</td><td class="n err-t">${gd(x.d)}</td><td class="n">${som(x.dw, "ves")}</td></tr></tfoot></table></div></section>`).join("") || `<p class="empty">${t("Okenn kliyan pa dwe.")}</p>`}`
+    : `<p class="empty">${t("Pa gen peman prevwa pou mwa sa a.")}</p>`}
+    <p class="mut sm rek-not">${t("«Te dwe peye» = jou peman kliyan an nan mwa a (depi debi cycle li), san jou ferye, × plan li. «Peye» = depo sou kont lan nan mwa a (depo an atant yo konte, sa ki rejte yo pa konte). «Dwe» = te dwe peye − peye. Yon kliyan ki peye davans pa kouvri lòt kliyan. Kont ki fèmen pa konte.")}</p></div>`;
+  document.getElementById("rek-mwa").onchange = (e) => { rekF.mwa = e.target.value; viewRekouvreman(); };
+  document.getElementById("rek-ajan").onchange = (e) => { rekF.ajan = e.target.value; viewRekouvreman(); };
+  document.getElementById("rek-pdf").onclick = () => {
+    const t0 = document.title; document.title = `Rekouvreman ${sèvis} ${rekF.mwa}${rekF.ajan ? " " + nonA(rekF.ajan) : ""}`;
+    document.documentElement.classList.add("enprime"); window.print();
+    setTimeout(() => { document.documentElement.classList.remove("enprime"); document.title = t0; }, 500);
+  };
+}
 
 // ---------- Metrik Tablo (objektif mwa a) ----------
 // Manadjè/admin chwazi metrik ki parèt sou Tablo ajan yo, objektif yo ak limit koulè yo (paramèt «tablo_metrik», pa sèvis).
@@ -1590,7 +1667,7 @@ async function viewRapo() {
     const det = detayRapo(M, D, mwen);
     Object.assign(ctx, { jou: [], i: 0, txTit: t("Detay chak ribrik"), txHtml: det.html, nTx: det.n });
   }
-  $app.innerHTML = `<div id="rapo">${sipèvizè ? baRapo(M) : ""}${L().parts.rapo(ctx)}${rapoPokoWe(M, pokoWe, D, sipèvizè && !rapoF.ajan)}${genKredi ? rapoKredi(M, krPe, krPen, sipèvizè && !rapoF.ajan, sipèvizè) : ""}${M.mod?.garanti && !sipèvizè ? rapoGaranti(M, garTx, garD, garR, false) : ""}</div>`;
+  $app.innerHTML = `<div id="rapo">${sipèvizè ? baRapo(M) : ""}${estManager() ? `<a class="row rek-lyen" href="#/rekouvreman"><div class="grow"><b>${t("Rapò rekouvreman")}</b><div class="mut sm">${t("Kòb kliyan yo dwe pou mwa a, pa ajan · PDF")}</div></div><span aria-hidden="true">›</span></a>` : ""}${L().parts.rapo(ctx)}${rapoPokoWe(M, pokoWe, D, sipèvizè && !rapoF.ajan)}${genKredi ? rapoKredi(M, krPe, krPen, sipèvizè && !rapoF.ajan, sipèvizè) : ""}${M.mod?.garanti && !sipèvizè ? rapoGaranti(M, garTx, garD, garR, false) : ""}</div>`;
   if (sipèvizè) brancheBaRapo(M);
   $app.querySelectorAll("[data-j]").forEach((b) => (b.onclick = () => { jouRapo = Number(b.dataset.j); viewRapo().then(() => requestAnimationFrame(() => $app.querySelector(`[data-j="${jouRapo}"]`)?.focus({ preventScroll: true }))); }));
 }
@@ -3818,6 +3895,7 @@ async function render() {
   if ((m = r.match(/^#\/kredi\/([\w-]+)\/kalandriye$/))) return estManager() ? viewKrediKalandriye(m[1]) : go("#/kredi");
   if ((m = r.match(/^#\/kredi\/([\w-]+)$/))) return viewKrediFich(m[1]);
   if (r === "#/rapo") return viewRapo();
+  if (r === "#/rekouvreman") return viewRekouvreman();
   if (r === "#/kat") { const M = await S.model(); ajans = (await db.meta("ajans")) || {}; return KAT.viewKat({ $app, M, man: estManager(), moi, ajans, getGps, toast }); }
   if (/^#\/(kliyan\/nouvo|cycle\/nouvo|tx\/nouvo|chwazi)/.test(r) && !(await leOk())) return viewLeFèmen();
   if (r === "#/le") return moi.admin ? viewLe() : go("#/");
