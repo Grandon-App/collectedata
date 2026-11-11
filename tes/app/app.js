@@ -30,7 +30,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "4.83";
+const APP_VERSION = "4.84";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin", kesye: "Responsab kès" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
@@ -725,7 +725,11 @@ function kalkRekouvreman(M, mwa) {
     const pv = S.joursPeman(de, a, k.jours_paiement, M.feries) * plan;
     if (!pv) continue;
     const ko = depo.get(k.id_compte_epargne) || 0, dwe = Math.max(0, pv - ko);
-    l.push({ k, c: M.clients.get(k.id_personne) || {}, plan, pv, ko, dwe, ves: Math.ceil(dwe / plan) });
+    // Sou tout cycle la (jiska fen peryòd la): sa l te dwe depi debi cycle la − tout depo li fè sou cycle la (ratrapaj reta mwa anvan yo).
+    const cyPv = S.joursPeman(k.date_debut, a, k.jours_paiement, M.feries) * plan;
+    const cyKo = (k._txs || []).filter((x) => S.txKind(x) === "depo" && x.validation_status !== "rejected" && S.jouTx(x) >= k.date_debut && S.jouTx(x) <= fen).reduce((s2, x) => s2 + Number(x.montant || 0), 0);
+    const cy = Math.max(0, cyPv - cyKo);
+    l.push({ k, c: M.clients.get(k.id_personne) || {}, plan, pv, ko, dwe, cy, ves: Math.ceil(cy / plan) });
   }
   return { l, m1, fen };
 }
@@ -746,9 +750,9 @@ async function viewRekouvreman() {
   const tout = [...gw.values()].flat(), Tpv = som(tout, "pv"), Td = som(tout, "dwe"), Trt = Tpv - Td, P = Tpv ? Math.round((Trt / Tpv) * 100) : 0;
   const kf = konfMetrik(await db.meta("paramet"));
   const kl = (p) => (p >= kf.objektif.rekouvreman * kf.vet / 100 ? "vet" : p >= kf.objektif.rekouvreman * kf.jon / 100 ? "jon" : "wouj");
-  const ajL = [...gw.entries()].map(([a, L]) => { const pv = som(L, "pv"), d = som(L, "dwe"); return { a, L, pv, d, rt: pv - d, p: pv ? Math.round(((pv - d) / pv) * 100) : 0, dw: L.filter((r) => r.dwe > 0) }; })
-    .sort((x, y) => y.d - x.d);
-  const nDwe = tout.filter((r) => r.dwe > 0).length;
+  const ajL = [...gw.entries()].map(([a, L]) => { const pv = som(L, "pv"), d = som(L, "dwe"); return { a, L, pv, d, cy: som(L, "cy"), rt: pv - d, p: pv ? Math.round(((pv - d) / pv) * 100) : 0, dw: L.filter((r) => r.dwe > 0 || r.cy > 0) }; })
+    .sort((x, y) => y.d + y.cy - x.d - x.cy);
+  const nDwe = tout.filter((r) => r.dwe > 0).length, Tcy = som(tout, "cy"), nCy = tout.filter((r) => r.cy > 0).length;
   const sèvis = C?.SEVIS === "epargne" ? "Epargne" : "Grandon";
   $app.innerHTML = `<div id="rekouvreman"><a href="#/rapo" class="back no-print">‹ ${t("Rapò")}</a>
     <div class="page-head"><h1>${t("Rapò rekouvreman")} · <span data-brut>${sèvis}</span></h1></div>
@@ -760,18 +764,19 @@ async function viewRekouvreman() {
       <div class="card kes-k"><span>${t("Kliyan te dwe peye")}</span><b>${gd(Tpv)}</b></div>
       <div class="card kes-k"><span>${t("Rantre")}</span><b class="in">${gd(Trt)}</b><small>${P}%</small></div>
       <div class="card kes-k"><span>${t("Poko rantre")}</span><b class="out" id="rek-dwe">${gd(Td)}</b><small>${nDwe} ${t("kliyan ki dwe")} / ${tout.length} ${t("kont")}</small></div>
+      <div class="card kes-k"><span>${t("Dwe sou cycle yo")}</span><b class="out" id="rek-cy">${gd(Tcy)}</b><small>${nCy} ${t("kliyan")} · ${t("ak reta mwa anvan yo")}</small></div>
     </div>
-    ${ajL.length ? `<section class="card rek-blok"><h2>${t("Pa ajan")}</h2><div class="tbl-wrap"><table class="rek-t"><thead><tr><th>${t("Ajan")}</th><th class="n">${t("Kont")}</th><th class="n">${t("Te dwe peye")}</th><th class="n">${t("Rantre")}</th><th class="n">${t("Poko rantre")}</th><th class="n">%</th><th class="n">${t("Kliyan dwe")}</th></tr></thead>
-      <tbody>${ajL.map((x) => `<tr data-rek-ajan="${h(x.a)}"><th data-brut>${h(nonA(x.a))}</th><td class="n">${x.L.length}</td><td class="n">${gd(x.pv)}</td><td class="n">${gd(x.rt)}</td><td class="n err-t">${gd(x.d)}</td><td class="n"><span class="rek-p m-${kl(x.p)}">${x.p}%</span></td><td class="n">${x.dw.length}</td></tr>`).join("")}</tbody>
-      <tfoot><tr><th>${t("Total")}</th><td class="n">${tout.length}</td><td class="n">${gd(Tpv)}</td><td class="n">${gd(Trt)}</td><td class="n err-t">${gd(Td)}</td><td class="n">${P}%</td><td class="n">${nDwe}</td></tr></tfoot></table></div></section>
+    ${ajL.length ? `<section class="card rek-blok"><h2>${t("Pa ajan")}</h2><div class="tbl-wrap"><table class="rek-t"><thead><tr><th>${t("Ajan")}</th><th class="n">${t("Kont")}</th><th class="n">${t("Te dwe peye")}</th><th class="n">${t("Rantre")}</th><th class="n">${t("Poko rantre")}</th><th class="n">%</th><th class="n">${t("Kliyan dwe")}</th><th class="n">${t("Dwe sou cycle la")}</th></tr></thead>
+      <tbody>${ajL.map((x) => `<tr data-rek-ajan="${h(x.a)}"><th data-brut>${h(nonA(x.a))}</th><td class="n">${x.L.length}</td><td class="n">${gd(x.pv)}</td><td class="n">${gd(x.rt)}</td><td class="n err-t rek-dm">${gd(x.d)}</td><td class="n"><span class="rek-p m-${kl(x.p)}">${x.p}%</span></td><td class="n">${x.L.filter((r) => r.dwe > 0).length}</td><td class="n err-t rek-dc">${gd(x.cy)}</td></tr>`).join("")}</tbody>
+      <tfoot><tr><th>${t("Total")}</th><td class="n">${tout.length}</td><td class="n">${gd(Tpv)}</td><td class="n">${gd(Trt)}</td><td class="n err-t">${gd(Td)}</td><td class="n">${P}%</td><td class="n">${nDwe}</td><td class="n err-t">${gd(Tcy)}</td></tr></tfoot></table></div></section>
     <h2 class="rek-h2">${t("Kliyan ki dwe, pa ajan")}</h2>
     ${ajL.filter((x) => x.dw.length).map((x) => `<section class="card rek-blok rek-ajan"><div class="ekip-sek-h"><h3 data-brut>${h(nonA(x.a))}</h3><span class="rek-p m-${kl(x.p)}">${x.p}% ${t("rantre")}</span></div>
-      <p class="mut sm">${x.dw.length} ${t("kliyan dwe sou")} ${x.L.length} ${t("kont")} · <b>${gd(x.d)}</b> ${t("poko rantre")}</p>
-      <div class="tbl-wrap"><table class="rek-t"><thead><tr><th>${t("Kliyan")}</th><th class="n">${t("Plan")}</th><th class="n">${t("Te dwe peye")}</th><th class="n">${t("Peye")}</th><th class="n">${t("Dwe")}</th><th class="n">${t("Vèsman")}</th></tr></thead>
-      <tbody>${x.dw.sort((a, b) => b.dwe - a.dwe).map((r) => `<tr class="rek-r"><td><a href="#/kliyan/${h(r.k.id_personne)}" data-brut>${d(non(r.c))}</a><small>${h(r.k.no_compte || "")}</small></td><td class="n">${gd(r.plan)}</td><td class="n">${gd(r.pv)}</td><td class="n">${gd(r.ko)}</td><td class="n err-t">${gd(r.dwe)}</td><td class="n">${r.ves}</td></tr>`).join("")}</tbody>
-      <tfoot><tr><th>${t("Total")}</th><td></td><td class="n">${gd(som(x.dw, "pv"))}</td><td class="n">${gd(som(x.dw, "ko"))}</td><td class="n err-t">${gd(x.d)}</td><td class="n">${som(x.dw, "ves")}</td></tr></tfoot></table></div></section>`).join("") || `<p class="empty">${t("Okenn kliyan pa dwe.")}</p>`}`
+      <p class="mut sm">${x.dw.length} ${t("kliyan dwe sou")} ${x.L.length} ${t("kont")} · <b>${gd(x.d)}</b> ${t("poko rantre")} ${t("pou mwa a")} · <b>${gd(x.cy)}</b> ${t("sou cycle yo")}</p>
+      <div class="tbl-wrap"><table class="rek-t"><thead><tr><th>${t("Kliyan")}</th><th class="n">${t("Plan")}</th><th class="n">${t("Te dwe peye")}</th><th class="n">${t("Peye")}</th><th class="n">${t("Dwe mwa a")}</th><th class="n">${t("Dwe sou cycle la")}</th><th class="n">${t("Vèsman")}</th></tr></thead>
+      <tbody>${x.dw.sort((a, b) => b.dwe + b.cy - a.dwe - a.cy).map((r) => `<tr class="rek-r"><td><a href="#/kliyan/${h(r.k.id_personne)}" data-brut>${d(non(r.c))}</a><small>${h(r.k.no_compte || "")}</small></td><td class="n">${gd(r.plan)}</td><td class="n">${gd(r.pv)}</td><td class="n">${gd(r.ko)}</td><td class="n err-t rek-dm">${gd(r.dwe)}</td><td class="n err-t rek-dc">${gd(r.cy)}</td><td class="n">${r.ves}</td></tr>`).join("")}</tbody>
+      <tfoot><tr><th>${t("Total")}</th><td></td><td class="n">${gd(som(x.dw, "pv"))}</td><td class="n">${gd(som(x.dw, "ko"))}</td><td class="n err-t">${gd(x.d)}</td><td class="n err-t">${gd(x.cy)}</td><td class="n">${som(x.dw, "ves")}</td></tr></tfoot></table></div></section>`).join("") || `<p class="empty">${t("Okenn kliyan pa dwe.")}</p>`}`
     : `<p class="empty">${t("Pa gen peman prevwa pou mwa sa a.")}</p>`}
-    <p class="mut sm rek-not">${t("«Te dwe peye» = jou peman kliyan an nan mwa a (depi debi cycle li), san jou ferye, × plan li. «Peye» = depo sou kont lan nan mwa a (depo an atant yo konte, sa ki rejte yo pa konte). «Dwe» = te dwe peye − peye. Yon kliyan ki peye davans pa kouvri lòt kliyan. Kont ki fèmen pa konte.")}</p></div>`;
+    <p class="mut sm rek-not">${t("«Te dwe peye» = jou peman kliyan an nan mwa a (depi debi cycle li), san jou ferye, × plan li. «Peye» = depo sou kont lan nan mwa a (depo an atant yo konte, sa ki rejte yo pa konte). «Dwe mwa a» = te dwe peye − peye. «Dwe sou cycle la» = sa kliyan an te dwe depi debi cycle li − tout sa l peye sou cycle la (reta mwa anvan yo konte); «Vèsman» = kantite jou plan sa reprezante. Yon kliyan ki peye davans pa kouvri lòt kliyan. Kont ki fèmen pa konte.")}</p></div>`;
   document.getElementById("rek-mwa").onchange = (e) => { rekF.mwa = e.target.value; viewRekouvreman(); };
   document.getElementById("rek-ajan").onchange = (e) => { rekF.ajan = e.target.value; viewRekouvreman(); };
   document.getElementById("rek-pdf").onclick = () => {
