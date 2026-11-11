@@ -30,7 +30,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "4.74";
+const APP_VERSION = "4.75";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin", kesye: "Responsab kès" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
@@ -2325,7 +2325,10 @@ async function viewKrediNouvo() {
   let kliyan = null;
   const konf = () => !!KF && f.querySelector("input[name=kalite]:checked")?.value === "konfyans";
   const kalite = () => (konf() ? "konfyans" : "klasik");
-  if (KF) f.taux.value = Number(KF.to ?? 10);
+  // To enterè pa defo: 7% pa mwa pou kredi klasik, to Konfyans lan (10%) pou Konfyans. Si moun nan chanje l, nou pa touche l ankò.
+  const TO_KLASIK = 7;
+  f.taux.value = TO_KLASIK;
+  f.taux.addEventListener("input", () => (f.taux.dataset.manuel = "1"));
   const rannMoun = () => {
     const v = document.getElementById("kr-q").value.trim().toLowerCase();
     const l = v ? moun.filter((c) => non(c).toLowerCase().includes(v) || String(c.code_client || "").toLowerCase().includes(v)).slice(0, 8) : [];
@@ -2366,6 +2369,7 @@ async function viewKrediNouvo() {
     f.querySelectorAll(".kr-konf").forEach((x) => (x.hidden = !k));
     document.getElementById("kr-to-l").textContent = k ? `${t("To enterè")} (% ${t("sou montan an")})` : `${t("To enterè")} (% ${t("pa mwa")})`;
     f.peman.dataset.manuel = "";
+    if (!f.taux.dataset.manuel) f.taux.value = k ? Number(KF?.to ?? 10) : TO_KLASIK;
     recap();
   };
   f.querySelectorAll("input[name=kalite]").forEach((r) => (r.onchange = mete));
