@@ -1,5 +1,5 @@
 // LOOK B · Mache — klè, gwo bouton jòn safran, fèt pou teren an. (Kontra: LOOKS.md. Modèl vizyèl: tests/refonte/B-*.dc.html)
-import { h, d, gd, gn, datFr, datKout, lè, non, inisyal, telFmt, JOU, JOU_KOUT, lisJou, badgePend, badgeKont, ICO, MOTIF_KOUT, pct, t, objektif, mwa, rekipere } from "./fmt.js";
+import { kane, h, d, gd, gn, datFr, datKout, lè, non, inisyal, telFmt, JOU, JOU_KOUT, lisJou, badgePend, badgeKont, ICO, MOTIF_KOUT, pct, t, objektif, mwa, rekipere } from "./fmt.js";
 
 // ---------- Ti zouti pwòp look la ----------
 const prenon = (moi) => h(String(moi?.nom || "").trim().split(" ")[0] || "");
@@ -125,7 +125,7 @@ export function fich(ctx) {
     const k = x.k;
     const np = x.nPeye ?? 0, nv = x.nPrevu;
     return `<a class="ncard" href="${x.href}" aria-label="Cycle ${h(k.no_compte || t("Cycle poko voye"))} · ${np}/${nv ?? "?"} ${t("vèsman")}">
-      <div class="nt"><b>${d(k.no_compte || t("Cycle poko voye"))}</b> ${badgePend(k)}<span class="nd">${datKout(k.date_debut)} → ${datKout(k.date_fin)}</span></div>
+      <div class="nt"><b>${d(k.no_compte || t("Cycle poko voye"))}</b> ${badgePend(k)}${kane(k)}<span class="nd">${datKout(k.date_debut)} → ${datKout(k.date_fin)}</span></div>
       ${semèn(x.dots)}
       <div class="nr"><span><b>${np}</b> / ${nv ?? "?"} ${t("vèsman")}</span><b>${man && x.solde != null ? `${t("Balans")} ${gd(x.solde)}` : `${gd(k._depots || 0)}${k._totalPrevu != null ? ` / ${gd(k._totalPrevu)}` : ""}`}</b></div>
       <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${x.pwosan || 0}"><i style="width:${x.pwosan || 0}%"></i></div>

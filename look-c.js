@@ -1,6 +1,6 @@
 // LOOK C · Lannuit — toujou fonse, kontras fò, chif an mono. (Kontra: LOOKS.md. Modèl vizyèl: tests/refonte/C-*.dc.html)
 // Chak pati = fn(ctx) → HTML. app.js branche evènman yo sou hook yo (id, klas, data-attribut) — pa retire yo.
-import { h, d, gd, gn, datFr, datKout, lèKout, non, inisyal, JOU, JOU_KOUT, lisJou, avatar, badgePend, badgeKont, ICO, MOTIF_KOUT, pct, t, FUSEAU, objektif, mwa, rekipere } from "./fmt.js";
+import { kane, h, d, gd, gn, datFr, datKout, lèKout, non, inisyal, JOU, JOU_KOUT, lisJou, avatar, badgePend, badgeKont, ICO, MOTIF_KOUT, pct, t, FUSEAU, objektif, mwa, rekipere } from "./fmt.js";
 
 // ---------- Ti zouti pwòp look la ----------
 const isoJouDe = (iso) => ((new Date(String(iso).slice(0, 10) + "T12:00:00Z").getUTCDay() + 6) % 7) + 1;
@@ -39,7 +39,7 @@ function semèn(dots) {
 function cycCard(x, { man, href = null, dots = null, extra = "" } = {}) {
   const k = x.k;
   const body = `
-    <div class="cyc-h"><b class="mono">${d(k.no_compte || t("Cycle poko voye"))}</b><span>${badgePend(k)}<i class="st ${k._actif ? "ok" : "mut"}">${k._actif ? "Aktif" : "Fini"}</i></span></div>
+    <div class="cyc-h"><b class="mono">${d(k.no_compte || t("Cycle poko voye"))}${kane(k)}</b><span>${badgePend(k)}<i class="st ${k._actif ? "ok" : "mut"}">${k._actif ? "Aktif" : "Fini"}</i></span></div>
     <div class="cyc-3">
       <div><span>Plan</span><b class="mono">${gd(k.montant_plan)}</b></div>
       <div><span>Vèsman</span><b class="mono">${x.nPeye}/${x.nPrevu ?? "?"}</b></div>

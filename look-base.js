@@ -1,6 +1,6 @@
 // Pati "baz": rann aktyèl la (ble marin senp). Chak look kòmanse ak yo, epi ranplase yo ak pwòp vèsyon li.
 // Kontra ctx yo: LOOKS.md.
-import { h, d, gd, datFr, lè, non, JOU, lisJou, avatar, badgePend, badgeKont, ICO, pct, t } from "./fmt.js";
+import { kane, h, d, gd, datFr, lè, non, JOU, lisJou, avatar, badgePend, badgeKont, ICO, pct, t } from "./fmt.js";
 
 export function tablo(ctx) {
   const { moi, today, stats } = ctx;
@@ -22,13 +22,13 @@ export function kontRow(r) {
   const id = k.id_compte_epargne;
   if (sekyon === "jodi") {
     return `<div class="row">
-      ${avatar(c)}<a class="grow lnk" href="#/cycle/${id}"><b>${d(non(c))}</b><div class="mut sm">${d(k.no_compte || t("Cycle poko voye"))} · plan ${gd(k.montant_plan)}</div>
+      ${avatar(c)}<a class="grow lnk" href="#/cycle/${id}"><b>${d(non(c))}</b><div class="mut sm">${d(k.no_compte || t("Cycle poko voye"))}${kane(k)} · plan ${gd(k.montant_plan)}</div>
         ${fidbakJodi && !ok ? `<div class="sm"><span class="badge warn">Fidbak anrejistre</span></div>` : ""}</a>
       ${ok ? `<span class="badge ok">✓ ${gd(k._jodi)}</span>` : `<div class="btns-v"><a class="btn sm pri" href="#/tx/nouvo/${id}">Depo</a><button class="btn sm" data-papeye="${id}">Pa peye</button></div>`}</div>`;
   }
   return `<div class="row">
     <a class="grow lnk" href="#/cycle/${id}"><b>${d(non(c))}</b> ${badgePend(k)}
-      <div class="mut sm">${d(k.no_compte || t("Cycle poko voye"))} · plan ${gd(k.montant_plan)}</div>
+      <div class="mut sm">${d(k.no_compte || t("Cycle poko voye"))}${kane(k)} · plan ${gd(k.montant_plan)}</div>
       <div class="mut sm">${k.frequence_semaine ? `${k.frequence_semaine}×/sem · ${lisJou(k.jours_paiement)}` : "—"} · ${r.nPeye}/${r.nPrevu ?? "?"} ${t("vèsman")}</div>
       ${man && r.solde != null ? `<div class="sm"><b>${t("Balans")}: ${gd(r.solde)}</b></div>` : ""}</a>
     <a class="btn sm pri" href="#/tx/nouvo/${id}">Depo</a></div>`;
