@@ -54,7 +54,7 @@ const FR = {
   "Ou pa konekte.": "Vous n'êtes pas connecté.",
   // Kliyan
   "Nouvo kliyan": "Nouveau client", "Kliyan Grandon yo": "Clients Grandon", "Nan baz la": "Dans la base",
-  "Chèche non, ID kliyan oswa telefòn…": "Rechercher nom, ID client ou téléphone…", "Chèche kliyan": "Rechercher un client",
+  "Chèche non, ID kliyan oswa telefòn…": "Rechercher nom, ID client ou téléphone…", "Chèche non, ID kliyan, telefòn oswa nimewo kanè…": "Rechercher nom, ID client, téléphone ou numéro de carnet…", "Kanè": "Carnet", "Chèche kliyan": "Rechercher un client",
   "Chèche anvan w kreye yon kliyan, pou evite doublon.": "Recherchez avant de créer un client, pour éviter les doublons.",
   "Ap chèche nan baz la…": "Recherche dans la base…",
   "Moun sa yo deja nan baz la. Si se li, ajoute l nan Grandon olye w kreye l ankò.": "Ces personnes sont déjà dans la base. Si c'est elle, ajoutez-la à Grandon au lieu de la recréer.",
