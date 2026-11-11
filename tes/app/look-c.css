@@ -1,0 +1,654 @@
+/* LOOK C · Lannuit — toujou fonse: fon #0b1222, sifas #141e33 / #1d2a47, liy #23304d, lò #e8c15a, vèt #4fd1a5.
+   Polis IBM Plex Sans (tèks) + IBM Plex Mono (tout chif / kòd). Dans, tankou yon liv kont: liy 1 px olye kat.
+   Tout règ yo anba html[data-look="c"] (pa gen règ global). Gade LOOKS.md pou kontra a. */
+
+/* ===================== Tokens (espesifisite (0,2,1): bat règ fonse app.css yo) ===================== */
+html[data-look="c"][data-look="c"] {
+  --bg: #0b1222; --card: #141e33; --card2: #1d2a47; --ink: #e8eef9; --mut: #9aa7c0; --line: #23304d; --div: #1a2540; --field: #0b1222; --track: #23304d;
+  --pri: #e8c15a; --pri-ink: #0b1222; --acc: #e8c15a; --gold: #e8c15a; --gold-ink: #0b1222; --gold-bg: rgba(232, 193, 90, .14);
+  --ok: #4fd1a5; --ok-bg: rgba(79, 209, 165, .12); --ok-line: #1f4d43; --warn: #e8c15a; --warn-bg: rgba(232, 193, 90, .14);
+  --err: #ff8a80; --err-bg: rgba(255, 138, 128, .12); --err-fill: #ff8a80; --err-line: #5a2a2a; --rate: #6e2f2f; --rate-line: rgba(255, 138, 128, .7); --info: #7fb2ff; --info-bg: rgba(127, 178, 255, .12);
+  --pend: #b9a7f5; --pend-bg: rgba(185, 167, 245, .14); --lnk: #7fb2ff;
+  --bar: #0f1830; --nav: #0f1830; --toast: #1d2a47;
+  --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  --r: 14px; --gx: 16px;
+  --ico-search: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239aa7c0' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E");
+  color-scheme: dark;
+}
+
+/* ===================== Baz ===================== */
+html[data-look="c"] body { font-family: var(--sans); background: var(--bg); color: var(--ink); line-height: 1.45; }
+html[data-look="c"] main { max-width: 640px; padding: 8px var(--gx) 40px; }
+html[data-look="c"] body.has-nav main { padding-bottom: calc(92px + env(safe-area-inset-bottom)); }
+html[data-look="c"] a { color: var(--lnk); }
+html[data-look="c"] a.lnk { color: inherit; text-decoration: none; }
+html[data-look="c"] .mono, html[data-look="c"] .mono b { font-family: var(--mono); font-weight: 500; font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
+html[data-look="c"] b.mono, html[data-look="c"] .mono b, html[data-look="c"] b .mono { font-weight: 600; }
+html[data-look="c"] h1 { font-size: 1.3rem; font-weight: 700; letter-spacing: -.01em; margin: 6px 0 10px; color: var(--ink); }
+html[data-look="c"] h1.mono { font-weight: 600; }
+html[data-look="c"] h2 { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin: 22px 0 6px; font-size: .69rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--mut); }
+html[data-look="c"] h2 small { font: 500 .72rem/1.4 var(--mono); color: var(--mut); text-transform: none; letter-spacing: 0; }
+html[data-look="c"] h2 small.mut { color: var(--mut); }
+html[data-look="c"] .mut { color: var(--mut); }
+html[data-look="c"] .sm { font-size: .85rem; } html[data-look="c"] .xs { font-size: .78rem; }
+html[data-look="c"] .ok-t { color: var(--ok); } html[data-look="c"] .err-t { color: var(--err); } html[data-look="c"] .gold { color: var(--gold); }
+html[data-look="c"] .empty { color: var(--mut); text-align: center; padding: 22px 12px; border: 1px dashed var(--line); border-radius: 10px; margin: 4px 0; font-size: .9rem; }
+html[data-look="c"] .list { gap: 0; }
+html[data-look="c"] .list .empty { width: 100%; }
+html[data-look="c"] #bar[hidden], html[data-look="c"] .tabbar[hidden] { display: none; }
+html[data-look="c"] :is(a, button, [role="tab"], select, textarea, input, summary, [tabindex]):focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+html[data-look="c"] .err-msg { color: var(--err); font-weight: 600; }
+html[data-look="c"] b.in, html[data-look="c"] .in { color: var(--ok); } html[data-look="c"] b.out, html[data-look="c"] .out { color: var(--err); } html[data-look="c"] b.fee, html[data-look="c"] .fee { color: var(--gold); }
+html[data-look="c"] .sub { color: var(--mut); font-size: .8rem; margin: -4px 0 10px; overflow-wrap: anywhere; }
+html[data-look="c"] p.sub.dat { margin: -2px 0 12px; }
+html[data-look="c"] .center { text-align: center; }
+html[data-look="c"] .hello { margin: 10px 0 0; font-size: .9rem; color: var(--mut); }
+html[data-look="c"] .hello .mono { font-size: .78rem; }
+html[data-look="c"] .hello + h1 { margin-top: 2px; }
+
+/* ===================== Ba anwo: mak "G" lò + pilil estati mono ===================== */
+html[data-look="c"] #bar { background: var(--bar); color: var(--ink); border-bottom: 1px solid var(--line); padding: 10px var(--gx); padding-top: max(10px, env(safe-area-inset-top)); gap: 10px; }
+html[data-look="c"] .brand { font-weight: 700; font-size: 1.1rem; gap: 10px; min-height: 44px; min-width: 0; }
+html[data-look="c"] .brand .mark { width: 30px; height: 30px; border-radius: 8px; border: 0; background: var(--gold); color: var(--gold-ink); font-size: 1rem; font-weight: 700; flex-shrink: 0; }
+html[data-look="c"] .brand small { font: 500 .62rem/1.5 var(--mono); border: 1px solid var(--line); border-radius: 6px; padding: 0 5px; opacity: 1; color: var(--mut); }
+html[data-look="c"] .net { position: relative; flex-shrink: 0; background: transparent; color: var(--ok); border: 1px solid var(--ok-line); font: 500 .72rem/1.3 var(--mono); text-transform: uppercase; letter-spacing: .02em; padding: 5px 11px; min-height: 36px; border-radius: 99px; gap: 7px; white-space: nowrap; }
+html[data-look="c"] .net::before { content: ""; position: absolute; inset: -4px 0; }
+html[data-look="c"] .net .dot { width: 7px; height: 7px; background: var(--ok); box-shadow: 0 0 6px rgba(79, 209, 165, .6); }
+html[data-look="c"] #bar a.net { color: var(--ok); } /* (1,2,2): bat `#bar a { color: inherit }` app.css la */
+html[data-look="c"] .net.off, html[data-look="c"] #bar a.net.off { color: var(--err); border-color: var(--err-line); }
+html[data-look="c"] .net.off .dot { background: var(--err); box-shadow: none; }
+html[data-look="c"] .net .cnt { background: none; color: inherit; padding: 0; font: inherit; border-radius: 0; }
+html[data-look="c"] .net .cnt::before { content: "· "; }
+html[data-look="c"] .net .cnt::after { content: " an atant"; text-transform: lowercase; }
+html[data-look="c"]:lang(fr) .net .cnt::after { content: " en attente"; }
+/* Anyen an atant: "● ANLIY · 0 an atant" tankou maket la (app.js mete .cnt sèlman si gen bagay an atant) */
+html[data-look="c"] #bar .net.on:not(:has(.cnt))::after { content: "· 0 an atant"; text-transform: lowercase; }
+html[data-look="c"]:lang(fr) #bar .net.on:not(:has(.cnt))::after { content: "· 0 en attente"; }
+html[data-look="c"] #bar .net .cnt.err { color: var(--err); }
+html[data-look="c"] .net .cnt.err::after { content: none; }
+html[data-look="c"] .brand .brand-t { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+html[data-look="c"] .net .spin { width: 10px; height: 10px; border-width: 2px; }
+
+/* ===================== Ba navigasyon anba ===================== */
+html[data-look="c"] .tabbar { background: var(--nav); border-top: 1px solid var(--line); box-shadow: none; padding: 8px max(4px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(4px, env(safe-area-inset-left)); }
+html[data-look="c"] .tabbar a { min-height: 52px; gap: 4px; color: var(--mut); font-size: .69rem; font-weight: 500; border-radius: 10px; padding: 4px 2px; min-width: 0; }
+html[data-look="c"] .tabbar a span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+html[data-look="c"] .tabbar svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; }
+html[data-look="c"] .tabbar a.on { color: var(--gold); font-weight: 700; }
+html[data-look="c"] .tabbar a.on svg { background: none; padding: 0; width: 22px; height: 22px; border-radius: 0; stroke-width: 2.2; }
+html[data-look="c"] .tabbar a:focus-visible { outline: 2px solid var(--gold); outline-offset: -2px; }
+html[data-look="c"] body.has-nav .toast { bottom: calc(84px + env(safe-area-inset-bottom)); }
+
+/* ===================== Tèt paj, retou ===================== */
+html[data-look="c"] .page-head { margin: 10px 0 12px; gap: 10px; align-items: center; }
+html[data-look="c"] .page-head h1 { margin: 0; font-size: 1.3rem; }
+html[data-look="c"] .page-head.sub { margin: 18px 0 8px; }
+html[data-look="c"] .page-head.sub h2 { margin: 0; }
+html[data-look="c"] .back { display: inline-flex; align-items: center; gap: 5px; min-height: 44px; padding: 0 4px 0 0; color: var(--ink); font-weight: 600; font-size: .9rem; text-decoration: none; }
+html[data-look="c"] main > .back + h1 { margin-top: 0; }
+html[data-look="c"] .topr { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin: 2px 0 8px; }
+html[data-look="c"] .kli { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; max-width: 70%; color: var(--ink); text-decoration: none; font-weight: 600; font-size: .85rem; }
+html[data-look="c"] .kli span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+html[data-look="c"] .kli svg { width: 16px; height: 16px; transform: rotate(180deg); color: var(--mut); flex-shrink: 0; }
+html[data-look="c"] .lrow { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-top: 18px; }
+html[data-look="c"] .lrow h2 { margin: 0; }
+html[data-look="c"] .lnk-a { display: inline-flex; align-items: center; min-height: 44px; font-weight: 600; font-size: .85rem; white-space: nowrap; }
+
+/* ===================== Kat, liy (liv kont), lis ===================== */
+html[data-look="c"] .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: 14px; margin: 8px 0; }
+html[data-look="c"] .row { background: transparent; border: 0; border-bottom: 1px solid var(--div); border-radius: 0; padding: 12px 0; gap: 12px; color: var(--ink); }
+html[data-look="c"] .list > .row:last-child, html[data-look="c"] .list > .row:last-of-type { border-bottom: 0; }
+html[data-look="c"] .row.flat { border: 0; padding: 8px 0 0; }
+html[data-look="c"] .row .grow b { font-weight: 600; }
+html[data-look="c"] .row .grow .sm { font-size: .8rem; }
+html[data-look="c"] .row .grow .xs { font-size: .76rem; }
+html[data-look="c"] .row .right b { font-family: var(--mono); font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+html[data-look="c"] .row .right .badge { margin-top: 4px; }
+/* Dezyèm liy liy app.js yo (kòd kont, dat, telefòn) an mono */
+html[data-look="c"] :is(a.row[href^="#/cycle/"], a.row[href^="#/kliyan/"], a.row[href^="#/tx/"], #baz .row, #dbl .row) .grow > .mut.sm:first-of-type { font-family: var(--mono); font-size: .76rem; font-variant-numeric: tabular-nums; }
+/* Liy fidbak (liSwivi: a.row.swivi nan onglè Fidbak, div.row.swivi sou paj cycle): fraz rezon an vin anvan liy «kont · dat, lè · ajan» an,
+   kidonk règ :first-of-type anwo a pa pran l — liy sa a dwe an mono tankou tout lòt liy liv kont lan. Nòt ajan an: italik ak yon ti liy agòch (pa yon dezyèm fraz rezon). */
+html[data-look="c"] .row.swivi { align-items: flex-start; }
+html[data-look="c"] .row.swivi .grow > .mut.sm { font-family: var(--mono); font-size: .76rem; font-variant-numeric: tabular-nums; margin-top: 1px; }
+html[data-look="c"] .row.swivi .rezon { margin-top: 1px; }
+html[data-look="c"] .row.swivi .nòt { margin-top: 5px; padding: 1px 0 1px 9px; border-left: 2px solid var(--line); font-style: italic; color: var(--ink); }
+html[data-look="c"] .row.swivi .err-msg { margin-top: 4px; }
+html[data-look="c"] .btns { gap: 8px; margin-top: 10px; }
+html[data-look="c"] .btns .btn { flex: 1; }
+html[data-look="c"] .btns-v { gap: 6px; align-items: flex-end; }
+html[data-look="c"] .thumb { width: 40px; height: 40px; border-radius: 12px; background: var(--card2); color: var(--ink); font-size: .85rem; font-weight: 700; }
+html[data-look="c"] .thumb.ph { background: var(--card2); color: var(--ink); }
+html[data-look="c"] .thumb.xs { width: 28px; height: 28px; border-radius: 8px; font-size: .65rem; }
+html[data-look="c"] .avatar { width: 72px; height: 72px; border-radius: 18px; background: var(--card2); border: 1px solid var(--gold); }
+html[data-look="c"] .avatar.ph { background: var(--card2); color: var(--ink); font-size: 1.6rem; font-weight: 700; }
+html[data-look="c"] .head { gap: 14px; }
+html[data-look="c"] .head h1 { margin: 0; }
+
+/* Liy kont (Epay) */
+html[data-look="c"] .kr { align-items: center; }
+html[data-look="c"] .kr .grow.lnk { display: flex; flex-direction: column; justify-content: center; align-self: stretch; min-height: 44px; }
+html[data-look="c"] .kr .nml { overflow-wrap: anywhere; }
+html[data-look="c"] .kr .nm { font-size: 1rem; overflow-wrap: anywhere; }
+html[data-look="c"] .kr .sub { font-size: .76rem; color: var(--mut); margin: 1px 0 0; overflow-wrap: anywhere; }
+html[data-look="c"] .kr .xs { margin-top: 2px; }
+html[data-look="c"] .kr .fbk { margin-top: 3px; color: var(--gold); font-size: .78rem; font-weight: 500; }
+html[data-look="c"] .kr .bal { margin-top: 3px; font-size: .8rem; color: var(--mut); }
+html[data-look="c"] .kr .bal b { color: var(--ink); }
+html[data-look="c"] .kr .right { text-align: right; flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+html[data-look="c"] .kr .right b { font-size: .88rem; }
+html[data-look="c"] .kr .right small { font-size: .76rem; color: var(--mut); }
+html[data-look="c"] .kr .cnt-v { font-size: .82rem; color: var(--mut); padding-right: 2px; }
+html[data-look="c"] .kr .btns-v .btn.sm { min-width: 72px; }
+
+/* ===================== Bouton ===================== */
+html[data-look="c"] .btn { min-height: 44px; padding: 8px 16px; border-radius: 10px; border: 1px solid var(--line); background: transparent; color: var(--ink); font-weight: 600; font-size: .92rem; transition: background-color .12s, border-color .12s, transform .08s; }
+html[data-look="c"] .btn:hover { background: rgba(255, 255, 255, .04); }
+html[data-look="c"] .btn:active { transform: scale(.98); }
+html[data-look="c"] .btn.pri { background: var(--gold); color: var(--gold-ink); border-color: var(--gold); font-weight: 700; }
+html[data-look="c"] .btn.pri:hover { background: #f0cc6c; }
+html[data-look="c"] .btn.sm { min-height: 44px; padding: 6px 12px; font-size: .82rem; }
+html[data-look="c"] .btn.ghost { border-color: var(--line); color: var(--mut); font-weight: 600; }
+html[data-look="c"] .btn.ghost:hover { color: var(--ink); }
+html[data-look="c"] .btn.block { margin: 10px 0; }
+html[data-look="c"] .btn.danger { color: var(--err); border-color: var(--err-line); }
+html[data-look="c"] .btn.block.danger { background: transparent; border-color: var(--err-line); }
+html[data-look="c"] .btn.danger-full { background: var(--err-fill); border-color: var(--err-fill); color: var(--gold-ink); }
+html[data-look="c"] .btn svg { width: 18px; height: 18px; }
+html[data-look="c"] .btn:disabled { opacity: .5; transform: none; cursor: default; }
+html[data-look="c"] .btn-row { gap: 8px; margin: 10px 0; }
+html[data-look="c"] .btn-row .btn { min-height: 48px; }
+html[data-look="c"] .page-head .btn { white-space: nowrap; }
+html[data-look="c"] .page-head .btn.pri { font-size: .88rem; padding: 8px 14px; }
+
+/* ===================== Badj, chip, filt ===================== */
+html[data-look="c"] .badge { font: 600 .66rem/1.5 var(--mono); text-transform: uppercase; letter-spacing: .04em; padding: 1px 7px; border-radius: 6px; border: 1px solid currentColor; vertical-align: middle; }
+html[data-look="c"] .badge.ok { color: var(--ok); border-color: var(--ok-line); background: var(--ok-bg); }
+html[data-look="c"] .badge.warn { color: var(--gold); border-color: rgba(232, 193, 90, .4); background: var(--gold-bg); }
+html[data-look="c"] .badge.err { color: var(--err); border-color: var(--err-line); background: var(--err-bg); }
+html[data-look="c"] .badge.info { color: var(--info); border-color: rgba(127, 178, 255, .4); background: var(--info-bg); }
+html[data-look="c"] .badge.mut { color: var(--mut); border-color: var(--line); background: transparent; }
+html[data-look="c"] .badge.pend { color: var(--pend); border-color: rgba(185, 167, 245, .4); background: var(--pend-bg); }
+html[data-look="c"] .chips { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; margin: 0 0 10px; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: transparent; }
+html[data-look="c"] .chip { min-height: 44px; padding: 4px 6px; border: 0; border-right: 1px solid var(--line); border-radius: 0; background: transparent; color: var(--mut); font: 500 .8rem/1.3 var(--mono); flex-direction: row; gap: 6px; }
+html[data-look="c"] .chip:last-child { border-right: 0; }
+html[data-look="c"] .chip small { font: inherit; color: var(--mut); }
+html[data-look="c"] .chip.on { background: var(--gold); color: var(--gold-ink); font-weight: 600; }
+html[data-look="c"] .chip.on small { color: var(--gold-ink); opacity: .8; }
+html[data-look="c"] .chips.filt { grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 4px 0 8px; }
+html[data-look="c"] .chips.filt .chip { min-height: 44px; min-width: 0; padding: 4px 5px; font-size: .78rem; line-height: 1.15; white-space: normal; flex-wrap: wrap; justify-content: center; row-gap: 0; column-gap: 5px; overflow-wrap: break-word; text-align: center; }
+html[data-look="c"] .chips.filt .chip small::before { content: "· "; }
+/* An franse («Aujourd'hui · 2», «En retard · 1») 3 kolòn egal twò etwat sou telefòn: kolòn yo pran lajè tèks yo (yo toujou ranpli liy lan);
+   break-word (pa anywhere) pou kolòn nan pa janm pi etwat pase mo a — si l pa antre (gwo tèks), se kantite a ki desann sou 2yèm liy lan, pa yon mòso mo. */
+html[data-look="c"]:lang(fr) .chips.filt { grid-template-columns: repeat(3, auto); }
+/* Fokis klavye sou yon chip: ank lan anndan (.chips gen overflow: hidden ki koupe ank deyò a); sou chip lò aktif la, ank fonse */
+html[data-look="c"] .chip:focus-visible { outline: 2px solid var(--gold); outline-offset: -3px; position: relative; z-index: 1; }
+html[data-look="c"] .chip.on:focus-visible { outline-color: var(--gold-ink); }
+
+/* ===================== Onglè (liy anba, lò) ===================== */
+/* Liy onglè yo: liy 1 px la se yon lonbraj anndan (pa yon bòdi) pou souliyen lò onglè aktif la pase sou li, menm lè liy lan woule.
+   Chak onglè kenbe omwen lajè tèks li (min-width: max-content, pa kase): si 4 onglè (manadjè) pa antre sou yon ti ekran, liy lan woule
+   sou kote olye etikèt yo pile youn sou lòt. Lè yo antre, yo gen menm lajè (flex-basis 0) tankou anvan. */
+html[data-look="c"] .tabs { background: transparent; border: 0; border-radius: 0; padding: 0; gap: 0; margin: 14px 0 4px; box-shadow: inset 0 -1px 0 var(--line); overflow-x: auto; overflow-y: hidden; scrollbar-width: none; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; }
+html[data-look="c"] .tabs::-webkit-scrollbar { display: none; }
+html[data-look="c"] .tab { flex: 1 1 0; min-height: 44px; border-radius: 0; color: var(--mut); font-weight: 600; font-size: .9rem; padding: 0 4px; gap: 6px; min-width: max-content; white-space: nowrap; border-bottom: 2px solid transparent; margin-bottom: 0; }
+html[data-look="c"] .tab.on { background: none; color: var(--ink); font-weight: 700; border-bottom-color: var(--gold); }
+html[data-look="c"] .tab:focus-visible { outline: 2px solid var(--gold); outline-offset: -2px; }
+html[data-look="c"] .cnt-b { background: var(--gold); color: var(--gold-ink); font: 600 .7rem/1.5 var(--mono); padding: 0 6px; border-radius: 6px; }
+
+/* ===================== Tuil estatistik (Epay / Tablo) ===================== */
+html[data-look="c"] .stat2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 4px 0 0; }
+html[data-look="c"] .stile { background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: 12px; display: flex; flex-direction: column; min-width: 0; }
+html[data-look="c"] .stile > span { font-size: .69rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--mut); }
+html[data-look="c"] .stile > b { font-family: var(--mono); font-weight: 600; font-size: clamp(1.15rem, 6vw, 1.4rem); line-height: 1.3; margin: auto 0 2px; padding-top: 2px; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+html[data-look="c"] .stile > b.ok { color: var(--ok); }
+html[data-look="c"] .stile > b i { font-style: normal; font-size: .65em; color: var(--mut); margin-left: .3em; }
+html[data-look="c"] .stile > small { font-size: .76rem; color: var(--mut); }
+html[data-look="c"] .stile > b.gold { color: var(--gold); }
+html[data-look="c"] .stile > small .mono { color: var(--ink); }
+html[data-look="c"] .nl { display: flex; flex-direction: column; }
+html[data-look="c"] .nl a { display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 8px 0; border-bottom: 1px solid var(--div); color: var(--ink); text-decoration: none; }
+html[data-look="c"] .nl a:last-child { border-bottom: 0; }
+html[data-look="c"] .nl > a > svg { width: 22px; height: 22px; color: var(--gold); flex-shrink: 0; }
+html[data-look="c"] .nl a b { display: block; font-weight: 600; font-size: 1rem; }
+html[data-look="c"] .nl a small { display: block; font-size: .78rem; color: var(--mut); }
+html[data-look="c"] .nl a i { display: flex; color: var(--mut); }
+html[data-look="c"] .nl a i svg { width: 16px; height: 16px; transform: rotate(180deg); }
+
+/* ===================== Fich kliyan ===================== */
+html[data-look="c"] .fich-h { display: flex; gap: 14px; align-items: center; margin: 4px 0 14px; }
+html[data-look="c"] .fich-h h1 { font-size: 1.4rem; margin: 0; overflow-wrap: anywhere; }
+html[data-look="c"] .fich-h .sub { margin: 2px 0 0; font-size: .82rem; }
+html[data-look="c"] .fich-g { margin-top: 6px; font-size: .78rem; color: var(--mut); }
+html[data-look="c"] .fich-g a { font-weight: 600; display: inline-flex; align-items: center; min-height: 44px; margin: -13px 0; white-space: nowrap; }
+html[data-look="c"] .fich-g .badge { margin-left: 4px; }
+html[data-look="c"] .kv { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--div); font-size: .88rem; }
+html[data-look="c"] .kv:last-child { border-bottom: 0; }
+html[data-look="c"] .kv > span { color: var(--mut); font-size: .85rem; }
+html[data-look="c"] .kv b { font-weight: 500; text-align: right; overflow-wrap: anywhere; }
+html[data-look="c"] .kv b.mono { font-weight: 500; }
+html[data-look="c"] .kv b small { font-size: .74rem; color: var(--mut); font-weight: 400; }
+html[data-look="c"] .kv b span { color: inherit; font-size: inherit; }
+html[data-look="c"] .kv b .mut { color: var(--mut); }
+html[data-look="c"] .card.info { padding: 0 12px; margin: 8px 0 0; }
+html[data-look="c"] .card.info .kv { display: grid; grid-template-columns: 7.2rem minmax(0, 1fr); gap: 0 12px; align-items: baseline; padding: 10px 0; border-bottom: 1px solid var(--div); }
+html[data-look="c"] .card.info .kv:last-child { border-bottom: 0; }
+html[data-look="c"] .card.info .kv > span { font-size: .85rem; }
+html[data-look="c"] .card.info .kv b { text-align: left; font-weight: 500; }
+html[data-look="c"] .card.info .kv b a { color: var(--ink); text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 3px; display: inline-flex; align-items: center; min-height: 44px; margin: -12px 0; }
+html[data-look="c"] .card.info .kv b .badge { vertical-align: 1px; }
+html[data-look="c"] .cyc { display: block; padding: 14px; margin: 8px 0; color: var(--ink); }
+html[data-look="c"] .cyc-h { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+html[data-look="c"] .cyc-h > b { font-size: 1rem; overflow-wrap: anywhere; }
+html[data-look="c"] .cyc-h > span { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; flex-shrink: 0; }
+html[data-look="c"] .cyc-h .st { font-style: normal; font-family: var(--mono); font-size: .72rem; font-weight: 500; text-transform: uppercase; letter-spacing: .04em; }
+html[data-look="c"] .cyc-h .st.ok { color: var(--ok); } html[data-look="c"] .cyc-h .st.mut { color: var(--mut); }
+html[data-look="c"] .cyc-3 { display: grid; grid-template-columns: repeat(3, minmax(0, auto)); gap: 8px 10px; margin-top: 10px; } /* kolòn yo pran lajè chif yo: gwo objektif pa kraze lòt yo */
+html[data-look="c"] .cyc-3 div { display: flex; flex-direction: column; min-width: 0; }
+html[data-look="c"] .cyc-3 span { font-size: .72rem; color: var(--mut); }
+html[data-look="c"] .cyc-3 b { font-size: .95rem; overflow-wrap: normal; white-space: normal; }
+html[data-look="c"] .cyc-bal { margin-top: 8px; font-size: .82rem; color: var(--mut); }
+html[data-look="c"] .cyc-bal b { color: var(--ink); }
+html[data-look="c"] .heat { display: grid; grid-template-columns: repeat(13, minmax(0, 1fr)); gap: 3px; margin-top: 12px; }
+html[data-look="c"] .heat i { display: block; height: 18px; border-radius: 3px; background: var(--line); }
+html[data-look="c"] .heat i.konple { background: var(--ok); }
+html[data-look="c"] .heat i.pasyel { background: var(--gold); }
+html[data-look="c"] .heat i.rate { background: var(--rate); box-shadow: inset 0 0 0 1px var(--rate-line); }
+html[data-look="c"] .heat i.ankou { background: transparent; box-shadow: inset 0 0 0 1px var(--gold); }
+html[data-look="c"] .legend { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 6px; font-size: .7rem; color: var(--mut); }
+html[data-look="c"] .legend span { display: inline-flex; align-items: center; gap: 5px; }
+html[data-look="c"] .legend span::before { content: ""; width: 9px; height: 9px; border-radius: 2px; background: var(--line); flex-shrink: 0; }
+html[data-look="c"] .legend .konple::before { background: var(--ok); } html[data-look="c"] .legend .pasyel::before { background: var(--gold); }
+html[data-look="c"] .legend .rate::before { background: var(--rate); box-shadow: inset 0 0 0 1px var(--rate-line); } html[data-look="c"] .legend .ankou::before { background: transparent; box-shadow: inset 0 0 0 1px var(--gold); }
+html[data-look="c"] .wk { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 4px; margin-top: 10px; }
+html[data-look="c"] .wd { display: flex; align-items: center; justify-content: center; min-height: 28px; border-radius: 6px; background: var(--field); border: 1px solid var(--line); color: var(--mut); font-size: .7rem; }
+html[data-look="c"] .wd i { font-style: normal; }
+html[data-look="c"] .wd.pa { border-style: dotted; border-color: var(--div); background: transparent; color: var(--mut); }
+html[data-look="c"] .wd.peye { background: var(--ok-bg); border-color: var(--ok-line); color: var(--ok); }
+html[data-look="c"] .wd.rate { background: var(--err-bg); border-color: var(--err-line); color: var(--err); }
+html[data-look="c"] .wd.jodi, html[data-look="c"] .wd.now { border-color: var(--gold); color: var(--gold); }
+html[data-look="c"] .wd.ferye { border-style: dashed; }
+html[data-look="c"] .prog { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--div); }
+html[data-look="c"] .prog > span { display: block; font-size: .72rem; color: var(--mut); }
+html[data-look="c"] .prog > b { display: block; font-weight: 500; font-size: .85rem; margin-top: 2px; }
+html[data-look="c"] .bar { height: 6px; border-radius: 3px; background: var(--track); margin-top: 8px; }
+html[data-look="c"] .bar i { background: var(--gold); border-radius: 3px; }
+
+/* ===================== Cycle: balans / vèsman ===================== */
+html[data-look="c"] .solde { text-align: left; padding: 12px 14px; }
+html[data-look="c"] .solde > span { font-size: .69rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--mut); }
+html[data-look="c"] .solde > b { display: block; font-family: var(--mono); font-weight: 600; font-size: clamp(1.6rem, 8vw, 2rem); line-height: 1.2; margin: 2px 0; color: var(--ink); overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+html[data-look="c"] .solde > b.gold { color: var(--gold); }
+html[data-look="c"] .solde > b i { font-style: normal; font-size: .5em; color: var(--mut); margin-left: .3em; }
+html[data-look="c"] .solde > small { display: block; font-size: .76rem; color: var(--mut); margin-top: 2px; }
+html[data-look="c"] .solde > small span { display: inline; font-size: inherit; color: var(--ink); }
+html[data-look="c"] .stats-l { margin-top: 8px; }
+html[data-look="c"] .stats { gap: 12px 10px; }
+html[data-look="c"] .stats span, html[data-look="c"] .recap span { color: var(--mut); font-size: .74rem; }
+html[data-look="c"] .stats b, html[data-look="c"] .recap b { font-family: var(--mono); font-weight: 600; font-variant-numeric: tabular-nums; }
+html[data-look="c"] .stats small, html[data-look="c"] .recap small { color: var(--mut); font-size: .72rem; }
+html[data-look="c"] .stats .warn b { color: var(--gold); }
+
+/* ===================== Rapò ===================== */
+html[data-look="c"] .segj { display: flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; flex-shrink: 0; }
+html[data-look="c"] .segj button { min-height: 44px; min-width: 44px; padding: 6px 10px; border: 0; border-right: 1px solid var(--line); background: transparent; color: var(--mut); font: 600 .78rem/1.3 var(--sans); cursor: pointer; white-space: nowrap; }
+html[data-look="c"] .segj button:last-child { border-right: 0; }
+html[data-look="c"] .segj button.on { background: var(--gold); color: var(--gold-ink); font-weight: 700; }
+html[data-look="c"] .segj button:focus-visible { outline-offset: -3px; }
+html[data-look="c"] .kach { display: flex; flex-direction: column; margin: 6px 0 12px; }
+html[data-look="c"] .kach > span { font-size: .69rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--mut); }
+html[data-look="c"] .kach > b { font-family: var(--mono); font-weight: 600; font-size: clamp(2rem, 11vw, 2.75rem); line-height: 1.15; letter-spacing: -.02em; color: var(--gold); overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+html[data-look="c"] .kach > b.err-t { color: var(--err); }
+html[data-look="c"] .kach > b i { font-style: normal; font-size: .42em; color: var(--mut); margin-left: .25em; letter-spacing: 0; }
+html[data-look="c"] .kach > small { font-size: .76rem; color: var(--mut); margin-top: 2px; }
+html[data-look="c"] .ledger { padding: 2px 14px; margin: 0 0 10px; }
+html[data-look="c"] .lr { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--div); font-size: .92rem; }
+html[data-look="c"] .lr:last-child { border-bottom: 0; }
+html[data-look="c"] .lr > span { color: var(--mut); min-width: 0; }
+html[data-look="c"] .lr > span small { font-size: .76rem; margin-left: 4px; }
+html[data-look="c"] .lr > b { font-size: .95rem; white-space: nowrap; }
+html[data-look="c"] .lr > b.mut { color: var(--mut); }
+html[data-look="c"] .mini3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 0 0 8px; }
+html[data-look="c"] .mini { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 10px; display: flex; flex-direction: column; min-width: 0; }
+html[data-look="c"] .mini b { font-size: 1.3rem; line-height: 1.25; }
+html[data-look="c"] .mini span { font-size: .7rem; color: var(--mut); line-height: 1.3; }
+html[data-look="c"] .swv { margin: 0 0 4px; }
+html[data-look="c"] .hbar { height: 90px; display: flex; align-items: flex-end; gap: 4px; border-bottom: 1px solid var(--line); margin-top: 8px; }
+html[data-look="c"] .hbar i { flex: 1; min-width: 0; display: block; background: var(--line); border-radius: 3px 3px 0 0; }
+html[data-look="c"] .hbar i.on { background: var(--ok); }
+html[data-look="c"] .hlab { display: grid; grid-template-columns: repeat(14, minmax(0, 1fr)); gap: 4px; margin-top: 4px; font-size: .64rem; color: var(--mut); text-align: center; }
+html[data-look="c"] .hlab span { overflow: hidden; white-space: nowrap; }
+html[data-look="c"] .rapo-g { display: grid; grid-template-columns: 1fr; gap: 0; }
+/* KPI baz (si yon paj itilize yo) */
+html[data-look="c"] .kpis { gap: 8px; }
+html[data-look="c"] .kpi { background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: 12px; }
+html[data-look="c"] .kpi > span { color: var(--mut); font-size: .72rem; }
+html[data-look="c"] .kpi b { font-family: var(--mono); font-weight: 600; font-size: 1.25rem; font-variant-numeric: tabular-nums; }
+html[data-look="c"] .kpi small { color: var(--mut); font-size: .72rem; }
+html[data-look="c"] .kpi.main { background: var(--card); border-color: var(--gold); color: var(--ink); }
+html[data-look="c"] .kpi.main span, html[data-look="c"] .kpi.main small { color: var(--mut); }
+html[data-look="c"] .kpi.main b { font-size: 1.8rem; color: var(--gold); }
+
+/* ===================== Rechèch, fòmilè ===================== */
+html[data-look="c"] .search, html[data-look="c"] input, html[data-look="c"] select, html[data-look="c"] textarea { min-height: 48px; padding: 11px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--field); color: var(--ink); font-size: 1rem; }
+html[data-look="c"] input::placeholder, html[data-look="c"] textarea::placeholder { color: var(--mut); opacity: 1; }
+html[data-look="c"] input:focus, html[data-look="c"] select:focus, html[data-look="c"] textarea:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 3px rgba(232, 193, 90, .25); }
+html[data-look="c"] input[type="number"], html[data-look="c"] input[inputmode="tel"], html[data-look="c"] input[inputmode="decimal"], html[data-look="c"] input[type="date"], html[data-look="c"] input[name="numero_piece"], html[data-look="c"] input[name="tel"] { font-family: var(--mono); font-weight: 500; }
+html[data-look="c"] input[type="file"] { padding: 10px 12px; font-size: .9rem; }
+html[data-look="c"] input[type="date"] { min-height: 48px; }
+html[data-look="c"] input:disabled, html[data-look="c"] select:disabled { opacity: .55; }
+html[data-look="c"] input[type="search"]::-webkit-search-cancel-button { filter: invert(.8); }
+html[data-look="c"] .search { background: var(--field) var(--ico-search) no-repeat 12px center / 18px 18px; padding-left: 40px; margin-bottom: 8px; }
+html[data-look="c"] .search-row { gap: 8px; }
+html[data-look="c"] .search-row .search { margin: 0; }
+html[data-look="c"] .search-row select { min-height: 48px; background-color: var(--field); font-family: var(--mono); font-size: .9rem; }
+html[data-look="c"] .gps-btn { min-height: 48px; padding: 8px 12px; font-size: .85rem; }
+html[data-look="c"] .gps-btn svg { width: 20px; height: 20px; fill: var(--gold); }
+html[data-look="c"] .form label { margin: 12px 0; font-weight: 600; font-size: .88rem; color: var(--ink); }
+html[data-look="c"] .form label small { font-weight: 400; }
+html[data-look="c"] .form label input, html[data-look="c"] .form label select, html[data-look="c"] .form label textarea { margin-top: 6px; font-weight: 400; }
+html[data-look="c"] fieldset.field { margin: 14px 0; }
+html[data-look="c"] fieldset.field legend { font-weight: 600; font-size: .88rem; margin-bottom: 8px; }
+html[data-look="c"] label.chk { font-weight: 500; margin: 14px 0; }
+html[data-look="c"] label.chk input { width: 22px; height: 22px; min-height: 0; accent-color: var(--gold); }
+html[data-look="c"] .seg { gap: 6px; }
+html[data-look="c"] .seg span { min-height: 48px; border-radius: 10px; border: 1px solid var(--line); background: var(--field); font-weight: 500; font-size: .88rem; color: var(--ink); }
+html[data-look="c"] .seg.s5 span { font-family: var(--mono); }
+html[data-look="c"] .seg input:checked + span { background: var(--gold); color: var(--gold-ink); border-color: var(--gold); font-weight: 700; }
+html[data-look="c"] .seg input:focus-visible + span, html[data-look="c"] .jours input:focus-visible + span { outline: 2px solid var(--gold); outline-offset: 2px; }
+html[data-look="c"] .jours { gap: 4px; }
+html[data-look="c"] .jours span { min-height: 46px; border-radius: 8px; border: 1px solid var(--line); background: var(--field); font-weight: 600; font-size: .78rem; color: var(--ink); }
+html[data-look="c"] .jours input:checked + span { background: var(--gold); color: var(--gold-ink); border-color: var(--gold); }
+html[data-look="c"] .jours input:disabled + span { color: var(--mut); border-style: dashed; border-color: var(--div); background: transparent; }
+html[data-look="c"] .recap { background: var(--field); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; gap: 10px; margin: 12px 0; }
+html[data-look="c"] .gps { padding: 10px 12px; border: 1px dashed var(--line); border-radius: 10px; margin: 12px 0; }
+html[data-look="c"] .prev { border-radius: 10px; border: 1px solid var(--line); }
+html[data-look="c"] [aria-invalid="true"] { border-color: var(--err) !important; box-shadow: 0 0 0 3px rgba(255, 138, 128, .22); }
+html[data-look="c"] .form > .btn, html[data-look="c"] form > .btn.pri { width: 100%; margin-top: 6px; }
+html[data-look="c"] #dbl .note { margin-top: 6px; }
+
+/* ===================== Nòt, toast, popup ===================== */
+html[data-look="c"] .note { padding: 10px 12px; border-radius: 10px; background: var(--card); border: 1px solid var(--line); border-left: 3px solid var(--mut); font-size: .88rem; }
+html[data-look="c"] .note.warn { border-left-color: var(--gold); color: var(--ink); }
+html[data-look="c"] .note.err { border-left-color: var(--err); color: var(--err); }
+html[data-look="c"] .note.err a { color: var(--err); }
+html[data-look="c"] .note.info-note { border-left-color: var(--info); color: var(--ink); background: var(--card); margin: 8px 0; }
+html[data-look="c"] .toast { background: var(--toast); color: var(--ink); border: 1px solid var(--line); border-left: 3px solid var(--ok); border-radius: 12px; box-shadow: 0 10px 30px rgba(0, 0, 0, .45); }
+html[data-look="c"] .toast.err { background: #2b1a1e; border-color: var(--err-line); border-left-color: var(--err); color: #ffd6d2; }
+html[data-look="c"] .toast.info { background: var(--toast); border-left-color: var(--info); color: var(--ink); }
+html[data-look="c"] .toast.update { border-left-color: var(--gold); }
+html[data-look="c"] .modal-wrap { background: rgba(4, 8, 18, .72); }
+html[data-look="c"] .modal { background: var(--card); color: var(--ink); border: 1px solid var(--line); border-radius: 18px; padding: 20px 18px; box-shadow: 0 24px 60px rgba(0, 0, 0, .6); }
+html[data-look="c"] .modal-h h2 { margin: 0; font: 700 1.1rem/1.3 var(--sans); text-transform: none; letter-spacing: 0; color: var(--ink); justify-content: center; text-align: center; }
+html[data-look="c"] .modal-ico { background: var(--gold); color: var(--gold-ink); box-shadow: 0 0 0 5px var(--gold-bg); }
+html[data-look="c"] .modal-ico.danger { background: var(--err-fill); color: var(--gold-ink); box-shadow: 0 0 0 5px var(--err-bg); }
+html[data-look="c"] .modal-foto { border: 2px solid var(--gold); border-radius: 18px; }
+html[data-look="c"] .modal-p { color: var(--mut); }
+html[data-look="c"] .modal-dl { background: var(--field); border: 1px solid var(--line); border-radius: 10px; padding: 2px 12px; }
+html[data-look="c"] .modal-dl div { border-bottom: 1px solid var(--div); }
+html[data-look="c"] .modal-dl dt { color: var(--mut); font-size: .85rem; }
+html[data-look="c"] .modal-dl dd { font-weight: 600; font-size: .92rem; }
+html[data-look="c"] .modal-b { gap: 8px; }
+html[data-look="c"] .modal-b .btn { min-height: 48px; }
+html[data-look="c"] .modal-l { font-weight: 600; font-size: .88rem; }
+html[data-look="c"] .modal-choix label:not(.modal-l) { border-radius: 10px; border: 1px solid var(--line); background: var(--field); min-height: 48px; font-weight: 500; }
+html[data-look="c"] .modal-choix label:has(input:checked) { border-color: var(--gold); background: var(--gold-bg); }
+html[data-look="c"] .modal-choix input[type="radio"] { width: 20px; height: 20px; min-height: 0; accent-color: var(--gold); }
+html[data-look="c"] .zoom img { border-radius: 14px; border: 1px solid var(--line); }
+html[data-look="c"] .zoom figcaption { font-weight: 600; }
+
+/* ===================== Koneksyon ===================== */
+html[data-look="c"] .login { padding-top: 34px; }
+html[data-look="c"] .login img { border-radius: 20px; border: 1px solid var(--gold); background: var(--card); }
+html[data-look="c"] .login h1 { font-size: 1.8rem; margin: 12px 0 0; }
+html[data-look="c"] .login > .mut { font-size: .9rem; }
+html[data-look="c"] .login form.card { margin-top: 18px; padding: 18px; }
+html[data-look="c"] .login form label { font-weight: 600; font-size: .88rem; }
+html[data-look="c"] .login .btn { margin-top: 10px; min-height: 48px; }
+html[data-look="c"] .login .note { margin-top: 14px; text-align: left; }
+html[data-look="c"] .lang-sw { padding: 3px; border-radius: 99px; background: transparent; border: 1px solid var(--line); margin-top: 12px; }
+html[data-look="c"] .lang-sw button { min-height: 44px; padding: 6px 18px; border-radius: 99px; font-weight: 600; color: var(--mut); }
+html[data-look="c"] .lang-sw button.on { background: var(--gold); color: var(--gold-ink); }
+
+/* ===================== Paramèt: chwa look ===================== */
+html[data-look="c"] .looks { gap: 8px; }
+html[data-look="c"] .look-opt { border-radius: 12px; border: 1px solid var(--line); background: var(--field); padding: 8px; }
+html[data-look="c"] .look-opt.on, html[data-look="c"] .look-opt:has(input:checked) { border-color: var(--gold); box-shadow: 0 0 0 2px var(--gold-bg); }
+html[data-look="c"] .look-opt:has(input:focus-visible) { outline: 2px solid var(--gold); outline-offset: 2px; }
+html[data-look="c"] .look-prev { border-radius: 8px; border-color: var(--line); }
+html[data-look="c"] .look-nom { font-weight: 600; display: block; }
+html[data-look="c"] .look-desk { color: var(--mut); display: block; }
+
+/* ===================== Tablèt (768 px +) ===================== */
+@media (min-width: 768px) {
+  html[data-look="c"] { --gx: 24px; }
+  html[data-look="c"] main { max-width: 980px; padding-left: var(--gx); padding-right: var(--gx); }
+  html[data-look="c"] body.has-nav main { padding-bottom: 110px; }
+  html[data-look="c"] #bar { padding-left: max(24px, calc(50% - 466px)); padding-right: max(24px, calc(50% - 466px)); }
+  html[data-look="c"] .grid-t { display: grid; grid-template-columns: 1fr 1fr; gap: 0 24px; align-items: start; }
+  html[data-look="c"] .tabbar { left: 50%; right: auto; transform: translateX(-50%); width: min(640px, 100%); bottom: 12px; border: 1px solid var(--line); border-radius: 16px; padding: 6px; }
+  html[data-look="c"] .tabbar a { font-size: .74rem; }
+  html[data-look="c"] .kpis { grid-template-columns: repeat(4, 1fr); }
+  html[data-look="c"] .rapo-g { grid-template-columns: 1fr 1fr; gap: 0 24px; align-items: start; }
+  html[data-look="c"] .rapo-g h2 { margin-top: 16px; }
+  html[data-look="c"] .stats { grid-template-columns: repeat(4, 1fr); }
+  html[data-look="c"] .stats .wide { grid-column: span 2; }
+  html[data-look="c"] .form { max-width: 640px; }
+  html[data-look="c"] .stat2 { max-width: 640px; }
+  html[data-look="c"] .modal-wrap { align-items: center; }
+}
+/* An franse pilil la pi long ("EN LIGNE · 0 en attente"): anba 420 px kenbe sèlman "EN LIGNE · n" pou mak la pa koupe */
+@media (max-width: 419px) {
+  html[data-look="c"]:lang(fr) .net .cnt::after, html[data-look="c"]:lang(fr) #bar .net.on:not(:has(.cnt))::after { content: none; }
+  /* 4 onglè (manadjè: Kont · Tranzaksyon · Fidbak · Validasyon) sou yon ti ekran: tèks pi piti pou yo antre san woule nan tay tèks nòmal (tèks «Gwo»/«Pi gwo»: liy lan woule) */
+  html[data-look="c"] .tabs:has(> .tab:nth-child(4)) .tab { font-size: .78rem; padding: 0 6px; gap: 4px; letter-spacing: -.01em; }
+  html[data-look="c"] .tabs:has(> .tab:nth-child(4)) .cnt-b { padding: 0 4px; font-size: .64rem; }
+}
+/* Ti ekran (≤ 359 px) */
+@media (max-width: 359px) {
+  html[data-look="c"] .card.info .kv { grid-template-columns: 6.2rem minmax(0, 1fr); }
+  html[data-look="c"] .segj button { padding: 6px 8px; font-size: .74rem; }
+  html[data-look="c"] .tab { font-size: .82rem; }
+  html[data-look="c"] .tabs:has(> .tab:nth-child(4)) .tab { font-size: .74rem; padding: 0 4px; }
+  html[data-look="c"] .kr .btns-v .btn.sm { min-width: 64px; padding: 6px 10px; }
+  html[data-look="c"] .btn-row .btn { font-size: .84rem; padding: 8px 6px; }
+  html[data-look="c"] .cyc-3 b { font-size: .88rem; }
+  html[data-look="c"] .hlab { font-size: .62rem; gap: 2px; }
+  html[data-look="c"] .hbar { gap: 2px; }
+  html[data-look="c"] .tabbar a { font-size: .64rem; letter-spacing: -.01em; }
+  html[data-look="c"] .chips.filt .chip { font-size: .7rem; column-gap: 3px; padding: 4px 3px; }
+  html[data-look="c"] .net .cnt::after, html[data-look="c"] #bar .net.on:not(:has(.cnt))::after { content: none; }
+}
+/* Mouvman redui */
+@media (prefers-reduced-motion: reduce) {
+  html[data-look="c"] *, html[data-look="c"] *::before, html[data-look="c"] *::after { transition: none !important; animation: none !important; }
+  html[data-look="c"] .btn:active { transform: none; }
+}
+
+/* ======================================================================
+   LAPTOP / EKRAN LAJ (≥ 1024 px) — kontra: LOOKS.md § "Laptop / ekran laj"
+   Navigasyon an vin yon kolòn fiks agòch (#0f1830, liy 1 px adwat) anba ba
+   estati a (--bar-h, mezire pa app.js); lajè --nav-w = 232 px. Kontni an
+   pi laj (1160 px, 1240 a ≥ 1440) ak gride 2 kolòn (--g2: 1fr/1fr a 1024,
+   5fr/7fr a ≥ 1280; .ep-2 11/13 ak .fich-2 7/5 a 1024–1279 paske lis kont yo
+   ak tablo enfòmasyon an bezwen plis plas). Wrapper yo (.ep-2/.ep-col, .fich-2/.fich-l/.fich-r,
+   .cyc-2) soti nan look-c.js: sou telefòn/tablèt yo se blòk senp (pa gen
+   estil), kidonk afichaj < 1024 px pa chanje. Règ telefòn/tablèt yo (ba
+   anba santre, padding anba, toast) remèt a zewo isit la paske règ look
+   la gen plis espesifisite pase app.css.
+   ====================================================================== */
+@media (min-width: 1024px) {
+  /* Doub atribi a (0,2,1): --gx dwe bat règ tokens baz la (menm espesifisite) */
+  html[data-look="c"][data-look="c"] { --nav-w: 232px; --gx: 32px; --g2: minmax(0, 1fr) minmax(0, 1fr); --nav-hov: #141e33; --row-hov: #121a2e; --gold-hov: #f0cf78; }
+
+  /* --- Ba anwo: #0f1830, sou tout lajè ekran an (body gen padding-left = --nav-w: ba a soti nan padding sa a) --- */
+  html[data-look="c"] #bar { padding: 10px 28px 10px 26px; padding-top: max(10px, env(safe-area-inset-top)); gap: 16px; }
+  html[data-look="c"] body.has-nav #bar { margin-left: calc(-1 * var(--nav-w)); }
+  html[data-look="c"] .brand { font-size: 1.15rem; }
+
+  /* --- Kolòn navigasyon: fiks, anba ba a, jiska anba ekran an (woule si ekran an kout) --- */
+  html[data-look="c"] .tabbar { position: fixed; left: 0; right: auto; top: var(--bar-h, 65px); bottom: 0; width: var(--nav-w); transform: none; z-index: 20;
+    display: flex; flex-direction: column; gap: 4px; padding: 16px 12px 12px; background: var(--nav); border: 0; border-right: 1px solid var(--line); border-radius: 0; box-shadow: none;
+    overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; }
+  html[data-look="c"] .tabbar a { position: relative; flex: 0 0 auto; flex-direction: row; justify-content: flex-start; align-items: center; gap: 12px; min-height: 48px; padding: 0 14px;
+    border-radius: 10px; color: var(--mut); font-size: .9375rem; font-weight: 600; letter-spacing: 0; transition: background-color .12s, color .12s; }
+  html[data-look="c"] .tabbar a span { overflow: visible; }
+  html[data-look="c"] .tabbar svg, html[data-look="c"] .tabbar a.on svg { width: 22px; height: 22px; flex-shrink: 0; stroke-width: 1.8; }
+  /* Aktif: tèks + ikòn lò, ti fon lò (8 %), ba lò 3 px agòch anndan bouton an */
+  html[data-look="c"] .tabbar a.on { color: var(--gold); background: rgba(232, 193, 90, .08); font-weight: 700; }
+  html[data-look="c"] .tabbar a.on svg { stroke-width: 2.2; }
+  html[data-look="c"] .tabbar a.on::before { content: ""; position: absolute; left: 0; top: 12px; bottom: 12px; width: 3px; border-radius: 0 3px 3px 0; background: var(--gold); }
+  html[data-look="c"] .tabbar a:focus-visible { outline: 2px solid var(--gold); outline-offset: -2px; }
+  /* Pye kolòn nan: non ajan an (ink 600), wòl (majiskil 10 px), vèsyon (mono) */
+  html[data-look="c"] .nav-foot { display: flex; flex-direction: column; gap: 3px; flex: 0 0 auto; margin-top: auto; padding: 14px 14px 6px; border-top: 1px solid var(--line); color: var(--mut); font-size: .8rem; }
+  html[data-look="c"] .nav-foot .nav-moi { color: var(--ink); font-weight: 600; font-size: .9rem; overflow-wrap: anywhere; }
+  html[data-look="c"] .nav-foot .nav-wol { font-size: .625rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
+  html[data-look="c"] .nav-foot .nav-ver { font-family: var(--mono); font-size: .72rem; margin-top: 4px; }
+
+  /* --- Kontni: kolòn 1160 px, padding 24/32/40; pa gen ba anba ankò; toast anba adwat --- */
+  html[data-look="c"] main { max-width: 1160px; padding: 24px var(--gx) 40px; }
+  html[data-look="c"] body.has-nav main { padding-bottom: 40px; }
+  html[data-look="c"] body.has-nav .toast { left: auto; right: 24px; bottom: 24px; max-width: 420px; margin: 0; }
+  html[data-look="c"] h1 { font-size: 1.6rem; }
+  html[data-look="c"] .page-head { margin: 0 0 16px; }
+  html[data-look="c"] .page-head h1 { font-size: 1.6rem; }
+  html[data-look="c"] h2 { font-size: .72rem; margin: 24px 0 8px; }
+  html[data-look="c"] .hello { margin-top: 0; }
+  html[data-look="c"] .topr { margin: 0 0 8px; }
+  html[data-look="c"] .card { padding: 16px 20px; }
+  html[data-look="c"] .card.info { padding: 0 20px; }
+  html[data-look="c"] .ledger { padding: 4px 20px; }
+  html[data-look="c"] .row { padding: 13px 0; }
+  /* Popup: pi konpak (tèt ikòn + tit sou yon liy, chwa 42 px, nòt 56 px) pou popup fidbak la (7 chwa) antre nèt nan yon ekran 600 px wotè */
+  html[data-look="c"] .modal { max-width: 480px; padding: 16px 24px; }
+  html[data-look="c"] .modal-h { flex-direction: row; justify-content: flex-start; text-align: left; gap: 12px; }
+  html[data-look="c"] .modal-h h2 { text-align: left; justify-content: flex-start; font-size: 1.05rem; }
+  html[data-look="c"] .modal-ico { width: 28px; height: 28px; font-size: .9rem; box-shadow: 0 0 0 3px var(--gold-bg); }
+  html[data-look="c"] .modal-ico.danger { box-shadow: 0 0 0 3px var(--err-bg); }
+  html[data-look="c"] .modal-foto { width: 56px; height: 56px; }
+  html[data-look="c"] .modal-p { text-align: left; margin: 4px 0 0; font-size: .9rem; }
+  html[data-look="c"] .modal-dl { margin-top: 10px; }
+  html[data-look="c"] .modal-choix fieldset { margin-top: 8px; gap: 3px; }
+  html[data-look="c"] .modal-choix label:not(.modal-l) { min-height: 44px; padding: 6px 12px; font-size: .9rem; } /* ≥ 44 px (kontra) */
+  html[data-look="c"] .modal-l { margin-top: 6px; }
+  html[data-look="c"] .modal-choix textarea { min-height: 48px; height: 48px; padding: 8px 12px; margin-top: 4px; }
+  html[data-look="c"] .modal-b { margin-top: 8px; }
+  html[data-look="c"] .modal-b .btn { min-height: 44px; }
+  html[data-look="c"] .empty { padding: 28px 16px; }
+  /* Paj etwat (fòm, paj ak lyen retou, koneksyon, Paramèt): 720 px santre */
+  html[data-look="c"] main:has(> .form), html[data-look="c"] main:has(> .back), html[data-look="c"] main:has(> .login) { max-width: 784px; }
+  html[data-look="c"] .form { max-width: 720px; margin-left: auto; margin-right: auto; }
+  html[data-look="c"] .card.form { padding: 20px 24px; }
+  html[data-look="c"] main > .back + h1 { font-size: 1.6rem; margin-bottom: 12px; }
+  html[data-look="c"] .login { max-width: 440px; margin: 0 auto; padding-top: 56px; }
+  html[data-look="c"] .login form.card { padding: 24px; }
+
+  /* --- Epay: tèt (tit + «＋ Nouvo cycle»), 2 tuil ≤ 640 px, onglè souliyen agòch (liy la sou tout lajè a), 2 lis kòt a kòt --- */
+  html[data-look="c"] .stat2 { max-width: 640px; gap: 12px; }
+  html[data-look="c"] .stile { padding: 14px 18px; }
+  html[data-look="c"] .stile > b { font-size: 1.6rem; }
+  html[data-look="c"] .tabs { margin: 20px 0 4px; }
+  html[data-look="c"] .tab { flex: 0 0 auto; min-width: 160px; padding: 0 20px; }
+  html[data-look="c"] .ep-2 { display: grid; grid-template-columns: minmax(0, 11fr) minmax(0, 13fr); gap: 0 24px; align-items: start; } /* 1024–1279: kont aktif yo (meta, balans) bezwen yon ti plis plas; 5/7 + 32 px a ≥ 1280 */
+  html[data-look="c"] .ep-col { min-width: 0; }
+  html[data-look="c"] .ep-2 .list.grid-t { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  html[data-look="c"] .ep-2 .chips.filt, html[data-look="c"] .fb-tab .chips.filt { width: fit-content; max-width: 100%; grid-template-columns: repeat(3, auto); margin: 2px 0 8px; } /* chak chip pran lajè tèks li (fr + gwo tèks pa kase sou 2 liy) */
+  html[data-look="c"] .ep-2 .chips.filt .chip, html[data-look="c"] .fb-tab .chips.filt .chip { padding: 4px 10px; font-size: .78rem; } /* 1024–1279: 3 chip yo antre sou yon liy menm an fr + «Pi gwo» */
+  html[data-look="c"] .ep-2 #q { max-width: 480px; margin-bottom: 4px; }
+  html[data-look="c"] #ong > .note.info-note { max-width: 760px; }
+  /* Liy demann / validasyon (.row.col): tèks agòch, bouton Apwouve · Refize adwat (pa etire sou tout lajè a) */
+  html[data-look="c"] .row.col { flex-direction: row; align-items: center; gap: 16px; }
+  html[data-look="c"] .row.col .btns { margin-top: 0; flex-shrink: 0; }
+  html[data-look="c"] .row.col .btns .btn { flex: 0 0 auto; min-width: 120px; }
+
+  /* --- Fich kliyan: gòch (avatar, non, enfòmasyon) | dwat (cycle aktif, lòt cycle) --- */
+  html[data-look="c"] .fich-2 { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 0 32px; align-items: start; } /* 7/5 a 1024–1279 (valè tablo a pa kase sou 3 liy), 5/7 a ≥ 1280 */
+  html[data-look="c"] .fich-l, html[data-look="c"] .fich-r { min-width: 0; }
+  html[data-look="c"] .fich-h { margin: 8px 0 16px; gap: 18px; }
+  html[data-look="c"] .fich-h h1 { font-size: 1.6rem; }
+  html[data-look="c"] .fich-h .avatar { width: 88px; height: 88px; border-radius: 22px; }
+  html[data-look="c"] .fich-h .avatar.ph { font-size: 1.9rem; }
+  html[data-look="c"] .fich-r > .lrow:first-child { margin-top: 8px; min-height: 44px; }
+  html[data-look="c"] .cyc { padding: 16px 20px; }
+  html[data-look="c"] .heat i { height: 20px; border-radius: 4px; }
+  html[data-look="c"] .wd { min-height: 34px; font-size: .74rem; }
+
+  /* --- Fich cycle: gòch (balans/vèsman, bouton yo, tablo detay) | dwat (kat cycle: chalè, semèn, pwogrè); lis yo anba --- */
+  html[data-look="c"] .cyc-2 { display: grid; grid-template-columns: var(--g2); grid-template-rows: auto auto 1fr; gap: 0 32px; align-items: start; }
+  html[data-look="c"] .cyc-2 > .solde { grid-column: 1; grid-row: 1; margin: 8px 0 0; padding: 16px 20px; }
+  html[data-look="c"] .cyc-2 > .cyc { grid-column: 2; grid-row: 1 / 4; margin: 8px 0 0; }
+  html[data-look="c"] .cyc-2 > .btn-row { grid-column: 1; grid-row: 2; margin: 12px 0; }
+  html[data-look="c"] .cyc-2 > .stats-l { grid-column: 1; grid-row: 3; margin-top: 0; }
+  html[data-look="c"] .solde > b { font-size: 2.4rem; }
+  html[data-look="c"] .cyc-3 b { font-size: 1.05rem; }
+  html[data-look="c"] #cycle > h2 { margin-top: 28px; }
+
+  /* --- Rapò: kach + liv kont agòch | ti tuil + graf «Kolèk pa lè» adwat; tranzaksyon anba sou tout lajè a --- */
+  html[data-look="c"] .rapo-g { grid-template-columns: var(--g2); gap: 0 32px; align-items: start; }
+  html[data-look="c"] .rapo-g h2 { margin-top: 20px; }
+  html[data-look="c"] .kach { margin: 6px 0 16px; }
+  html[data-look="c"] .kach > b { font-size: 3rem; }
+  html[data-look="c"] .mini3 { gap: 12px; margin: 6px 0 12px; }
+  html[data-look="c"] .mini { padding: 14px 16px; }
+  html[data-look="c"] .mini b { font-size: 1.6rem; }
+  html[data-look="c"] .mini span { font-size: .76rem; }
+  html[data-look="c"] .swv { margin: 0 0 8px; font-size: .82rem; }
+  html[data-look="c"] .hbar { height: 150px; gap: 6px; }
+  html[data-look="c"] .hlab { gap: 6px; font-size: .7rem; }
+  html[data-look="c"] .segj button { padding: 6px 16px; }
+
+  /* --- Tablo de bò: 2 tuil + 3 gwo lyen (kat) sou yon liy --- */
+  html[data-look="c"] #tablo { max-width: 1000px; }
+  html[data-look="c"] #tablo .stat2 { max-width: none; } /* menm lajè ak 3 kat yo anba: bò dwat yo aliye */
+  html[data-look="c"] #tablo .stile > b { font-size: 1.9rem; }
+  html[data-look="c"] #tablo .nl { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+  html[data-look="c"] #tablo .nl a { min-height: 96px; padding: 16px 18px; gap: 14px; border: 1px solid var(--line); border-radius: var(--r); background: var(--card); transition: background-color .12s, border-color .12s; }
+  html[data-look="c"] #tablo .nl > a > svg { width: 44px; height: 44px; padding: 10px; box-sizing: border-box; border-radius: 12px; background: var(--gold-bg); }
+  html[data-look="c"] #tablo .nl a b { font-size: 1.05rem; }
+  html[data-look="c"] #tablo .nl a small { font-size: .8rem; }
+
+  /* --- Kliyan: rechèch ≤ 760 px, lis 2 kolòn (3 a ≥ 1440) --- */
+  html[data-look="c"] .search-row { max-width: 760px; }
+  html[data-look="c"] .list.grid-t { gap: 0 32px; }
+  html[data-look="c"] .list.grid-t:not(.ep-2 .list.grid-t) > .row:is(:last-child, :last-of-type) { border-bottom: 1px solid var(--div); } /* lis 2–3 kolòn: dènye liy chak kolòn gen menm divizyon */
+
+  /* --- Paramèt: 3 kat look yo sou yon liy (seksyon ≤ 720 px, gade main:has(> .form)) --- */
+  html[data-look="c"] .looks { gap: 12px; }
+  html[data-look="c"] .look-opt { padding: 10px; }
+}
+/* Laptop laj (≥ 1280 px): kolòn 5fr/7fr; lis yo (tranzaksyon, demann, fidbak (#ong > .fb-tab > .list), rapò) an 2 kolòn depi 2 liy — pa liy ak bouton
+   Apwouve/Refize (.row.col > .btns: yo rete sou 1 kolòn ≤ 760 px). Yon sèl liy = lajè yon kolòn (anyen pa etire sou tout lajè a). */
+@media (min-width: 1280px) {
+  html[data-look="c"][data-look="c"] { --g2: minmax(0, 5fr) minmax(0, 7fr); }
+  html[data-look="c"] .ep-2 { grid-template-columns: var(--g2); gap: 0 32px; }
+  html[data-look="c"] .ep-2 .chips.filt .chip, html[data-look="c"] .fb-tab .chips.filt .chip { padding: 4px 14px; font-size: .8rem; }
+  html[data-look="c"] .fich-2 { grid-template-columns: var(--g2); }
+  html[data-look="c"] .heat i { height: 22px; }
+  html[data-look="c"] :is(#ong, #cycle, #rapo, .fb-tab) > .list:has(> .row:nth-child(2)):not(:has(> .row.col > .btns)) { display: block; columns: 2; column-gap: 32px; }
+  html[data-look="c"] :is(#ong, #cycle, #rapo, .fb-tab) > .list:has(> .row:nth-child(2)):not(:has(> .row.col > .btns)) > .row { break-inside: avoid; border-bottom: 1px solid var(--div); }
+  html[data-look="c"] :is(#ong, #cycle, #rapo, .fb-tab) > .list:has(> .row:only-child) { max-width: calc(50% - 16px); }
+  html[data-look="c"] :is(#ong, #cycle, #rapo) > .list:has(> .row.col > .btns) { max-width: 760px; }
+}
+@media (min-width: 1440px) {
+  html[data-look="c"] main { max-width: 1240px; }
+  html[data-look="c"] .list.grid-t { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  html[data-look="c"] .ep-2 .list.grid-t { grid-template-columns: minmax(0, 1fr); }
+}
+/* Eta hover (laptop ak sourit/trackpad sèlman): liy liv kont yo #121a2e, bouton yo klere 8 %, bouton lò yo #f0cf78.
+   Limite a ≥ 1024 px pou foto telefòn/tablèt yo rete idantik. */
+@media (hover: hover) and (min-width: 1024px) {
+  html[data-look="c"] .tabbar a:not(.on):hover { background: var(--nav-hov); color: var(--ink); }
+  html[data-look="c"] .btn:not(:disabled):hover { background: rgba(255, 255, 255, .08); }
+  html[data-look="c"] .btn.pri:not(:disabled):hover { background: var(--gold-hov); border-color: var(--gold-hov); }
+  html[data-look="c"] .btn.ghost:not(:disabled):hover { color: var(--ink); }
+  html[data-look="c"] .btn.danger:not(:disabled):hover { background: var(--err-bg); }
+  html[data-look="c"] .btn.danger-full:not(:disabled):hover { background: #ff9d94; border-color: #ff9d94; }
+  html[data-look="c"] a.row, html[data-look="c"] .row.kr, html[data-look="c"] .nl a, html[data-look="c"] .cyc.lnk, html[data-look="c"] .chip, html[data-look="c"] .tab, html[data-look="c"] .segj button, html[data-look="c"] .look-opt { transition: background-color .12s, border-color .12s, color .12s; }
+  html[data-look="c"] a.row:hover, html[data-look="c"] .row.kr:has(> a.lnk:hover), html[data-look="c"] #tablo .nl a:hover { background: var(--row-hov); } /* .kr: sèlman lè sourit la sou lyen an (avatar/vid pa klikab) */
+  html[data-look="c"] .cyc.lnk:hover { background: var(--row-hov); border-color: var(--mut); }
+  html[data-look="c"] .chip:not(.on):hover, html[data-look="c"] .segj button:not(.on):hover { background: rgba(255, 255, 255, .05); color: var(--ink); }
+  html[data-look="c"] .tab:not(.on):hover { color: var(--ink); border-bottom-color: var(--line); }
+  html[data-look="c"] .lang-sw button:not(.on):hover { background: rgba(255, 255, 255, .06); color: var(--ink); }
+  html[data-look="c"] .look-opt:not(.on):hover { border-color: var(--mut); }
+  html[data-look="c"] .back:hover, html[data-look="c"] .lnk-a:hover, html[data-look="c"] .kli:hover span, html[data-look="c"] .fich-g a:hover { text-decoration: underline; }
+}

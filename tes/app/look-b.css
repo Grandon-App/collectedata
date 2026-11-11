@@ -1,0 +1,654 @@
+/* LOOK B · Mache — tout règ yo anba html[data-look="b"]. Tokens + estrikti. (Gade LOOKS.md)
+   Blan, ank #10203f, navy #1b3a8a, safran #f2a900. Plus Jakarta Sans (fallback system-ui). Gwo bouton 48 px, rayon 14 px. */
+
+/* ---------- Tokens (klè) ---------- */
+html[data-look="b"] {
+  --bg: #ffffff; --card: #ffffff; --ink: #10203f; --mut: #586683; --line: #e4e8f0; --line2: #dbe1ec;
+  --soft: #f1f4f9; --soft2: #f6f8fb;
+  --pri: #1b3a8a; --pri-ink: #ffffff; --lnk: #1b3a8a; --navy: #1b3a8a; --navy-mut: #c4d0ee;
+  --acc: #f2a900; --acc-ink: #10203f; --acc-dk: #4d3800;
+  --ok: #17663a; --ok-dot: #22a35a; --warn: #6b4e00; --err: #9c2a1b; --err-dot: #e0443a; --info: #1b3a8a; --pend: #5b3fb0;
+  --t-b: #e9eefb; --i-b: #1b3a8a; --t-y: #fff4d6; --i-y: #6b4e00; --t-g: #eaf6ee; --i-g: #17663a; --t-r: #fdecea; --i-r: #9c2a1b; --t-p: #efeafb; --i-p: #5b3fb0;
+  --r: 20px; --rb: 14px;
+  --sh: 0 8px 20px rgba(16, 32, 63, .08);
+  --fab-sh: 0 8px 20px rgba(242, 169, 0, .35); --fab-sh-on: 0 8px 20px rgba(27, 58, 138, .35);
+  --focus: #1b3a8a; --thumb: #1b3a8a; --ring: #fff4d6; --toast: #10203f; --cnt-err: #b3261e; --cnt-err-ink: #ffffff;
+  --search-ico: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23586683' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E");
+  color-scheme: light;
+}
+/* ---------- Tokens (fonse): Paramèt → Fonse, oswa Otomatik + telefòn fonse ---------- */
+html[data-look="b"][data-theme="dark"] {
+  --bg: #0f172a; --card: #1e293b; --ink: #f1f5f9; --mut: #a3b1c6; --line: #334155; --line2: #3b4a63;
+  --soft: #273449; --soft2: #243144;
+  --pri: #3b66d9; --pri-ink: #ffffff; --lnk: #93c5fd; --navy: #1b3a8a; --navy-mut: #c4d0ee;
+  --acc: #f2a900; --acc-ink: #10203f; --acc-dk: #4d3800;
+  --ok: #4ade80; --ok-dot: #22a35a; --warn: #fbbf24; --err: #ff8a80; --err-dot: #ff6b61; --info: #93c5fd; --pend: #cbb8ff;
+  --t-b: #1e2b4d; --i-b: #bfd3ff; --t-y: #3a2d0a; --i-y: #ffd36a; --t-g: #0f2e1c; --i-g: #86e3a8; --t-r: #3b1512; --i-r: #ffb4a8; --t-p: #2a2050; --i-p: #cbb8ff;
+  --sh: 0 8px 20px rgba(0, 0, 0, .35);
+  --focus: #ffffff; --thumb: #3b66d9; --ring: #8c6713; --toast: #2b4fa8; --cnt-err: #ffb4a8; --cnt-err-ink: #10203f;
+  --search-ico: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a3b1c6' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E");
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: dark) {
+  html[data-look="b"]:not([data-theme="light"]) {
+    --bg: #0f172a; --card: #1e293b; --ink: #f1f5f9; --mut: #a3b1c6; --line: #334155; --line2: #3b4a63;
+    --soft: #273449; --soft2: #243144;
+    --pri: #3b66d9; --pri-ink: #ffffff; --lnk: #93c5fd; --navy: #1b3a8a; --navy-mut: #c4d0ee;
+    --acc: #f2a900; --acc-ink: #10203f; --acc-dk: #4d3800;
+    --ok: #4ade80; --ok-dot: #22a35a; --warn: #fbbf24; --err: #ff8a80; --err-dot: #ff6b61; --info: #93c5fd; --pend: #cbb8ff;
+    --t-b: #1e2b4d; --i-b: #bfd3ff; --t-y: #3a2d0a; --i-y: #ffd36a; --t-g: #0f2e1c; --i-g: #86e3a8; --t-r: #3b1512; --i-r: #ffb4a8; --t-p: #2a2050; --i-p: #cbb8ff;
+    --sh: 0 8px 20px rgba(0, 0, 0, .35);
+    --focus: #ffffff; --thumb: #3b66d9; --ring: #8c6713; --toast: #2b4fa8; --cnt-err: #ffb4a8; --cnt-err-ink: #10203f;
+    --search-ico: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a3b1c6' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E");
+    color-scheme: dark;
+  }
+}
+
+/* ---------- Baz ---------- */
+html[data-look="b"] body { background: var(--bg); color: var(--ink); font-family: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; line-height: 1.45; }
+html[data-look="b"] main { padding: 14px 18px 90px; }
+html[data-look="b"] h1 { font-size: 1.875rem; font-weight: 800; letter-spacing: -.02em; line-height: 1.15; margin: 4px 0 12px; gap: 8px; }
+html[data-look="b"] h2 { font-size: 1.0625rem; font-weight: 800; letter-spacing: -.01em; margin: 22px 0 10px; display: flex; align-items: center; gap: 8px; }
+html[data-look="b"] h2 small { font-weight: 600; }
+html[data-look="b"] .cnt-h { font-size: .8125rem; font-weight: 700; color: var(--mut); background: var(--soft); border-radius: 99px; padding: 2px 9px; }
+html[data-look="b"] a { color: var(--lnk); }
+html[data-look="b"] a.lnk { color: inherit; }
+html[data-look="b"] a.row { color: var(--ink); }
+html[data-look="b"] .mut { color: var(--mut); }
+html[data-look="b"] .sm { font-size: .8125rem; }
+html[data-look="b"] .xs { font-size: .75rem; }
+html[data-look="b"] .ink { color: var(--ink); }
+html[data-look="b"] .err-t { color: var(--err); } html[data-look="b"] .ok-t { color: var(--ok); } html[data-look="b"] .warn-t { color: var(--warn); }
+html[data-look="b"] .empty { color: var(--mut); background: var(--soft2); border-radius: var(--r); padding: 26px 12px; font-weight: 600; }
+html[data-look="b"] :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+html[data-look="b"] .btn:focus-visible, html[data-look="b"] .chip:focus-visible, html[data-look="b"] .tab:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+html[data-look="b"] input:focus-visible, html[data-look="b"] select:focus-visible, html[data-look="b"] textarea:focus-visible { outline: 0; border-color: var(--pri); box-shadow: 0 0 0 3px color-mix(in srgb, var(--pri) 22%, transparent); }
+
+/* Tèt paj (dat · non + tit) */
+html[data-look="b"] .bhead { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; margin: 2px 0 14px; }
+html[data-look="b"] .bhead h1 { margin: 0; }
+html[data-look="b"] .eyebrow { font-size: .8125rem; font-weight: 600; color: var(--mut); margin: 0 0 2px; }
+html[data-look="b"] .rdate { margin: -4px 0 12px; }
+html[data-look="b"] .topr { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin: 0 0 10px; }
+html[data-look="b"] .topr .btn { gap: 8px; }
+html[data-look="b"] .topr .btn svg { width: 18px; height: 18px; }
+
+/* ---------- Ba anwo ---------- */
+html[data-look="b"] #bar { background: var(--card); color: var(--ink); border-bottom: 1px solid var(--line); padding: 4px 18px; padding-top: max(4px, env(safe-area-inset-top)); }
+html[data-look="b"] .brand { color: var(--lnk); font-weight: 800; font-size: 1.125rem; letter-spacing: -.01em; min-height: 44px; align-items: center; }
+html[data-look="b"] .brand .mark { width: 30px; height: 30px; border-radius: 10px; border: 0; background: var(--thumb); color: #fff; font-size: 1rem; box-shadow: inset 0 0 0 2px var(--acc); }
+html[data-look="b"] .brand small { color: var(--i-y); background: var(--t-y); border: 0; opacity: 1; font-weight: 700; padding: 2px 7px; border-radius: 99px; }
+html[data-look="b"] .net { background: var(--t-g); color: var(--i-g); font-weight: 700; font-size: .8125rem; padding: 6px 14px; min-height: 44px; }
+html[data-look="b"] .net.off { background: var(--t-r); color: var(--i-r); }
+html[data-look="b"] .dot { width: 8px; height: 8px; background: var(--ok-dot); }
+html[data-look="b"] .net.off .dot { background: var(--err-dot); }
+html[data-look="b"] .cnt { background: var(--navy); color: #fff; font-size: .75rem; }
+html[data-look="b"] .cnt.err { background: var(--cnt-err); color: var(--cnt-err-ink); }
+html[data-look="b"] .spin { border-right-color: transparent; }
+
+/* ---------- Navigasyon anba: 5 bouton, Epay = wonn 58 px ki leve ---------- */
+html[data-look="b"] .tabbar { background: var(--card); border-top: 1px solid var(--line); box-shadow: none;
+  padding: 6px max(8px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left)); align-items: end; }
+html[data-look="b"] .tabbar a { min-height: 52px; justify-content: flex-end; gap: 4px; font-size: .6875rem; font-weight: 700; color: var(--mut); border-radius: 12px; }
+html[data-look="b"] .tabbar a.on { color: var(--lnk); font-weight: 800; }
+html[data-look="b"] .tabbar svg { width: 24px; height: 24px; fill: none; stroke: currentColor; }
+html[data-look="b"] .tabbar a.on svg { background: none; padding: 0; width: 24px; height: 24px; border-radius: 0; stroke-width: 2.4; }
+html[data-look="b"] .tabbar a[href="#/epay"] svg, html[data-look="b"] .tabbar a[href="#/epay"].on svg { width: 58px; height: 58px; padding: 14px; margin-top: -30px; border-radius: 50%;
+  background: var(--acc); color: var(--acc-ink); border: 4px solid var(--card); box-shadow: var(--fab-sh); stroke-width: 2.2; }
+html[data-look="b"] .tabbar a[href="#/epay"].on svg { background: var(--pri); color: var(--pri-ink); box-shadow: var(--fab-sh-on); }
+html[data-look="b"] .tabbar a:focus-visible { outline: 3px solid var(--focus); outline-offset: -3px; }
+html[data-look="b"] .tabbar a[href="#/epay"]:focus-visible { outline: 0; }
+html[data-look="b"] .tabbar a[href="#/epay"]:focus-visible svg { box-shadow: 0 0 0 3px var(--focus); }
+html[data-look="b"] body.has-nav main { padding-bottom: calc(104px + env(safe-area-inset-bottom)); }
+html[data-look="b"] body.has-nav .toast { bottom: calc(92px + env(safe-area-inset-bottom)); }
+
+/* ---------- Kat, liy, lis ---------- */
+html[data-look="b"] .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: 16px; margin: 10px 0; }
+html[data-look="b"] .list { gap: 10px; }
+html[data-look="b"] .row { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 12px 14px; gap: 12px; }
+html[data-look="b"] .row b { font-weight: 800; }
+html[data-look="b"] .row .right b { font-size: 1.0625rem; }
+html[data-look="b"] .row.flat { background: transparent; border: 0; padding: 8px 0 0; }
+/* Liy fidbak (onglè Fidbak + fich cycle): kat yo nan gride a ka gen wotè diferan → tèks la rete anwo; fraz rezon an, epi nòt ajan an kòm ti blòk sitasyon ak ba safran */
+html[data-look="b"] .row.swivi { align-items: flex-start; }
+html[data-look="b"] .swivi .rezon { margin-top: 2px; }
+html[data-look="b"] .swivi .nòt { margin-top: 6px; padding: 6px 10px; background: var(--soft); border-left: 3px solid var(--acc); border-radius: 0 10px 10px 0; color: var(--ink); overflow-wrap: anywhere; }
+html[data-look="b"] .btns { gap: 8px; margin-top: 10px; }
+html[data-look="b"] .btns .btn { flex: 1; }
+html[data-look="b"] .btns-v { gap: 8px; }
+html[data-look="b"] .btn-row { gap: 8px; margin: 12px 0; }
+html[data-look="b"] .row.demande .btns { margin-top: 12px; }
+html[data-look="b"] b.in { color: var(--ok); } html[data-look="b"] b.out { color: var(--err); } html[data-look="b"] b.fee { color: var(--warn); }
+html[data-look="b"] .kv { padding: 8px 0; gap: 12px; align-items: center; }
+html[data-look="b"] .kv > span { font-size: .8125rem; font-weight: 600; color: var(--mut); }
+html[data-look="b"] .kv > b { font-weight: 700; text-align: right; overflow-wrap: anywhere; }
+html[data-look="b"] .card.info .kv { padding: 11px 0; border-bottom: 1px solid var(--line); }
+html[data-look="b"] .card.info .kv:last-child { border-bottom: 0; }
+html[data-look="b"] .card.info .kv b { font-weight: 700; }
+html[data-look="b"] .card.info .kv b a { display: inline-block; padding: 10px 0; margin: -10px 0; }
+html[data-look="b"] .head { gap: 14px; }
+html[data-look="b"] .head.center { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 0; margin: 4px 0 16px; }
+html[data-look="b"] .head.center h1 { justify-content: center; font-size: 1.625rem; margin: 12px 0 2px; }
+html[data-look="b"] .head.center .sub { font-size: .875rem; font-weight: 600; color: var(--mut); }
+html[data-look="b"] .head.center .sub + .sub { margin-top: 6px; }
+
+/* ---------- Bouton: 48 px, rayon 14 px. .pri = safran ---------- */
+html[data-look="b"] .btn { min-height: 48px; padding: 10px 18px; border-radius: var(--rb); border: 0; background: var(--soft); color: var(--ink); font-weight: 700; font-size: 1rem; gap: 8px; }
+html[data-look="b"] .btn.pri { background: var(--acc); color: var(--acc-ink); font-weight: 800; }
+html[data-look="b"] .btn.danger { background: var(--t-r); color: var(--i-r); }
+html[data-look="b"] .btn.danger-full { background: #b3261e; color: #fff; }
+html[data-look="b"] .btn.sm { min-height: 44px; padding: 8px 14px; font-size: .9375rem; }
+html[data-look="b"] .btn.block { margin: 10px 0; }
+html[data-look="b"] .btn.block.danger { background: var(--t-r); }
+html[data-look="b"] .btn:disabled { opacity: .5; }
+html[data-look="b"] .btn svg { width: 20px; height: 20px; flex-shrink: 0; }
+html[data-look="b"] .btn.sq { padding: 8px 16px 8px 12px; gap: 6px; }
+html[data-look="b"] .btn.sq svg { width: 22px; height: 22px; stroke-width: 2.4; }
+html[data-look="b"] .btn.sq.sm { padding: 6px 12px 6px 8px; min-width: 44px; }
+html[data-look="b"] .back { display: inline-flex; align-items: center; gap: 4px; min-height: 44px; padding: 0 14px 0 10px; border-radius: var(--rb); background: var(--soft); color: var(--ink); font-weight: 700; font-size: .9375rem; margin: 0 0 10px; }
+html[data-look="b"] .back.sq { width: 44px; padding: 0; justify-content: center; margin: 0; }
+html[data-look="b"] .back.sq svg { width: 22px; height: 22px; stroke-width: 2.4; }
+html[data-look="b"] .page-head { margin: 4px 0 14px; flex-wrap: wrap; }
+html[data-look="b"] .page-head h1 { font-size: 1.875rem; }
+html[data-look="b"] .page-head.sub { margin: 20px 0 8px; }
+html[data-look="b"] .page-head.sub h2 { margin: 0; }
+
+/* ---------- Badj: ti pil ak fon pal ---------- */
+html[data-look="b"] .badge { border: 0; padding: 3px 9px; font-size: .75rem; font-weight: 700; line-height: 1.3; }
+html[data-look="b"] .badge.ok { background: var(--t-g); color: var(--i-g); }
+html[data-look="b"] .badge.warn { background: var(--t-y); color: var(--i-y); }
+html[data-look="b"] .badge.err { background: var(--t-r); color: var(--i-r); }
+html[data-look="b"] .badge.info { background: var(--t-b); color: var(--i-b); }
+html[data-look="b"] .badge.mut { background: var(--soft); color: var(--mut); }
+html[data-look="b"] .badge.pend { background: var(--t-p); color: var(--i-p); }
+
+/* ---------- Chips (jou rapò, filt) ak onglè ---------- */
+html[data-look="b"] .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 12px; }
+html[data-look="b"] .chip { flex-direction: row; min-height: 44px; padding: 8px 16px; border-radius: 99px; border: 1px solid var(--line2); background: var(--card); color: var(--ink); font-weight: 700; font-size: .875rem; gap: 5px; }
+html[data-look="b"] .chip small { font-size: .875rem; font-weight: 700; color: var(--mut); }
+html[data-look="b"] .chip small::before { content: "· " / ""; }
+html[data-look="b"] .chip.on { background: var(--pri); color: var(--pri-ink); border-color: var(--pri); }
+html[data-look="b"] .chip.on small { color: inherit; opacity: .85; }
+html[data-look="b"] .chips.filt { margin: 12px 0 14px; }
+html[data-look="b"] .chips.filt .chip { min-height: 44px; }
+html[data-look="b"] .tabs { background: transparent; border: 0; border-radius: 0; padding: 0; margin: 0 0 12px; gap: 8px; flex-wrap: wrap; }
+html[data-look="b"] .tab { flex: 1 1 auto; min-width: 0; min-height: 44px; padding: 8px 14px; border-radius: 99px; border: 1px solid var(--line2); background: var(--card); color: var(--ink); font-weight: 700; font-size: .9375rem; overflow-wrap: anywhere; }
+html[data-look="b"] .tab.on { background: var(--pri); color: var(--pri-ink); border-color: var(--pri); }
+html[data-look="b"] .cnt-b { background: var(--cnt-err); color: var(--cnt-err-ink); font-weight: 800; font-size: .75rem; padding: 1px 8px; }
+html[data-look="b"] .tab[data-ong="fidbak"] .cnt-b { background: var(--t-y); color: var(--i-y); } /* fidbak jodi a = enfòmasyon, pa yon alèt (Validasyon rete wouj) */
+html[data-look="b"] .tab.on .cnt-b { background: #fff; color: var(--navy); }
+
+/* ---------- Rechèch ---------- */
+html[data-look="b"] .search, html[data-look="b"] input[type="search"] { min-height: 52px; border: 0; border-radius: 16px; background: var(--soft) var(--search-ico) no-repeat 16px center / 20px 20px; padding: 12px 14px 12px 46px; font-size: 1rem; margin: 0 0 4px; }
+html[data-look="b"] input[type="search"]:focus-visible { box-shadow: 0 0 0 2px var(--pri); }
+html[data-look="b"] .search-row { gap: 8px; margin-bottom: 4px; }
+html[data-look="b"] .search-row .search { margin: 0; }
+html[data-look="b"] .search-row select { min-height: 52px; border-radius: 16px; background-color: var(--soft); border: 0; font-weight: 700; }
+html[data-look="b"] .gps-btn { min-height: 52px; border-radius: 16px; padding: 8px 14px; font-size: .9375rem; }
+html[data-look="b"] .gps-btn svg { width: 20px; height: 20px; fill: var(--lnk); }
+html[data-look="b"] #q-hint { margin: 6px 2px 10px; }
+html[data-look="b"] input[placeholder] { text-overflow: ellipsis; }
+
+/* ---------- Tiles ak chif ---------- */
+html[data-look="b"] .tiles3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 0 0 8px; }
+html[data-look="b"] .tiles2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 10px 0; }
+html[data-look="b"] .tile { display: flex; flex-direction: column; gap: 2px; min-width: 0; border-radius: 16px; padding: 12px; background: var(--soft2); color: var(--ink); text-decoration: none; }
+html[data-look="b"] .tile > span { font-size: .75rem; font-weight: 700; color: var(--mut); line-height: 1.3; }
+html[data-look="b"] .tile > b { font-size: 1.375rem; font-weight: 800; letter-spacing: -.02em; line-height: 1.15; overflow-wrap: anywhere; }
+html[data-look="b"] .tile > b.amt { font-size: clamp(.875rem, 4.6vw, 1.125rem); overflow-wrap: normal; }
+html[data-look="b"] .tile > b small { font-size: .875rem; font-weight: 700; color: var(--mut); letter-spacing: 0; }
+html[data-look="b"] .tile > em { font-style: normal; font-size: .75rem; font-weight: 600; color: var(--mut); }
+html[data-look="b"] .tile.y { background: var(--t-y); } html[data-look="b"] .tile.y > span, html[data-look="b"] .tile.y > b small, html[data-look="b"] .tile.y > em { color: var(--i-y); }
+html[data-look="b"] .tile.b { background: var(--t-b); } html[data-look="b"] .tile.b > span, html[data-look="b"] .tile.b > b small, html[data-look="b"] .tile.b > em { color: var(--i-b); }
+html[data-look="b"] .tile.g { background: var(--t-g); } html[data-look="b"] .tile.g > span, html[data-look="b"] .tile.g > b small, html[data-look="b"] .tile.g > em { color: var(--i-g); }
+html[data-look="b"] .tile.r { background: var(--t-r); } html[data-look="b"] .tile.r > span, html[data-look="b"] .tile.r > b small, html[data-look="b"] .tile.r > em { color: var(--i-r); }
+html[data-look="b"] .tile.wide { grid-column: 1 / -1; }
+html[data-look="b"] .tiles3.mini .tile { align-items: center; text-align: center; gap: 2px; }
+html[data-look="b"] .tiles3.mini .tile > b { font-size: 1.5rem; }
+html[data-look="b"] .tile.dek { margin: 8px 0 0; }
+html[data-look="b"] .tile.dek > b.amt { font-size: 1.375rem; }
+/* "Balans deklare" se 4yèm tuil nan .tiles3.mini (pou laptop); sou telefòn li rete yon tuil laj, tèks agòch */
+html[data-look="b"] .tiles3.mini .tile.dek { align-items: stretch; text-align: left; margin: 0; }
+html[data-look="b"] .tiles3.mini .tile.dek > b.amt { font-size: 1.375rem; }
+html[data-look="b"] .bigl { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
+html[data-look="b"] .bigl a { display: flex; align-items: center; gap: 14px; min-height: 76px; padding: 12px 14px; border: 1px solid var(--line); border-radius: var(--r); color: var(--ink); text-decoration: none; }
+html[data-look="b"] .bigl a b { display: block; font-size: 1.125rem; font-weight: 800; }
+html[data-look="b"] .bigl a small { display: block; font-size: .8125rem; font-weight: 600; color: var(--mut); }
+html[data-look="b"] .bigl a i { display: flex; color: var(--mut); transform: rotate(180deg); }
+html[data-look="b"] .bigl a i svg { width: 22px; height: 22px; }
+html[data-look="b"] .bi { display: flex; align-items: center; justify-content: center; width: 48px; height: 48px; border-radius: 16px; flex-shrink: 0; }
+html[data-look="b"] .bi svg { width: 24px; height: 24px; }
+html[data-look="b"] .bi.b { background: var(--t-b); color: var(--i-b); } html[data-look="b"] .bi.y { background: var(--t-y); color: var(--i-y); }
+html[data-look="b"] .bi.g { background: var(--t-g); color: var(--i-g); } html[data-look="b"] .bi.r { background: var(--t-r); color: var(--i-r); }
+
+/* ---------- Avatar: kare awondi ---------- */
+html[data-look="b"] .thumb { width: 48px; height: 48px; border-radius: 16px; background: var(--soft); }
+html[data-look="b"] .thumb.ph { background: var(--thumb); color: #fff; font-weight: 800; font-size: 1.0625rem; }
+html[data-look="b"] .thumb.ph.t1 { background: var(--acc); color: var(--acc-ink); }
+html[data-look="b"] .thumb.ph.t2 { background: var(--t-g); color: var(--i-g); }
+html[data-look="b"] .thumb.xs { width: 28px; height: 28px; border-radius: 9px; font-size: .75rem; margin-left: -6px; }
+html[data-look="b"] .avatar { width: 104px; height: 104px; border-radius: 34px; box-shadow: 0 0 0 5px var(--ring); }
+html[data-look="b"] .avatar.ph { background: var(--thumb); color: #fff; font-size: 2.375rem; font-weight: 800; }
+html[data-look="b"] .head:not(.center) .avatar { width: 64px; height: 64px; border-radius: 20px; box-shadow: 0 0 0 4px var(--ring); }
+html[data-look="b"] .head:not(.center) .avatar.ph { font-size: 1.5rem; }
+
+/* ---------- Epay: kat "Pou wè jodi a" ---------- */
+html[data-look="b"] .jcard { flex-direction: column; align-items: stretch; border-radius: 20px; padding: 14px; gap: 12px; }
+html[data-look="b"] .jtop { display: flex; align-items: center; gap: 12px; min-width: 0; }
+html[data-look="b"] .jtop .nm, html[data-look="b"] .acard .nm { font-size: 1.0625rem; font-weight: 800; line-height: 1.2; overflow-wrap: break-word; }
+html[data-look="b"] .jtop .mut { margin-top: 1px; }
+html[data-look="b"] .jact { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 8px; }
+html[data-look="b"] .jact .btn { padding-left: 6px; padding-right: 6px; font-size: .9375rem; line-height: 1.15; }
+html[data-look="b"] .jact.one { grid-template-columns: 1fr; }
+html[data-look="b"] .paid { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px; min-height: 48px; border-radius: var(--rb); background: var(--t-g); color: var(--i-g); font-weight: 800; font-size: 1.0625rem; }
+html[data-look="b"] .paid i { font-style: normal; display: inline-flex; width: 24px; height: 24px; border-radius: 50%; background: var(--ok-dot); color: #fff; align-items: center; justify-content: center; font-size: .9rem; }
+html[data-look="b"] .paid .amt { white-space: nowrap; }
+html[data-look="b"] .paid small { font-size: .75rem; font-weight: 700; opacity: .9; }
+html[data-look="b"] .jcard.ok { background: color-mix(in srgb, var(--t-g) 45%, var(--card)); border-color: color-mix(in srgb, var(--ok-dot) 30%, var(--line)); }
+html[data-look="b"] .fb { display: flex; }
+html[data-look="b"] .chip-fb { display: inline-flex; align-items: center; gap: 6px; background: var(--t-y); color: var(--i-y); font-size: .75rem; font-weight: 700; padding: 6px 11px; border-radius: 99px; }
+html[data-look="b"] .chip-fb svg { width: 14px; height: 14px; }
+html[data-look="b"] .dots { display: inline-flex; align-items: center; gap: 4px; flex-shrink: 0; align-self: flex-start; margin-top: 4px; }
+html[data-look="b"] .dt { display: block; width: 11px; height: 11px; border-radius: 50%; background: var(--line2); flex-shrink: 0; }
+html[data-look="b"] .dt.pa { width: 6px; height: 6px; margin: 0 2.5px; }
+html[data-look="b"] .dt.peye { background: var(--ok-dot); }
+html[data-look="b"] .dt.jodi, html[data-look="b"] .dt.avni { background: transparent; border: 2px solid var(--acc); }
+html[data-look="b"] .dt.jodi { box-shadow: 0 0 0 2px color-mix(in srgb, var(--acc) 30%, transparent); }
+html[data-look="b"] .dt.rate { background: var(--err-dot); border-radius: 3px; }
+html[data-look="b"] .dt.ferye { background: transparent; border: 1.5px dashed var(--mut); }
+/* Kont ak cycle aktif: liy konpak */
+html[data-look="b"] .acard { align-items: center; }
+html[data-look="b"] .acard .lnk { padding-right: 2px; }
+html[data-look="b"] .acard .bal { margin-top: 2px; color: var(--i-b); }
+html[data-look="b"] .acard .bal b { font-weight: 800; }
+html[data-look="b"] .acard.reta { border-color: color-mix(in srgb, var(--err-dot) 35%, var(--line)); }
+html[data-look="b"] .bar.mini { height: 5px; margin-top: 8px; max-width: 160px; }
+html[data-look="b"] .acard .btn.sq.sm { flex-direction: column; gap: 0; width: 56px; min-height: 56px; padding: 6px 4px; justify-content: center; font-size: .6875rem; line-height: 1.1; }
+html[data-look="b"] .acard .btn.sq.sm svg { width: 24px; height: 24px; }
+
+/* ---------- Fich kliyan ---------- */
+html[data-look="b"] .acts3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 0 0 10px; }
+html[data-look="b"] .act { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 64px; padding: 6px 4px; border-radius: 18px; text-decoration: none; font-weight: 700; font-size: .75rem; line-height: 1.2; text-align: center; overflow-wrap: anywhere; }
+html[data-look="b"] .act svg { width: 22px; height: 22px; flex-shrink: 0; }
+html[data-look="b"] .act span { display: block; width: auto; height: auto; margin: 0; border-radius: 0; background: none; color: inherit; font-size: inherit; }
+html[data-look="b"] .act.b { background: var(--t-b); color: var(--i-b); }
+html[data-look="b"] .act.g { background: var(--t-g); color: var(--i-g); }
+html[data-look="b"] .act.w { background: var(--t-y); color: var(--i-y); border: 1.5px dashed color-mix(in srgb, var(--i-y) 45%, transparent); }
+html[data-look="b"] .act.y { background: var(--acc); color: var(--acc-ink); font-weight: 800; }
+html[data-look="b"] .act.y svg { stroke-width: 2.4; }
+html[data-look="b"] .act.n { background: var(--soft2); color: var(--mut); border: 1.5px dashed var(--line2); }
+html[data-look="b"] .info2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 10px 0 0; }
+html[data-look="b"] .it { background: var(--soft2); border-radius: 16px; padding: 12px; min-width: 0; }
+html[data-look="b"] .it > span { display: block; font-size: .75rem; font-weight: 600; color: var(--mut); margin-bottom: 2px; }
+html[data-look="b"] .it > b { display: block; font-weight: 800; font-size: .9375rem; line-height: 1.3; overflow-wrap: break-word; }
+/* Kat navy cycle aktif */
+html[data-look="b"] .ncard { display: block; background: var(--navy); color: #fff; border-radius: 22px; padding: 16px; text-decoration: none; margin: 0 0 10px; }
+html[data-look="b"] .ncard .badge.pend { background: rgba(255,255,255,.14); color: #fff; }
+html[data-look="b"] .nt { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+html[data-look="b"] .nt b { font-size: 1rem; font-weight: 800; }
+html[data-look="b"] .nd { font-size: .75rem; font-weight: 600; color: var(--navy-mut); }
+html[data-look="b"] .wk { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 4px; margin-top: 12px; }
+html[data-look="b"] .wd { text-align: center; font-size: .6875rem; font-weight: 600; color: var(--navy-mut); }
+html[data-look="b"] .wd i { display: flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 50%; margin: 4px auto 0; background: rgba(255,255,255,.1); color: #fff; }
+html[data-look="b"] .wd i svg { width: 15px; height: 15px; stroke-width: 3; }
+html[data-look="b"] .wd.peye i { background: var(--ok-dot); }
+html[data-look="b"] .wd.jodi, html[data-look="b"] .wd.avni { color: #fff; font-weight: 700; }
+html[data-look="b"] .wd.jodi i, html[data-look="b"] .wd.avni i { background: transparent; border: 2px solid var(--acc); }
+html[data-look="b"] .wd.jodi i { box-shadow: 0 0 0 3px rgba(242,169,0,.3); }
+html[data-look="b"] .wd.rate i { background: transparent; border: 2px solid var(--err-dot); }
+html[data-look="b"] .wd.ferye i { background: rgba(255,255,255,.04); border: 1px dashed rgba(255,255,255,.35); }
+html[data-look="b"] .nr { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-top: 14px; font-size: .8125rem; font-weight: 600; flex-wrap: wrap; }
+html[data-look="b"] .nr b { font-weight: 800; }
+html[data-look="b"] .ncard .bar { background: rgba(255,255,255,.15); margin-top: 6px; }
+html[data-look="b"] .ncard .bar i { background: var(--acc); }
+
+/* ---------- Fich cycle ---------- */
+html[data-look="b"] .solde { text-align: left; }
+html[data-look="b"] .solde .tile > span { font-size: .75rem; }
+html[data-look="b"] .solde .tile > b { display: block; font-size: 1.375rem; color: var(--ink); margin: 0; }
+html[data-look="b"] .solde .tile > b.amt { font-size: 1.125rem; }
+html[data-look="b"] .stats { gap: 12px 10px; padding: 16px; }
+html[data-look="b"] .stats > div > span { font-size: .75rem; font-weight: 600; }
+html[data-look="b"] .stats > div > b { font-weight: 800; }
+html[data-look="b"] .stats > div > small { font-size: .75rem; }
+html[data-look="b"] .bar { height: 8px; background: var(--line); margin-top: 8px; }
+html[data-look="b"] .bar i { background: var(--acc); }
+
+/* ---------- Rapò ---------- */
+html[data-look="b"] .kach { background: var(--acc); color: var(--acc-ink); border-radius: 24px; padding: 18px; margin: 0 0 14px; }
+html[data-look="b"] .kach > span { display: block; font-size: .875rem; font-weight: 700; color: var(--acc-dk); }
+html[data-look="b"] .kach > b { display: block; font-size: clamp(1.75rem, 11vw, 2.625rem); font-weight: 800; letter-spacing: -.03em; line-height: 1.1; overflow-wrap: normal; }
+html[data-look="b"] .kach > b.neg { color: #7a1d12; }
+html[data-look="b"] .kp { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+html[data-look="b"] .kp i { font-style: normal; font-size: .8125rem; font-weight: 700; color: var(--acc-dk); background: rgba(255,255,255,.55); padding: 5px 11px; border-radius: 99px; }
+html[data-look="b"] .kach > small { display: block; margin-top: 10px; font-size: .75rem; font-weight: 600; color: var(--acc-dk); }
+html[data-look="b"] .rlist { display: flex; flex-direction: column; gap: 8px; margin: 0 0 10px; }
+html[data-look="b"] .rl { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; padding: 12px; border: 1px solid var(--line); border-radius: 18px; min-width: 0; }
+html[data-look="b"] .rl > .grow { min-width: 96px; }
+html[data-look="b"] .rl > .grow b { font-weight: 800; }
+html[data-look="b"] .rl .vim { font-size: .8125rem; font-weight: 600; color: var(--mut); }
+html[data-look="b"] .rl .vim b { color: var(--ink); font-weight: 700; }
+html[data-look="b"] .ri { display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 14px; flex-shrink: 0; }
+html[data-look="b"] .ri svg { width: 22px; height: 22px; stroke-width: 2.2; }
+html[data-look="b"] .ri.g { background: var(--t-g); color: var(--i-g); } html[data-look="b"] .ri.r { background: var(--t-r); color: var(--i-r); } html[data-look="b"] .ri.y { background: var(--t-y); color: var(--i-y); }
+html[data-look="b"] .rv { font-size: 1.0625rem; font-weight: 800; white-space: nowrap; flex-shrink: 0; margin-left: auto; text-align: right; }
+html[data-look="b"] .rv small { display: block; font-size: .6875rem; font-weight: 600; color: var(--mut); line-height: 1.2; }
+html[data-look="b"] .swv { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin: 12px 2px 0; font-size: .8125rem; font-weight: 600; }
+html[data-look="b"] .swv b { font-weight: 800; margin-right: 2px; }
+html[data-look="b"] .kpis { gap: 8px; }
+html[data-look="b"] .kpi { border-radius: 16px; background: var(--soft2); border: 0; }
+html[data-look="b"] .kpi > span { font-weight: 700; font-size: .75rem; }
+html[data-look="b"] .kpi > b { font-weight: 800; }
+html[data-look="b"] .kpi.main { background: var(--acc); color: var(--acc-ink); }
+html[data-look="b"] .kpi.main > span, html[data-look="b"] .kpi.main > small { color: var(--acc-dk); }
+html[data-look="b"] .kpi.main > b { color: var(--acc-ink); font-size: 2.25rem; }
+
+/* ---------- Fòmilè ---------- */
+html[data-look="b"] input, html[data-look="b"] select, html[data-look="b"] textarea { min-height: 48px; padding: 11px 14px; border-radius: var(--rb); border: 1.5px solid var(--line2); background: var(--card); color: var(--ink); font-size: 1rem; }
+html[data-look="b"] textarea { min-height: 72px; }
+html[data-look="b"] input[type="date"] { min-height: 48px; }
+html[data-look="b"] input[type="file"] { padding: 10px 14px; background: var(--soft2); border-style: dashed; }
+html[data-look="b"] .form label { font-weight: 700; font-size: .9375rem; margin: 12px 0; }
+html[data-look="b"] .form label small { font-weight: 600; }
+html[data-look="b"] .form label input, html[data-look="b"] .form label select, html[data-look="b"] .form label textarea { margin-top: 6px; }
+html[data-look="b"] fieldset.field { margin: 14px 0; }
+html[data-look="b"] fieldset.field legend { font-weight: 700; font-size: .9375rem; margin-bottom: 8px; }
+html[data-look="b"] label.chk { font-weight: 600; padding: 4px 0; }
+html[data-look="b"] label.chk input { width: 24px; height: 24px; min-height: 0; accent-color: var(--navy); }
+html[data-look="b"] .err-msg { color: var(--err); font-weight: 700; }
+html[data-look="b"] [aria-invalid="true"] { border-color: var(--err-dot) !important; box-shadow: 0 0 0 3px color-mix(in srgb, var(--err-dot) 20%, transparent); }
+html[data-look="b"] .seg { gap: 8px; margin: 0 0 8px; }
+html[data-look="b"] .seg span { min-height: 48px; border-radius: var(--rb); border: 0; background: var(--soft); font-weight: 700; font-size: .9375rem; color: var(--ink); }
+html[data-look="b"] .seg input:checked + span { background: var(--pri); color: var(--pri-ink); }
+html[data-look="b"] .seg input:focus-visible + span { outline: 3px solid var(--focus); outline-offset: 2px; }
+html[data-look="b"] .seg.s4 span { font-size: .9375rem; padding: 4px; }
+html[data-look="b"] .jours { gap: 6px; }
+html[data-look="b"] .jours span { min-height: 48px; border-radius: 12px; border: 0; background: var(--soft); font-weight: 700; font-size: .8125rem; color: var(--ink); }
+html[data-look="b"] .jours input:checked + span { background: var(--pri); color: var(--pri-ink); }
+html[data-look="b"] .jours input:disabled + span { opacity: .45; }
+html[data-look="b"] .jours input:focus-visible + span { outline: 3px solid var(--focus); outline-offset: 2px; }
+html[data-look="b"] .recap { background: var(--soft2); border-radius: 16px; padding: 14px; gap: 12px 10px; }
+html[data-look="b"] .recap > div > span { font-size: .75rem; font-weight: 600; }
+html[data-look="b"] .recap > div > b { font-weight: 800; }
+html[data-look="b"] .recap > div > small { font-size: .75rem; }
+html[data-look="b"] .gps { background: var(--soft2); border-radius: 16px; padding: 8px 8px 8px 14px; margin: 12px 0; }
+html[data-look="b"] .prev { border-radius: 16px; }
+html[data-look="b"] .note { border-radius: 16px; border: 0; background: var(--soft2); padding: 12px 14px; font-weight: 600; }
+html[data-look="b"] .note.warn { background: var(--t-y); color: var(--i-y); }
+html[data-look="b"] .note.err { background: var(--t-r); color: var(--i-r); }
+html[data-look="b"] .note.err a, html[data-look="b"] .note.warn a { color: inherit; }
+html[data-look="b"] .note.info-note { background: var(--t-b); color: var(--i-b); border: 0; margin: 8px 0; font-size: .9rem; }
+html[data-look="b"] .form .btn[type="submit"], html[data-look="b"] .form button.pri { width: 100%; margin-top: 8px; }
+html[data-look="b"] .form .gps .btn { width: auto; margin: 0; min-height: 44px; }
+html[data-look="b"] .form .note .btn { width: auto; margin: 0; }
+html[data-look="b"] .form .btn.sm { width: auto; margin-top: 0; }
+
+/* ---------- Koneksyon ---------- */
+html[data-look="b"] .login { padding-top: 36px; }
+html[data-look="b"] .login h1 { font-size: 1.875rem; margin-top: 10px; }
+html[data-look="b"] .login img { border-radius: 24px; box-shadow: 0 0 0 5px var(--ring); }
+html[data-look="b"] .login form { margin-top: 20px; }
+html[data-look="b"] .login form label { font-weight: 700; font-size: .9375rem; }
+html[data-look="b"] .login form label input { margin-top: 6px; font-weight: 400; }
+html[data-look="b"] .login .btn { margin-top: 10px; }
+html[data-look="b"] .lang-sw { background: var(--soft); border: 0; padding: 4px; margin-top: 10px; }
+html[data-look="b"] .lang-sw button { min-height: 40px; padding: 6px 18px; font-weight: 700; color: var(--mut); }
+html[data-look="b"] .lang-sw button.on { background: var(--pri); color: var(--pri-ink); }
+
+/* ---------- Popup ---------- */
+html[data-look="b"] .modal-wrap { background: rgba(16, 32, 63, .55); }
+html[data-look="b"] .modal { border-radius: 24px; padding: 22px 20px 20px; background: var(--card); color: var(--ink); }
+html[data-look="b"] .modal-h h2 { font-size: 1.25rem; font-weight: 800; margin: 0; }
+html[data-look="b"] .modal-ico { width: 56px; height: 56px; background: var(--thumb); color: #fff; box-shadow: 0 0 0 6px var(--ring); }
+html[data-look="b"] .modal-ico.danger { background: #b3261e; box-shadow: 0 0 0 6px var(--t-r); }
+html[data-look="b"] .modal-foto { width: 88px; height: 88px; border-radius: 28px; border: 0; box-shadow: 0 0 0 5px var(--ring); }
+html[data-look="b"] .modal-p { font-weight: 600; }
+html[data-look="b"] .modal-dl { background: var(--soft2); border-radius: 16px; padding: 4px 14px; }
+html[data-look="b"] .modal-dl div { border-bottom-color: var(--line); padding: 9px 0; }
+html[data-look="b"] .modal-dl dt { font-weight: 600; font-size: .875rem; }
+html[data-look="b"] .modal-dl dd { font-weight: 800; }
+html[data-look="b"] .modal-l { font-weight: 700; }
+html[data-look="b"] .modal-b { gap: 8px; margin-top: 18px; }
+html[data-look="b"] .modal-b .btn { min-height: 48px; }
+html[data-look="b"] .modal-choix fieldset { gap: 8px; }
+html[data-look="b"] .modal-choix label:not(.modal-l) { min-height: 48px; border: 0; background: var(--soft2); border-radius: var(--rb); font-weight: 700; padding: 10px 14px; }
+html[data-look="b"] .modal-choix input[type="radio"] { width: 22px; height: 22px; min-height: 0; accent-color: var(--navy); }
+html[data-look="b"] .modal-choix label:has(input:checked) { background: var(--t-b); color: var(--i-b); box-shadow: inset 0 0 0 2px var(--pri); }
+html[data-look="b"] .zoom img { border-radius: 20px; }
+html[data-look="b"] .zoom figcaption { font-weight: 800; }
+
+/* ---------- Toast ---------- */
+html[data-look="b"] .toast { background: var(--toast); color: #fff; border-radius: 16px; font-weight: 700; box-shadow: var(--sh); padding: 14px 18px; }
+html[data-look="b"] .toast.err { background: #b3261e; color: #fff; }
+html[data-look="b"] .toast.info { background: var(--toast); color: #fff; }
+html[data-look="b"] .toast.update { border: 0; }
+
+/* ---------- Paramèt: chwa look ---------- */
+html[data-look="b"] .looks { gap: 8px; }
+html[data-look="b"] .look-opt { border: 2px solid var(--line); border-radius: 18px; padding: 8px; background: var(--card); }
+html[data-look="b"] .look-opt.on, html[data-look="b"] .look-opt:has(input:checked) { border-color: var(--acc); box-shadow: 0 0 0 3px var(--ring); }
+html[data-look="b"] .look-opt:has(input:focus-visible) { outline: 3px solid var(--focus); outline-offset: 2px; }
+html[data-look="b"] .look-prev { border-radius: 12px; }
+html[data-look="b"] .look-nom { font-weight: 800; }
+html[data-look="b"] .look-desk { font-weight: 500; }
+html[data-look="b"] .card .kv { padding: 10px 0; border-bottom: 1px solid var(--line); }
+html[data-look="b"] .card .kv:last-child { border-bottom: 0; }
+html[data-look="b"] .card > .btn.block:last-child { margin-bottom: 0; }
+html[data-look="b"] .center { text-align: center; }
+
+/* ---------- Tablo de bò (baz, si yon lòt pati sèvi ak li) ---------- */
+html[data-look="b"] .hello { font-weight: 600; }
+html[data-look="b"] .soon { border-radius: var(--r); }
+html[data-look="b"] .soon-ico svg { fill: none; stroke: var(--acc); }
+
+/* ---------- Tablèt (768 px +) ---------- */
+@media (min-width: 768px) {
+  html[data-look="b"] main { max-width: 980px; padding-left: 24px; padding-right: 24px; }
+  html[data-look="b"] .grid-t { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  html[data-look="b"] .list.grid-t > .empty { grid-column: 1 / -1; }
+  html[data-look="b"] .tabbar { left: 50%; right: auto; transform: translateX(-50%); width: min(640px, 100%); bottom: 12px; border: 1px solid var(--line); border-radius: 22px; padding: 6px 10px 8px; }
+  html[data-look="b"] .tabbar a { font-size: .75rem; }
+  html[data-look="b"] body.has-nav main { padding-bottom: 120px; }
+  html[data-look="b"] .form { max-width: 640px; }
+  html[data-look="b"] .kpis { grid-template-columns: repeat(4, 1fr); }
+  html[data-look="b"] .acts3 { max-width: 640px; }
+  html[data-look="b"] .info2 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  html[data-look="b"] .bigl { display: grid; grid-template-columns: repeat(3, 1fr); }
+  html[data-look="b"] .tiles3.mini .tile > b { font-size: 1.75rem; }
+  html[data-look="b"] .rtop { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: start; margin-bottom: 12px; }
+  html[data-look="b"] .rtop .kach, html[data-look="b"] .rtop .rlist { margin: 0; }
+  html[data-look="b"] .ctop { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; align-items: start; }
+  html[data-look="b"] .ctop .ncard { margin: 10px 0; }
+  html[data-look="b"] .ctop .stats { grid-column: 1 / -1; }
+  html[data-look="b"] .btn-row, html[data-look="b"] .acts3, html[data-look="b"] .head.center { max-width: 640px; margin-left: auto; margin-right: auto; }
+  html[data-look="b"] .kach > b { font-size: 3rem; }
+}
+@media (max-width: 767px) {
+  /* Manadjè: 4 onglè (Kont, Tranzaksyon, Fidbak, Validasyon) → 2 × 2, pa 3 + yon pil pou kont li sou tout lajè a */
+  html[data-look="b"] .tabs:has(> .tab:nth-child(4)) .tab { flex: 1 1 calc(50% - 4px); }
+}
+@media (max-width: 360px) {
+  html[data-look="b"] .bhead .btn.sq span { display: none; }
+  html[data-look="b"] .bhead .btn.sq { width: 48px; padding: 0; justify-content: center; }
+  html[data-look="b"] .acts3 { gap: 6px; }
+  html[data-look="b"] .act { font-size: .6875rem; }
+  html[data-look="b"] .jact { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); }
+  html[data-look="b"] .jtop { flex-wrap: wrap; }
+  html[data-look="b"] .dots { order: 3; flex-basis: calc(100% - 60px); margin: 0 0 0 60px; }
+  html[data-look="b"] .tiles3 .tile { padding: 10px; }
+  html[data-look="b"] .chip { padding: 8px 12px; }
+  html[data-look="b"] .tab { padding: 8px 10px; font-size: .875rem; }
+  html[data-look="b"][data-teks="xl"] .tiles3:not(.mini) { grid-template-columns: 1fr 1fr; grid-auto-flow: dense; }
+  html[data-look="b"][data-teks="xl"] .tiles3:not(.mini) .tile:has(> b.amt) { grid-column: 1 / -1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html[data-look="b"] .modal-wrap, html[data-look="b"] .modal, html[data-look="b"] .spin { animation: none; }
+  html[data-look="b"] * { transition: none !important; }
+}
+
+/* ======================================================================
+   LAPTOP / EKRAN LAJ (≥ 1024 px) — kontra: LOOKS.md § "Laptop / ekran laj"
+   Navigasyon an vin yon kolòn fiks agòch anba #bar (lajè --nav-w = 248 px);
+   kontni an pi laj (1160 px, 1240 a ≥ 1440) ak gride 2 kolòn sou paj yo.
+   Règ telefòn/tablèt yo (left/transform/bottom/rayon/FAB ki leve) re-ekri
+   isit la paske yo gen plis espesifisite pase app.css.
+   ====================================================================== */
+@media (min-width: 1024px) {
+  html[data-look="b"] { --nav-w: 248px; }
+
+  /* --- Ba anwo: blan, sou tout lajè a, liy 1 px anba; mak agòch, pil Anliy adwat --- */
+  html[data-look="b"] #bar { padding: 8px 24px; padding-top: max(8px, env(safe-area-inset-top)); }
+  /* body.has-nav gen padding-left --nav-w (app.css): ba a soti nan padding sa a pou l kouvri tout lajè a */
+  html[data-look="b"] body.has-nav #bar { margin-left: calc(-1 * var(--nav-w)); }
+  html[data-look="b"] .brand { font-size: 1.25rem; }
+
+  /* --- Kolòn navigasyon agòch (reset pil tablèt la ak FAB Epay a) --- */
+  html[data-look="b"] .tabbar { position: fixed; left: 0; right: auto; top: var(--bar-h, 61px); bottom: 0; width: var(--nav-w); transform: none;
+    display: flex; flex-direction: column; align-items: stretch; gap: 4px; padding: 16px 12px 12px;
+    background: var(--card); border: 0; border-right: 1px solid var(--line); border-radius: 0; box-shadow: none; overflow-y: auto; overscroll-behavior: contain; }
+  html[data-look="b"] .tabbar a { flex: 0 0 auto; flex-direction: row; justify-content: flex-start; align-items: center; gap: 12px; min-height: 52px; padding: 0 12px 0 10px;
+    border-radius: var(--rb); font-size: 1.0625rem; font-weight: 700; color: var(--ink); }
+  html[data-look="b"] .tabbar a.on { background: var(--t-b); color: var(--i-b); font-weight: 800; }
+  html[data-look="b"] .tabbar svg, html[data-look="b"] .tabbar a.on svg { width: 36px; height: 36px; padding: 6px; margin: 0; border-radius: 10px; background: none; border: 0; box-shadow: none; stroke-width: 2.2; flex-shrink: 0; }
+  html[data-look="b"] .tabbar a.on svg { stroke-width: 2.5; }
+  /* Epay = aksyon prensipal: ikòn li nan yon ti kare safran 36 px (ikòn navy), san FAB ki leve (pa gen chevochman, pa gen transform) */
+  html[data-look="b"] .tabbar a[href="#/epay"] svg, html[data-look="b"] .tabbar a[href="#/epay"].on svg { width: 36px; height: 36px; padding: 7px; margin: 0; border-radius: 10px; border: 0; box-shadow: none;
+    background: var(--acc); color: var(--acc-ink); stroke-width: 2.4; }
+  html[data-look="b"] .tabbar a:focus-visible, html[data-look="b"] .tabbar a[href="#/epay"]:focus-visible { outline: 3px solid var(--focus); outline-offset: -3px; }
+  html[data-look="b"] .tabbar a[href="#/epay"]:focus-visible svg { box-shadow: none; }
+  /* Pye kolòn nan: non ajan an (800), wòl, vèsyon */
+  html[data-look="b"] .nav-foot { flex: 0 0 auto; margin-top: auto; padding: 14px 12px 4px; gap: 1px; border-top: 1px solid var(--line); font-size: .8125rem; font-weight: 600; color: var(--mut); }
+  html[data-look="b"] .nav-foot .nav-moi { font-size: .9375rem; font-weight: 800; color: var(--ink); overflow-wrap: anywhere; }
+  html[data-look="b"] .nav-foot .nav-ver { font-size: .75rem; }
+
+  /* --- Kontni: pa gen ba anba ankò; toast anba adwat; main 1160 px --- */
+  html[data-look="b"] body.has-nav main { padding-bottom: 40px; }
+  html[data-look="b"] body.has-nav .toast { left: auto; right: 24px; bottom: 24px; max-width: 420px; }
+  html[data-look="b"] main { max-width: 1160px; padding: 28px 32px 40px; }
+  html[data-look="b"] h1 { font-size: 2rem; }
+  html[data-look="b"] .page-head h1 { font-size: 2rem; }
+  html[data-look="b"] .page-head { margin: 0 0 16px; }
+  html[data-look="b"] h2 { font-size: 1.125rem; margin: 24px 0 12px; }
+  /* Paj etwat (fòm, paj ak lyen retou, koneksyon, Paramèt): 720 px santre */
+  html[data-look="b"] main:has(> .form), html[data-look="b"] main:has(> .back), html[data-look="b"] main:has(> .login) { max-width: 784px; }
+  /* Fallback san :has() (Firefox < 121, Safari < 15.4): paj ak lyen retou ak Paramèt (.page-head + h2) rete 720 px, aliyen agòch; san efè lè :has() mache */
+  html[data-look="b"] main > .back ~ *, html[data-look="b"] main > .page-head + h2, html[data-look="b"] main > .page-head + h2 ~ * { max-width: 720px; }
+  html[data-look="b"] main > .back ~ .form, html[data-look="b"] main > .page-head + h2 ~ .form { margin-left: 0; }
+  html[data-look="b"] .form { max-width: 720px; margin-left: auto; margin-right: auto; }
+  html[data-look="b"] .login { max-width: 440px; margin: 0 auto; padding-top: 56px; }
+  html[data-look="b"] .modal { max-width: 480px; padding: 28px 28px 24px; }
+
+  /* --- Epay: tèt (dat·non, tit, bouton), onglè, zouti (rechèch ≤ 520 px + filt), 3 tuil ≤ 760 px, 2 lis kòt a kòt (5fr / 7fr) --- */
+  html[data-look="b"] .bhead { margin: 0 0 18px; }
+  html[data-look="b"] .tabs { margin: 0 0 16px; }
+  html[data-look="b"] .tab { flex: 0 1 auto; min-width: 176px; padding: 8px 24px; }
+  html[data-look="b"] .ktool { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; margin: 0 0 16px; }
+  html[data-look="b"] .ktool .search { flex: 1 1 320px; max-width: 520px; margin: 0; }
+  html[data-look="b"] .ktool .chips.filt { margin: 0; }
+  html[data-look="b"] .tiles3.stat { max-width: 760px; gap: 12px; margin: 0 0 8px; }
+  html[data-look="b"] .tiles3.stat .tile { padding: 14px 16px; }
+  html[data-look="b"] .kont2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0 24px; align-items: start; }
+  html[data-look="b"] .kcol { min-width: 0; }
+  html[data-look="b"] .kont2 .list.grid-t { grid-template-columns: 1fr; gap: 10px; }
+  html[data-look="b"] .note.info-note { max-width: 760px; }
+
+  /* --- Fich kliyan: kolòn gòch (avatar, aksyon, enfòmasyon kle 2×2) + kolòn dwat (lòt enfòmasyon, cycle yo) --- */
+  html[data-look="b"] .fich2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0 32px; align-items: start; }
+  html[data-look="b"] .fcol { min-width: 0; }
+  html[data-look="b"] .fich2 .head.center, html[data-look="b"] .fich2 .acts3 { max-width: none; }
+  html[data-look="b"] .fich2 .head.center { margin: 8px 0 20px; }
+  html[data-look="b"] .fich2 .acts3 { gap: 10px; margin: 0 0 10px; }
+  html[data-look="b"] .fich2 .info2 { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 10px; }
+  html[data-look="b"] .fcol.fr > .page-head.sub:first-child { margin-top: 8px; }
+  html[data-look="b"] .fich2 .ncard { padding: 20px; }
+
+  /* --- Fich cycle: kat navy + tuil balans agòch (5fr), estatistik adwat (7fr); lis yo anba --- */
+  html[data-look="b"] .ctop { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto 1fr; gap: 12px 24px; align-items: start; margin-top: 12px; }
+  html[data-look="b"] .ctop .ncard, html[data-look="b"] .ctop .solde { grid-column: 1; margin: 0; }
+  html[data-look="b"] .ctop .ncard { padding: 20px; }
+  html[data-look="b"] .ctop .stats { grid-column: 2; grid-row: 1 / 3; margin: 0; padding: 20px; gap: 14px 16px; }
+  html[data-look="b"] #cycle > .btn-row { max-width: none; margin: 12px 0 4px; gap: 24px; } /* bouton yo aliyen ak kolòn gride .ctop a */
+
+  /* --- Rapò: kat safran (5fr) + 3 liy (7fr) menm wotè; 4 ti tuil sou yon liy --- */
+  html[data-look="b"] .rtop { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: stretch; margin-bottom: 16px; }
+  html[data-look="b"] .rtop .kach { display: flex; flex-direction: column; justify-content: center; padding: 22px 24px; }
+  html[data-look="b"] .rtop .rlist { height: 100%; gap: 8px; }
+  html[data-look="b"] .rtop .rl { flex: 1; padding: 12px 16px; }
+  html[data-look="b"] .tiles3.mini { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 0 0 8px; }
+  html[data-look="b"] .tiles3.mini .tile { padding: 16px 12px; }
+  html[data-look="b"] .tiles3.mini .tile.dek { grid-column: auto; align-items: center; text-align: center; }
+  html[data-look="b"] .tiles3.mini .tile.dek > b.amt { font-size: 1.75rem; }
+  html[data-look="b"] .tiles3.mini .tile.dek > b { order: -1; } /* chif anwo, etikèt anba, menm jan ak 3 lòt tuil yo */
+  html[data-look="b"] .swv { margin: 16px 2px 0; }
+
+  /* --- Tablo de bò: salitasyon, 3 tuil, 3 gwo lyen sou yon liy (menm lajè ak lòt paj yo) --- */
+  html[data-look="b"] #tablo .tiles3 { gap: 12px; }
+  html[data-look="b"] #tablo .tile { padding: 16px; gap: 4px; }
+  html[data-look="b"] #tablo .tile > b { font-size: 1.75rem; }
+  html[data-look="b"] #tablo .tile > b.amt { font-size: 1.5rem; }
+  html[data-look="b"] .tile > b.amt { font-size: 1.375rem; }
+  /* minmax(0, 1fr) + overflow-wrap: 3 tuil yo pa janm depase main (fr + tèks "Pi gwo" a 1024 px); gwosè laj yo a ≥ 1280 px */
+  html[data-look="b"] .bigl { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 16px; }
+  html[data-look="b"] .bigl a { min-height: 88px; padding: 14px 16px; gap: 12px; }
+  html[data-look="b"] .bigl a b, html[data-look="b"] .bigl a small { overflow-wrap: anywhere; }
+
+  /* --- Kliyan: rechèch ≤ 760 px, lis 2 kolòn (3 a ≥ 1440) --- */
+  html[data-look="b"] .search-row { max-width: 760px; }
+  html[data-look="b"] .list.grid-t { grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  /* --- Paramèt: 3 kat look yo sou yon liy (seksyon ≤ 720 px, gade main:has(> .form)) --- */
+  html[data-look="b"] .looks { gap: 12px; }
+}
+@media (min-width: 1280px) {
+  /* Gride 2 kolòn yo: 5fr / 7fr (lis prensipal la pi laj) */
+  html[data-look="b"] .kont2, html[data-look="b"] .fich2, html[data-look="b"] .ctop, html[data-look="b"] .rtop { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); }
+  /* Lis tranzaksyon / validasyon (Epay), lis fich cycle ak lis rapò an 2 kolòn */
+  html[data-look="b"] #ong > .list, html[data-look="b"] #cycle > .list, html[data-look="b"] .rtx { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  html[data-look="b"] #ong > .list > .empty, html[data-look="b"] #cycle > .list > .empty, html[data-look="b"] .rtx > .empty { grid-column: 1 / -1; }
+  html[data-look="b"] #cycle > .btn-row { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); }
+  /* Tablo: gwo lyen yo pi gwo (ikòn 56 px, tit 1.25rem) lè gen plas */
+  html[data-look="b"] .bigl a { min-height: 100px; padding: 16px 18px; gap: 16px; }
+  html[data-look="b"] .bigl a b { font-size: 1.25rem; }
+  html[data-look="b"] .bigl a small { font-size: .875rem; }
+  html[data-look="b"] .bi { width: 56px; height: 56px; border-radius: 18px; }
+  html[data-look="b"] .bi svg { width: 28px; height: 28px; }
+}
+@media (min-width: 1440px) {
+  html[data-look="b"] main { max-width: 1240px; }
+  html[data-look="b"] .list.grid-t { grid-template-columns: repeat(3, 1fr); }
+  html[data-look="b"] #ong > .list.grid-t { grid-template-columns: repeat(3, 1fr); } /* onglè Fidbak: menm jan ak Kliyan (règ #ong > .list ≥ 1280 la bay 2) */
+}
+@media (min-width: 1024px) and (max-width: 1279px) {
+  /* Epay manadjè: 4 onglè × 176 px > 712 px kontni → pil yo yon ti kras pi etwat pou yo rete sou yon sèl liy (3 onglè yo pa chanje) */
+  html[data-look="b"] .tabs:has(> .tab:nth-child(4)) .tab { min-width: 150px; padding: 8px 20px; }
+  /* Fich: kolòn dwat la ~340 px — etikèt la kenbe lajè l (≤ 55 %), se valè a (aliyen adwat, yon ti kras pi piti) ki kase si bezwen, pa tou de bò yo */
+  html[data-look="b"] .fich2 .card.info .kv > span { flex: 0 0 auto; max-width: 55%; }
+  html[data-look="b"] .fich2 .card.info .kv > b { flex: 1 1 auto; min-width: 0; font-size: .9375rem; }
+}
+/* Kolòn gòch fich la (avatar, aksyon, enfòmasyon) rete kole anba ba a sèlman si fenèt la ase wo, sinon tuil anba yo ta kache lè w desann */
+@media (min-width: 1024px) and (min-height: 760px) {
+  html[data-look="b"] .fcol.fl { position: sticky; top: calc(var(--bar-h, 61px) + 24px); }
+  html[data-look="b"][data-teks="xl"] .fcol.fl { position: static; }
+}
+@media (min-width: 1024px) and (min-height: 920px) {
+  html[data-look="b"][data-teks="xl"] .fcol.fl { position: sticky; top: calc(var(--bar-h, 61px) + 24px); }
+}
+
+/* ---------- Hover (laptop ak sourit sèlman): kat yo leve, bouton prensipal yo vin pi fonse, liy yo pran yon ti koulè ---------- */
+@media (hover: hover) and (min-width: 1024px) {
+  html[data-look="b"] { --acc-hov: #dd9a00; }
+  html[data-look="b"] .btn, html[data-look="b"] .back, html[data-look="b"] .chip, html[data-look="b"] .tab, html[data-look="b"] a.row, html[data-look="b"] .row.acard, html[data-look="b"] .row.jcard,
+  html[data-look="b"] .ncard, html[data-look="b"] .bigl a, html[data-look="b"] .act, html[data-look="b"] .look-opt, html[data-look="b"] .tabbar a { transition: background-color .15s ease, box-shadow .15s ease, transform .15s ease, filter .15s ease; }
+  html[data-look="b"] .btn:not(:disabled):hover, html[data-look="b"] .back:hover { background: var(--line2); }
+  html[data-look="b"] .btn.pri:not(:disabled):hover { background: var(--acc-hov); }
+  html[data-look="b"] .btn.danger:not(:disabled):hover { filter: brightness(.95); }
+  html[data-look="b"] .btn.danger-full:not(:disabled):hover { background: #9c2a1b; }
+  html[data-look="b"] .chip:not(.on):hover, html[data-look="b"] .tab:not(.on):hover { background: var(--soft); }
+  html[data-look="b"] .chip.on:hover, html[data-look="b"] .tab.on:hover { filter: brightness(.9); }
+  html[data-look="b"] a.row:hover, html[data-look="b"] .row.acard:hover, html[data-look="b"] .row.jcard:not(.ok):hover { background: var(--soft2); box-shadow: var(--sh); }
+  html[data-look="b"] .ncard:hover, html[data-look="b"] .bigl a:hover, html[data-look="b"] .look-opt:hover { box-shadow: var(--sh); transform: translateY(-1px); }
+  html[data-look="b"] .look-opt.on:hover, html[data-look="b"] .look-opt:has(input:checked):hover { box-shadow: 0 0 0 3px var(--ring), var(--sh); }
+  html[data-look="b"] .bigl a:hover { background: var(--soft2); }
+  html[data-look="b"] .act:hover, html[data-look="b"] .lang-sw button:not(.on):hover { filter: brightness(.96); }
+  html[data-look="b"] .tabbar a:not(.on):hover { background: var(--soft); }
+}

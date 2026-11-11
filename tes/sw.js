@@ -1,4 +1,3 @@
-// Service worker kopi TÈS la: menm lojik ak ../sw.js, men fichye aplikasyon yo nan ../
-// epi pwòp cache pa l (li pa touche cache prodiksyon an).
-self.GRANDON_SW = { baz: "../", lokal: ["./", "index.html", "config.js", "manifest.webmanifest"], non: "tes" };
-importScripts("../sw.js");
+// Service worker kopi TÈS la: kòd tès la nan app/ (separe ak prodiksyon), pwòp cache pa l.
+self.GRANDON_SW = { baz: "app/", lokal: ["./", "index.html", "config.js", "manifest.webmanifest"], non: "tes" };
+importScripts("app/sw.js");
