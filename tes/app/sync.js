@@ -187,6 +187,24 @@ const EXEC = {
   },
 
   // Demann pou modifye/siprime (ajan) ak modifikasyon apre otorizasyon (migrasyon 29).
+  // Moun ki gen dwa siyati sou yon cycle: foto a monte anvan, apre sa demann lan (manadjè: aplike touswit).
+  async siyati(p) {
+    let foto = p.foto_url || null;
+    if (!foto) {
+      const ph = await db.get("photos", p.photo_id);
+      if (!ph) throw new Error("Foto pyès la pa sou telefòn nan ankò. Refè demann lan.");
+      const path = `${C.DOSYE_FOTO}/siyati-${p.compte}-${p.id.slice(0, 8)}.jpg`;
+      await api.upload(path, ph.blob);
+      foto = api.publicUrl(path);
+    }
+    const r = await api.rpc("grandon_siyati_demann", { p_id: p.id, p_compte: p.compte, p_non: p.non, p_piece: p.piece, p_nif: p.nif, p_foto: foto, p_kreye_le: p.capture_le });
+    const vale = { non: p.non, piece: p.piece, nif: p.nif, foto };
+    await db.put("modif", { id: p.id, kind: "siyati", operasyon: "modifye", ref_id: p.compte, chan: ["siyati"], rezon: null, agent_id: api.getSession()?.user?.id,
+      kreye_le: p.capture_le, statut: r?.statut || "an_atant", vale_apre: vale });
+    if (r?.statut === "fini") { const k = await db.get("comptes", p.compte); if (k) { Object.assign(k, { siyati_non: vale.non, siyati_piece: vale.piece, siyati_nif: vale.nif, siyati_foto: foto }); await db.put("comptes", k); } }
+    if (p.photo_id) await db.del("photos", p.photo_id);
+  },
+
   async modif_demann(p) {
     const r = await api.rpc("grandon_modif_demann", { p_id: p.id, p_kind: p.kind, p_operasyon: p.operasyon, p_ref: p.ref, p_chan: p.chan || null,
       p_rezon: p.rezon, p_kreye_le: p.kreye_le });
@@ -504,6 +522,7 @@ export async function model() {
     if (o.kind === "gps" && M.clients.has(p.id_personne) && M.clients.get(p.id_personne).gps_lat == null)
       Object.assign(M.clients.get(p.id_personne), { gps_lat: p.lat, gps_lng: p.lng, _gpsPending: true });
     if (o.kind === "foto" && M.clients.has(p.id_personne)) Object.assign(M.clients.get(p.id_personne), { photo_id: p.photo_id, _fotoPending: true });
+    if (o.kind === "siyati") M._siyatiPend = [...(M._siyatiPend || []), { ...p, ...pend }];
     if (o.kind === "adopte" && !M.clients.has(p.id))
       M.clients.set(p.id, { id_personne: p.id, prenom: p.prenom, nom: p.nom, code_client: p.code_client, photo_url: p.photo_url, tel4: p.tel4, ...pend });
     if (o.kind === "cycle")
