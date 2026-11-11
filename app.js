@@ -30,7 +30,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "4.86";
+const APP_VERSION = "4.87";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin", kesye: "Responsab kès" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
@@ -1228,13 +1228,13 @@ const CHAN_KLIYAN = [["prenom", "Prenon"], ["nom", "Non"], ["telephone", "Telef�
 const CHAN_TX = [["montant", "Montan"], ["solde_avant_declare", "Balans kanè avan"], ["solde_declare", "Balans kanè apre"], ["type_frais", "Tip frè"], ["note", "Nòt"]];
 const CHAN_CYCLE = [["duree_mois", "Dire"], ["frequence_semaine", "Frekans"], ["jours_paiement", "Jou peman"], ["montant_plan", "Plan"], ["date_debut", "Dat kòmansman"]];
 const CHAN_POTFEY = [["ajan", "Ajan pòtfèy"]];
-const etikètChan = (kind, k) => ((kind === "kliyan" ? CHAN_KLIYAN : kind === "cycle" ? CHAN_CYCLE : kind === "potfey" ? CHAN_POTFEY : CHAN_TX).find(([x]) => x === k) || [k, k === "photo" ? "Foto" : k])[1];
+const etikètChan = (kind, k) => kind === "siyati" ? "Moun ki gen dwa siyati" : ((kind === "kliyan" ? CHAN_KLIYAN : kind === "cycle" ? CHAN_CYCLE : kind === "potfey" ? CHAN_POTFEY : CHAN_TX).find(([x]) => x === k) || [k, k === "photo" ? "Foto" : k])[1];
 const mwenSe = (id) => id === moi?.id || id === "moi";
 const otorizasyon = (M, kind, ref) => [...M.modif.values()].find((x) => x.kind === kind && x.ref_id === ref && x.operasyon === "modifye" && x.statut === "apwouve" && mwenSe(x.agent_id));
 const demannModif = (M, kind, ref) => [...M.modif.values()].find((x) => x.kind === kind && x.ref_id === ref && x.statut === "an_atant");
 function ciblModif(M, kind, ref) {
   if (kind === "kliyan") return non(M.clients.get(ref));
-  if (kind === "cycle" || kind === "potfey") { const k = M.comptes.get(ref); return `${t(kind === "potfey" ? "Pòtfèy" : "Cycle")} ${k?.no_compte || ""} · ${non(k && M.clients.get(k.id_personne))}`; }
+  if (kind === "cycle" || kind === "potfey" || kind === "siyati") { const k = M.comptes.get(ref); return `${t(kind === "potfey" ? "Pòtfèy" : "Cycle")} ${k?.no_compte || ""} · ${non(k && M.clients.get(k.id_personne))}`; }
   const tx = M.txs.get(ref); const k = tx && M.comptes.get(tx.id_compte_epargne);
   return tx ? `${t(LABEL_TX[S.txKind(tx)])} ${gd(tx.montant)} · ${non(k && M.clients.get(k.id_personne))}` : t("Tranzaksyon");
 }
@@ -1245,12 +1245,14 @@ function chanTx(tx) {
 function liModif(M, x, { decide = false } = {}) {
   const ETA = { an_atant: ["warn", "An atant"], apwouve: ["ok", "Apwouve: ou ka modifye"], refize: ["err", "Refize"], itilize: ["mut", "Fèt"], fini: ["mut", "Fèt"] };
   const [kl, et] = ETA[x.statut] || ["mut", x.statut];
-  const href = x.kind === "kliyan" ? `#/kliyan/${x.ref_id}` : x.kind === "cycle" || x.kind === "potfey" ? `#/cycle/${x.ref_id}` : (() => { const tx = M.txs.get(x.ref_id); return tx ? `#/cycle/${tx.id_compte_epargne}` : "#/epay"; })();
-  const ki = x.operasyon === "siprime" ? (x.kind === "tx" ? t("Anile tranzaksyon an") : t("Retire kliyan an nan Grandon")) : `${t("Modifye")}: ${(x.chan || []).map((k) => t(etikètChan(x.kind, k))).join(", ")}`;
+  const href = x.kind === "kliyan" ? `#/kliyan/${x.ref_id}` : x.kind === "cycle" || x.kind === "potfey" || x.kind === "siyati" ? `#/cycle/${x.ref_id}` : (() => { const tx = M.txs.get(x.ref_id); return tx ? `#/cycle/${tx.id_compte_epargne}` : "#/epay"; })();
+  const ki = x.kind === "siyati" ? t(x.vale_avan ? "Chanje moun ki gen dwa siyati" : "Ajoute yon moun ki gen dwa siyati") : x.operasyon === "siprime" ? (x.kind === "tx" ? t("Anile tranzaksyon an") : t("Retire kliyan an nan Grandon")) : `${t("Modifye")}: ${(x.chan || []).map((k) => t(etikètChan(x.kind, k))).join(", ")}`;
   return `<div class="row col modif">
     <div><a href="${href}"><b>${x.kind === "kliyan" ? d(ciblModif(M, x.kind, x.ref_id)) : h(ciblModif(M, x.kind, x.ref_id))}</b></a> <span class="badge ${kl}">${t(et)}</span> ${x._pending ? `<span class="badge pend">${t("Poko voye")}</span>` : ""}
       <div class="sm">${ki}</div>
       ${x.kind === "cycle" && x.vale_apre && x.statut === "an_atant" ? `<div class="sm">${(x.chan || []).map((k0) => `${t(etikètChan("cycle", k0))}: <b>${valèIstorik("cycle", k0, x.vale_avan?.[k0])}</b> → <b>${valèIstorik("cycle", k0, x.vale_apre?.[k0])}</b>`).join(" · ")}${x.vale_apre.date_fin ? ` · ${t("fen")} → <b>${datFr(x.vale_apre.date_fin)}</b>` : ""}</div>` : ""}
+      ${x.kind === "siyati" && x.vale_apre ? `<div class="siyati-m sm">${x.vale_apre.foto ? `<a href="${h(x.vale_apre.foto)}" target="_blank" rel="noopener"><img src="${h(x.vale_apre.foto)}" alt="${h(t("Foto pyès la"))}" loading="lazy"></a>` : ""}
+        <div><b data-brut>${h(x.vale_apre.non || "")}</b><div class="mut">${h(x.vale_apre.piece || "")} · <span data-brut>${h(x.vale_apre.nif || "")}</span></div>${x.vale_avan?.non ? `<div class="mut">${t("Ranplase")}: <span data-brut>${h(x.vale_avan.non)}</span></div>` : ""}</div></div>` : ""}
       <div class="mut sm">${t("Rezon")}: ${d(x.rezon || "")} · ${lè(x.kreye_le)}${nomAjan(x.agent_id) ? ` · ${d(nomAjan(x.agent_id))}` : ""}</div>
       ${x.statut === "refize" && x.motif_refi ? `<div class="err-msg sm">${t("Rezon refi a")}: ${d(x.motif_refi)}</div>` : ""}</div>
     ${decide && x.statut === "an_atant" ? `<div class="btns"><button class="btn sm pri" data-mok="${h(x.id)}">${t("Apwouve")}</button><button class="btn sm danger" data-mnon="${h(x.id)}">${t("Refize")}</button></div>` : ""}
@@ -1609,7 +1611,7 @@ async function viewEpay() {
   const jouSwivi = (x) => S.jouLokal(new Date(x.capture_le));
   const semenDe = S.ajouteJou(M.today, -6);
   const nFbJodi = swivis.filter((x) => jouSwivi(x) === M.today).length, nFbSemen = swivis.filter((x) => jouSwivi(x) >= semenDe).length;
-  const modifAtant = [...M0.modif.values()].filter((x) => x.statut === "an_atant" && (x.kind === "kliyan" || x.kind === "cycle")).sort((a, b) => String(a.kreye_le).localeCompare(String(b.kreye_le)));
+  const modifAtant = [...M0.modif.values()].filter((x) => x.statut === "an_atant" && (x.kind === "kliyan" || x.kind === "cycle" || x.kind === "siyati")).sort((a, b) => String(a.kreye_le).localeCompare(String(b.kreye_le)));
   const vipAtant = [...M0.demandes.values()].filter((x) => x.statut === "otorizasyon" && !x._pending).sort((a, b) => String(a.capture_le).localeCompare(String(b.capture_le)));
   const ongs = [["kont", "Kont", null], ["tx", "Tranzaksyon", null], ["fidbak", "Fidbak", nFbJodi || null], ...(man ? [["valid", "Validasyon", modifAtant.length + vipAtant.length || null]] : [])];
   const st = statsEpay(M);
@@ -3010,6 +3012,7 @@ async function viewCycleNew(idPersonne, kontId = null) {
       <small class="mut">${t("Regilye: kliyan an ka retire nenpòt lè. VIP: pa gen retrè, sof ak otorizasyon yon manadjè.")}</small></fieldset>` : ""}
     <label>Dat kòmansman<input name="debut" type="date" value="${kMod ? h(kMod.date_debut || S.jodi()) : S.jodi()}" min="${kMod ? "2020-01-01" : S.ajouteJou(S.jodi(), -30)}" max="${S.ajouteJou(S.jodi(), 30)}"></label>
     ${kMod ? `<label>Rezon <small class="mut">(${estManager() ? t("opsyonèl") : t("obligatwa")})</small><input name="rezon" maxlength="200" autocomplete="off" placeholder="${h(t("Egz.: enfòmasyon cycle la te manke"))}"></label>` : ""}
+    ${kMod ? "" : `<details class="siyati-opt" id="siyati-opt"><summary>${t("Ajoute yon moun ki gen dwa siyati")} <small class="mut">(${t("opsyonèl")})</small></summary>${siyatiChan()}</details>`}
     <div class="recap" id="recap" aria-live="polite"></div>
     <p class="err-msg" id="err" role="alert"></p>
     <button class="btn pri" type="submit">${kMod ? (estManager() ? "Anrejistre modifikasyon an" : t("Voye demann lan")) : "Kreye cycle a"}</button>
@@ -3050,6 +3053,7 @@ async function viewCycleNew(idPersonne, kontId = null) {
   }));
   f.oninput = recap;
   syncBoxes(); recap();
+  const pranSiyati = kMod ? () => null : brancheSiyati(f);
   f.onsubmit = async (e) => {
     e.preventDefault();
     const err = document.getElementById("err");
@@ -3084,13 +3088,15 @@ async function viewCycleNew(idPersonne, kontId = null) {
       } catch (e2) { b.disabled = false; return (err.textContent = t(e2.message)); }
     }
     if (!debut || debut < S.ajouteJou(S.jodi(), -30) || debut > S.ajouteJou(S.jodi(), 30)) return (err.textContent = "Dat kòmansman an dwe ant 30 jou pase ak 30 jou devan.");
+    const sy = pranSiyati();
+    if (sy?.erè) { document.getElementById("siyati-opt").open = true; return (err.textContent = t(sy.erè)); }
     if (sanKal.length && !(await ui.ask({ titre: "Kreye yon 2yèm kont?", danje: true, ikon: "!", ok: "Kreye 2yèm kont lan",
       tekst: `${t("Kliyan sa a gen kont")} ${sanKal.map((k) => k.no_compte).join(", ")} ${t("deja. Nouvo kont lan ap kòmanse a 0 G: depo ansyen kont lan p ap parèt ladan l.")}` }))) return;
     if (!(await ui.ask({ titre: "Kreye cycle Grandon sa a?", ok: "Kreye cycle a", foto: c.photo_url, detay: [
       ["Kliyan", non(c)], ["Dire", `${duree} ${t("mwa")}`], ["Frekans", `${freq}× ${t("pa semèn")}`],
       ["Jou peman", js.map((j) => t(JOU[j])).join(", ")], ["Plan", `${gd(plan)}`], ["Fen cycle a", datFr(finDe(debut, duree))],
       ["Vèsman prevwa", String(S.joursPeman(debut, S.ajouteJou(finDe(debut, duree), -1), js, M.feries))],
-      ["Total pou l sanble", gd(plan * S.joursPeman(debut, S.ajouteJou(finDe(debut, duree), -1), js, M.feries))]] }))) return;
+      ["Total pou l sanble", gd(plan * S.joursPeman(debut, S.ajouteJou(finDe(debut, duree), -1), js, M.feries))]].concat(sy ? [["Moun ki gen dwa siyati", `${sy.non} · ${sy.piece} ${sy.nif}`]] : []) }))) return;
     const b = f.querySelector("button[type=submit]"); b.disabled = true;
     const id = S.uuid();
     const gps = await getGps(5000);
@@ -3102,6 +3108,7 @@ async function viewCycleNew(idPersonne, kontId = null) {
       ...(kane ? { date_fin: finDe(debut, duree), nb_vesman: kane } : {}),
       gps, capture_le: new Date().toISOString(), appareil: S.appareil(), no_compte,
     }, c._pending ? [idPersonne] : []);
+    if (sy) await voyeSiyati(id, sy, [id]);
     toast(`${t("Cycle la anrejistre.")}${no_compte ? ` · ${no_compte}` : ""}`, "ok", 5000);
     go(`#/cycle/${id}`);
   };
@@ -3129,6 +3136,96 @@ async function chanjeAjanPòtfèy(k, c) {
   } catch (e) { toast(t(e.message), "err"); }
 }
 
+// ---------- Moun ki gen dwa siyati (yon sèl cycle) ----------
+// Pa obligatwa. Non konplè, tip pyès, nimewo (NIF/CIN/Paspò), foto pyès la (oswa foto moun nan si l pa gen pyès).
+// Ajan: demann → manadjè a valide. Manadjè / admin: aplike touswit.
+function siyatiChan(pre = "sy") {
+  return `<div class="siyati-f">
+    <label>${t("Non konplè moun nan")} *<input name="${pre}_non" maxlength="120" autocomplete="off"></label>
+    <div class="grid2">
+      <label>${t("Pyès idantifikasyon")} *<select name="${pre}_piece"><option value="">${t("Chwazi…")}</option>${PIECES.map((x) => `<option value="${x}">${x}</option>`).join("")}</select></label>
+      <label>${t("Nimewo pyès la")} *<input name="${pre}_nif" autocomplete="off"></label>
+    </div>
+    <p class="mut sm" id="${pre}-hint"></p>
+    <div class="field"><b class="lbl">${t("Foto pyès la")} *</b> <small class="mut">${t("Si moun nan pa gen pyès la sou li, pran foto moun nan.")}</small>
+      <div class="btns"><button type="button" class="btn" id="${pre}-kam">📷 ${t("Pran foto")}</button>
+        <label class="btn foto-fichye">🖼 ${t("Chwazi yon foto")}<input type="file" accept="image/*" id="${pre}-fich"></label></div>
+      <img class="siyati-prev" id="${pre}-prev" alt="${h(t("Foto pyès la"))}" hidden></div>
+  </div>`;
+}
+// Konekte chan yo; retounen yon fonksyon ki bay done yo (oswa yon erè, oswa null si tout chan yo vid).
+function brancheSiyati(f, pre = "sy") {
+  let foto = null;
+  const hint = () => (document.getElementById(`${pre}-hint`).textContent = t(verifierPiece(f[`${pre}_piece`].value, f[`${pre}_nif`].value) || ""));
+  f[`${pre}_piece`].onchange = hint; f[`${pre}_nif`].oninput = hint;
+  const mete = async (blob) => {
+    try { foto = await compress(blob); } catch { return toast(t("Foto a pa ka li."), "err"); }
+    const im = document.getElementById(`${pre}-prev`); if (im.src) URL.revokeObjectURL(im.src); im.src = URL.createObjectURL(foto); im.hidden = false;
+  };
+  document.getElementById(`${pre}-kam`).onclick = async () => {
+    const r = await ui.kamera();
+    if (r?.erè) { toast(r.erè, "err", 7000); document.getElementById(`${pre}-fich`).click(); return; }
+    if (r) mete(r);
+  };
+  document.getElementById(`${pre}-fich`).onchange = (e) => { const x = e.target.files[0]; if (x) mete(x); };
+  return () => {
+    const non0 = f[`${pre}_non`].value.trim(), piece = f[`${pre}_piece`].value, nif = f[`${pre}_nif`].value.trim();
+    if (!non0 && !piece && !nif && !foto) return null;
+    if (non0.length < 3) return { erè: "Mete non konplè moun ki gen dwa siyati a." };
+    if (!piece) return { erè: "Chwazi tip pyès idantifikasyon an." };
+    if (!nif) return { erè: "Mete nimewo pyès idantifikasyon an." };
+    const ep = verifierPiece(piece, nif); if (ep) return { erè: ep };
+    if (!foto) return { erè: "Pran foto pyès la (oswa foto moun nan)." };
+    return { non: non0, piece, nif, foto };
+  };
+}
+async function voyeSiyati(compte, sy, deps = []) {
+  const photo_id = S.uuid();
+  await db.put("photos", { id: photo_id, blob: sy.foto });
+  await S.enqueue("siyati", { id: S.uuid(), compte, non: sy.non, piece: sy.piece, nif: sy.nif, photo_id, capture_le: new Date().toISOString() }, deps);
+}
+// Seksyon sou fich cycle la.
+function seksyonSiyati(M, k) {
+  const pend = (M._siyatiPend || []).filter((x) => x.compte === k.id_compte_epargne).pop();
+  const dm = [...M.modif.values()].find((x) => x.kind === "siyati" && x.ref_id === k.id_compte_epargne && x.statut === "an_atant");
+  const bouton = !estKesye() && !k._pending ? `<a class="btn sm" href="#/cycle/${h(k.id_compte_epargne)}/siyati">${t(k.siyati_non ? "Chanje moun nan" : "Ajoute yon moun")}</a>` : "";
+  return `<section class="card siyati-k" id="siyati"><div class="ekip-sek-h"><h2>${t("Moun ki gen dwa siyati")}</h2>${bouton}</div>
+    ${k.siyati_non ? `<div class="siyati-m">${k.siyati_foto ? `<a href="${h(k.siyati_foto)}" target="_blank" rel="noopener"><img src="${h(k.siyati_foto)}" alt="${h(t("Foto pyès la"))}" loading="lazy"></a>` : ""}
+      <div><b data-brut>${h(k.siyati_non)}</b><div class="mut sm">${h(k.siyati_piece || "")} · <span data-brut>${h(k.siyati_nif || "")}</span></div><div class="mut sm">${t("Pou cycle sa a sèlman.")}</div></div></div>`
+      : `<p class="mut sm">${t("Pa gen moun ki gen dwa siyati sou cycle sa a.")}</p>`}
+    ${pend ? `<p class="note info-note"><span class="badge pend">${t("Poko voye")}</span> ${d(pend.non)} · ${h(pend.piece)} ${d(pend.nif)}${pend._error ? ` · <span class="err-t">${d(t(pend._error))}</span>` : ""}</p>` : ""}
+    ${dm ? `<p class="note warn">${t("Demann an atant manadjè a")}: <b data-brut>${h(dm.vale_apre?.non || "")}</b> · ${h(dm.vale_apre?.piece || "")} ${d(dm.vale_apre?.nif || "")}</p>` : ""}
+  </section>`;
+}
+async function viewSiyati(kontId) {
+  const M = await S.model();
+  const k = M.comptes.get(kontId);
+  if (!k || estKesye()) { $app.innerHTML = `<a href="#/epay" class="back">‹ Epay</a><p class="empty">${t("Cycle la pa jwenn.")}</p>`; return; }
+  const c = M.clients.get(k.id_personne) || {};
+  const man = estManager();
+  $app.innerHTML = `<a href="#/cycle/${h(kontId)}" class="back">‹ ${d(k.no_compte || t("Cycle"))}</a>
+    <h1>${t("Moun ki gen dwa siyati")}</h1>
+    <p class="mut">${d(non(c))} · ${d(k.no_compte || "")}${kane(k)}</p>
+    <p class="note info-note">${t("Moun sa a ap gen dwa siyati sou cycle sa a sèlman, pa sou lòt cycle kliyan an.")} ${man ? "" : t("Demann lan ale bay manadjè a pou l valide l.")}</p>
+    ${k.siyati_non ? `<p class="note warn">${t("Moun ki gen dwa siyati kounye a")}: <b data-brut>${h(k.siyati_non)}</b>. ${t("Nouvo moun nan ap ranplase l.")}</p>` : ""}
+    <form id="f" class="card form" novalidate>${siyatiChan()}<p class="err-msg" id="err" role="alert"></p>
+      <button class="btn pri" type="submit">${t(man ? "Anrejistre" : "Voye demann lan")}</button></form>`;
+  const f = document.getElementById("f");
+  const pran = brancheSiyati(f);
+  f.onsubmit = async (e) => {
+    e.preventDefault();
+    const err = document.getElementById("err");
+    const sy = pran();
+    if (!sy) return (err.textContent = t("Mete enfòmasyon moun nan."));
+    if (sy.erè) return (err.textContent = t(sy.erè));
+    if (!(await ui.ask({ titre: man ? "Anrejistre moun ki gen dwa siyati a?" : "Voye demann lan bay manadjè a?", foto: URL.createObjectURL(sy.foto), ok: man ? "Anrejistre" : "Voye demann lan",
+      detay: [["Kliyan", non(c)], ["Cycle", k.no_compte || ""], ["Non", sy.non], ["Pyès", `${sy.piece} · ${sy.nif}`]] }))) return;
+    await voyeSiyati(kontId, sy, k._pending ? [kontId] : []);
+    toast(t(man ? "Moun ki gen dwa siyati a anrejistre." : "Demann lan voye bay manadjè a."), "ok", 5000);
+    go(`#/cycle/${kontId}`);
+  };
+}
+
 // ---------- Fich cycle ----------
 async function viewCycle(id) {
   const M = await S.model();
@@ -3153,6 +3250,7 @@ async function viewCycle(id) {
   ${k.tip_plan === "vip" || k.plan_lib ? `<p class="note info-note kont-tip">${k.tip_plan === "vip" ? `<b>VIP</b> · ${t("Retrè ak viman bezwen otorizasyon yon manadjè anvan responsab kès la.")}` : ""}${k.tip_plan === "vip" && k.plan_lib ? "<br>" : ""}${k.plan_lib ? `<b>${t("Plan Lib")}</b> · ${t("Kliyan an bay sa l vle, men pa mwens pase")} ${gd(k.montant_plan)}.` : ""}</p>` : ""}
   ${man && !k._pending ? `<div class="card potfey-k"><div class="grow"><span class="mut sm">${t("Ajan pòtfèy")}</span><b data-brut>${h(nomAjan(k.created_by) || t("San ajan"))}</b></div>
     <button type="button" class="btn sm" id="chanje-ajan">${t("Chanje ajan")}</button></div>` : ""}
+  ${seksyonSiyati(M, k)}
   ${man && !k.frequence_semaine && !k._pending ? `<p class="note warn">${t("Cycle sa a pa gen frekans ni jou peman: kalandriye peman an vid. Peze «Modifye cycle a» pou mete yo.")}</p>` : ""}
   ${seksyonAlet([k], man)}
   ${k._demandes.length ? `<h2>Demann retrè ak viman</h2><div class="list">${k._demandes.map((x) => liDemande(M, x)).join("")}</div>` : ""}
@@ -3838,7 +3936,7 @@ async function viewIstorik() {
       <div><span>${t("Refize yo")}</span><b>${kont(["refize"])}</b></div><div><span>${t("Modifikasyon fèt")}</span><b>${kont(["aplike", "dirèk", "dirèk_kes"])}</b></div>
       <div><span>${t("Anilasyon")}</span><b>${kont(["anile", "anile_dirèk"])}</b></div></div>
     <div class="list ist-lis">${ev.map((e) => { const [kl, et] = TIP[e.tip]; const x = e.x;
-      const href = x.kind === "kliyan" ? `#/kliyan/${x.ref_id}` : x.kind === "cycle" || x.kind === "potfey" ? `#/cycle/${x.ref_id}` : (() => { const tx = M.txs.get(x.ref_id); return tx ? `#/cycle/${tx.id_compte_epargne}` : "#/epay"; })();
+      const href = x.kind === "kliyan" ? `#/kliyan/${x.ref_id}` : x.kind === "cycle" || x.kind === "potfey" || x.kind === "siyati" ? `#/cycle/${x.ref_id}` : (() => { const tx = M.txs.get(x.ref_id); return tx ? `#/cycle/${tx.id_compte_epargne}` : "#/epay"; })();
       const ki = x.operasyon === "siprime" ? (x.kind === "tx" ? t("Anile tranzaksyon an") : t("Retire kliyan an nan Grandon")) : (x.chan || []).map((k) => t(etikètChan(x.kind, k))).join(", ");
       return `<div class="row col ist">
         <div><b class="mono">${lèKout(e.le)}</b> <span class="badge ${kl}">${t(et)}</span> <a href="${href}">${x.kind === "kliyan" ? d(ciblModif(M, x.kind, x.ref_id)) : h(ciblModif(M, x.kind, x.ref_id))}</a></div>
@@ -3987,6 +4085,7 @@ async function render() {
   if ((m = r.match(/^#\/kliyan\/([\w-]+)$/))) return viewClient(m[1]);
   if ((m = r.match(/^#\/chwazi\/(cycle|tx)$/))) return viewPick(m[1]);
   if ((m = r.match(/^#\/cycle\/nouvo\/([\w-]+)$/))) return viewCycleNew(m[1]);
+  if ((m = r.match(/^#\/cycle\/([\w-]+)\/siyati$/))) return !estKesye() ? viewSiyati(m[1]) : go(`#/cycle/${m[1]}`);
   if ((m = r.match(/^#\/cycle\/([\w-]+)\/modifye$/))) return !estKesye() ? viewCycleNew(null, m[1]) : go(`#/cycle/${m[1]}`);
   if ((m = r.match(/^#\/cycle\/([\w-]+)$/))) return viewCycle(m[1]);
   if ((m = r.match(/^#\/tx\/nouvo\/([\w-]+)$/))) return viewTxNew(m[1]);
