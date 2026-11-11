@@ -30,7 +30,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "4.80";
+const APP_VERSION = "4.81";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin", kesye: "Responsab kès" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
@@ -627,7 +627,10 @@ async function viewTablo(ajanId = null) {
     ? t("Chif yo se pou kliyan ki nan pòtfèy ou sèlman, ak tout depo yo, kèlkeswa ajan ki touche kòb la.")
     : t("Chif yo se pou tout kliyan Grandon yo (tout pòtfèy).")}${tc && tc.n ? ` ${t("Jodi a ou touche")} <b>${gd(tc.tout)}</b>${tc.nLòt ? ` · ${t("ladan l")} <b>${gd(tc.lòt)}</b> ${t("pou kliyan lòt ajan")} (${tc.nLòt})` : ""}.` : ""}</p>`;
   const tèt = ajan ? `<div class="ekip-tet"><a href="#/ekip" class="back">‹ ${t("Ekip")}</a><div class="ekip-non"><span class="ekip-av" aria-hidden="true">${h(inisyalNon(ajan.nom))}</span><div><b data-brut>${h(ajan.nom)}</b><small>${t("Done ajan sa a sèlman")}</small></div></div></div>` : "";
-  $app.innerHTML = `<div id="tablo"${ajan ? ' class="tablo-ajan"' : ""}>${tèt}${tètSk}${L().parts.tablo({ ...ctxBase(M), stats: st, isoJou: S.isoJou(M.today) })}${man && !ajan ? `${await seksyonEkip(M0)}${seksyonKontwol(M0)}<section class="doublon-sek" id="doublon" hidden></section>` : ""}${ajan ? lisKontAjan(M) : seksyonAletTablo(M, M0)}</div>`;
+  const kf = konfMetrik(await db.meta("paramet"));
+  const mtk = ajan ? seksyonMetrik(M0, M, (id) => id === ajan.user_id, kf) : sk === "mwen" ? seksyonMetrik(M0, M, mwenSe, kf) : "";
+  const mtkEkip = man && !ajan ? await (async () => { const { lis, ids } = await ekipAjan(M0); return seksyonMetrikEkip(M0, lis, ids, kf); })() : "";
+  $app.innerHTML = `<div id="tablo"${ajan ? ' class="tablo-ajan"' : ""}>${tèt}${tètSk}${mtk}${L().parts.tablo({ ...ctxBase(M), stats: st, isoJou: S.isoJou(M.today) })}${man && !ajan ? `${await seksyonEkip(M0)}${mtkEkip}${seksyonKontwol(M0)}<section class="doublon-sek" id="doublon" hidden></section>` : ""}${ajan ? lisKontAjan(M) : seksyonAletTablo(M, M0)}</div>`;
   $app.querySelector("[data-mwa-reta]")?.addEventListener("click", () => { ongEpay = "kont"; filtKont = "reta"; });
   if (man && !ajan) { ajans = (await db.meta("ajans")) || {}; montreKontwol(M0); chajeDoublon(); }
   if (!ajan) brancherAlet(M0);
@@ -700,6 +703,115 @@ function chifAjan(M, a, ids) {
   return { a, st, depoAtant: depoAtant.length, depoAtantSom: depoAtant.reduce((s, x) => s + Number(x.montant || 0), 0), pokoWe, dènye };
 }
 
+
+// ---------- Metrik Tablo (objektif mwa a) ----------
+// Manadjè/admin chwazi metrik ki parèt sou Tablo ajan yo, objektif yo ak limit koulè yo (paramèt «tablo_metrik», pa sèvis).
+// Koulè: rezilta a konpare ak objektif la jiska jodi a (ritm mwa a). Vèt ≥ limit vèt · Jòn ≥ limit jòn · Wouj anba.
+const METRIK = {
+  mobilizasyon: { non: "Moyenne mobilisation", obj: 10000, dek: "Mwayèn depo ajan an fè pa jou travay nan mwa a (lendi–samdi, san jou ferye)." },
+  kliyan_nouvo: { non: "Nouvo kliyan mwa a", obj: 30, dek: "Kliyan ajan an ouvri premye kont yo nan mwa a." },
+  rekouvreman: { non: "Rekouvreman mwa a", obj: 90, dek: "Pousantaj sa kliyan pòtfèy la te dwe peye depi 1ye mwa a ki rantre." },
+};
+function konfMetrik(pa) {
+  const c = pa?.tablo_metrik?.[C.SEVIS || "grandon"] || {};
+  const obj = Object.fromEntries(Object.entries(METRIK).map(([k, m]) => [k, Number(c.objektif?.[k]) > 0 ? Number(c.objektif[k]) : m.obj]));
+  return { aktif: Array.isArray(c.aktif) ? c.aktif.filter((k) => METRIK[k]) : Object.keys(METRIK), objektif: obj,
+    vet: Number(c.vet) > 0 ? Number(c.vet) : 100, jon: Number(c.jon) >= 0 && c.jon != null ? Number(c.jon) : 80 };
+}
+const JOU_TRAVAY = [1, 2, 3, 4, 5, 6];
+// estLi(created_by): depo/kont ki pou ajan an. Mp: modèl pòtfèy ajan an (pou rekouvreman).
+function kalkMetrik(M0, Mp, estLi, kf) {
+  const mwa1 = M0.today.slice(0, 8) + "01", mwaFen = S.ajouteJou(S.ajouteJou(mwa1, 32).slice(0, 8) + "01", -1);
+  const jPase = S.joursPeman(mwa1, M0.today, JOU_TRAVAY, M0.feries), jTotal = S.joursPeman(mwa1, mwaFen, JOU_TRAVAY, M0.feries) || 1;
+  const rit = Math.max(jPase, 1) / jTotal;
+  const depo = [...M0.txs.values()].filter((x) => S.txKind(x) === "depo" && x.validation_status !== "rejected" && estLi(x.created_by) && S.jouTx(x) >= mwa1 && S.jouTx(x) <= M0.today)
+    .reduce((a, x) => a + Number(x.montant || 0), 0);
+  const premye = new Map(); // id_personne → premye kont (sèvis sa a)
+  for (const k of M0.comptes.values()) {
+    const j = S.jouLokal(new Date(k.date_kreye || k.created_at || `${k.date_debut}T12:00:00Z`));
+    const p = premye.get(k.id_personne);
+    if (!p || j < p.j) premye.set(k.id_personne, { j, k });
+  }
+  const nouvo = [...premye.values()].filter((p) => p.j >= mwa1 && p.j <= M0.today && estLi(p.k.created_by)).length;
+  const st = statsTablo(Mp);
+  const kote = (val, obj) => { const p = obj > 0 ? Math.round((val / obj) * 100) : 0; return { p, eta: p >= kf.vet ? "vet" : p >= kf.jon ? "jon" : "wouj" }; };
+  const res = {
+    mobilizasyon: { val: jPase ? Math.round(depo / jPase) : 0, obj: kf.objektif.mobilizasyon, sous: `${gd(depo)} / ${jPase} ${t("jou")}` },
+    kliyan_nouvo: { val: nouvo, obj: Math.max(1, Math.round(kf.objektif.kliyan_nouvo * rit)), objMwa: kf.objektif.kliyan_nouvo },
+    rekouvreman: { val: st.mwaPwosan, obj: kf.objektif.rekouvreman, sous: `${gd(st.mwaPlan)} / ${gd(st.mwaPrevu)}`, san: !st.mwaPrevu },
+  };
+  for (const r of Object.values(res)) Object.assign(r, kote(r.val, r.obj));
+  return { res, jPase, jTotal };
+}
+const ETA_M = { vet: "Vèt", jon: "Jòn", wouj: "Wouj" };
+function kat1Metrik(k, r) {
+  const m = METRIK[k];
+  const val = k === "mobilizasyon" ? `${gd(r.val)}` : k === "rekouvreman" ? `${r.val}%` : `${r.val}`;
+  const obj = k === "mobilizasyon" ? `${t("Objektif")} ${gd(r.obj)} / ${t("jou")}` : k === "rekouvreman" ? `${t("Objektif")} ${r.obj}%`
+    : `${t("Objektif")} ${r.objMwa} · ${t("jiska jodi a")} ${r.obj}`;
+  if (r.san) return `<div class="card metrik m-san" data-metrik="${k}"><span class="metrik-n">${t(m.non)}</span><b>—</b><small>${t("Pa gen peman prevwa nan mwa a.")}</small></div>`;
+  return `<div class="card metrik m-${r.eta}" data-metrik="${k}" data-eta="${r.eta}" title="${h(t(m.dek))}"><span class="metrik-n">${t(m.non)}</span>
+    <b>${val}${k === "mobilizasyon" ? `<small> / ${t("jou")}</small>` : ""}</b><small>${obj}</small>
+    <span class="ekip-bar metrik-bar" aria-hidden="true"><i style="width:${Math.min(100, r.p)}%"></i></span>
+    <span class="metrik-eta"><i aria-hidden="true"></i>${t(ETA_M[r.eta])} · ${r.p}%${r.sous ? ` <span class="mut">· ${r.sous}</span>` : ""}</span></div>`;
+}
+function seksyonMetrik(M0, Mp, estLi, kf) {
+  if (!kf.aktif.length) return "";
+  const { res, jPase, jTotal } = kalkMetrik(M0, Mp, estLi, kf);
+  return `<section class="metrik-sek" id="metrik"><div class="ekip-sek-h"><h2>${t("Objektif mwa a")}</h2><small class="mut">${jPase}/${jTotal} ${t("jou travay")}${estManager() ? ` · <a href="#/metrik">${t("Chanje")}</a>` : ""}</small></div>
+    <div class="metrik-g">${kf.aktif.map((k) => kat1Metrik(k, res[k])).join("")}</div></section>`;
+}
+// Manadjè: tablo koulè pou chak ajan (yon kolòn pa metrik aktif).
+function seksyonMetrikEkip(M0, lis, ids, kf) {
+  if (!kf.aktif.length || !lis.length) return "";
+  const rows = lis.filter((a) => a.user_id !== SAN_AJAN).map((a) => ({ a, r: kalkMetrik(M0, modèlAjan(M0, a.user_id, ids), (id) => id === a.user_id, kf).res }));
+  if (!rows.length) return "";
+  const sel = (k, r) => r.san ? `<td class="m-san">—</td>` : `<td class="m-${r.eta}" data-eta="${r.eta}"><i aria-hidden="true"></i>${k === "mobilizasyon" ? gd(r.val) : k === "rekouvreman" ? `${r.val}%` : r.val}<small>${r.p}%</small></td>`;
+  return `<section class="metrik-sek" id="metrik-ekip"><div class="ekip-sek-h"><h2>${t("Objektif ekip la · mwa a")}</h2><a href="#/metrik" class="sm">${t("Chanje metrik yo")} ›</a></div>
+    <div class="tbl-wrap"><table class="metrik-t"><thead><tr><th>${t("Ajan")}</th>${kf.aktif.map((k) => `<th>${t(METRIK[k].non)}</th>`).join("")}</tr></thead>
+    <tbody>${rows.map(({ a, r }) => `<tr><th><a href="#/ekip/${h(a.user_id)}" data-brut>${h(a.nom)}</a></th>${kf.aktif.map((k) => sel(k, r[k])).join("")}</tr>`).join("")}</tbody></table></div>
+    <p class="mut sm metrik-leje"><span class="m-vet"><i></i>${t("Vèt")} ≥ ${kf.vet}%</span> <span class="m-jon"><i></i>${t("Jòn")} ≥ ${kf.jon}%</span> <span class="m-wouj"><i></i>${t("Wouj")} &lt; ${kf.jon}% ${t("objektif la jiska jodi a")}</span></p></section>`;
+}
+// Paramèt metrik yo (manadjè / admin).
+async function viewMetrik() {
+  if (!estManager()) return go("#/");
+  const kf = konfMetrik(await db.meta("paramet"));
+  $app.innerHTML = `<a href="#/param" class="back">‹ Paramèt</a><h1>${t("Metrik Tablo ajan yo")}</h1>
+    <p class="mut">${t("Chwazi metrik ajan yo wè sou Tablo yo, objektif chak mwa a ak limit koulè yo. Sa aplike pou sèvis sa a sèlman.")}</p>
+    <form id="f" class="card form" novalidate>
+      <fieldset class="field"><legend>${t("Metrik ki parèt")}</legend>
+        ${Object.entries(METRIK).map(([k, m]) => `<label class="chk"><input type="checkbox" name="aktif" value="${k}" ${kf.aktif.includes(k) ? "checked" : ""}> <span><b>${t(m.non)}</b><br><small class="mut">${t(m.dek)}</small></span></label>`).join("")}
+      </fieldset>
+      <fieldset class="field"><legend>${t("Objektif yo")}</legend>
+        <label>${t("Moyenne mobilisation")} <small class="mut">(${t("goud pa jou")})</small><input type="number" inputmode="numeric" min="1" name="o_mobilizasyon" value="${kf.objektif.mobilizasyon}" required></label>
+        <label>${t("Nouvo kliyan mwa a")}<input type="number" inputmode="numeric" min="1" name="o_kliyan_nouvo" value="${kf.objektif.kliyan_nouvo}" required></label>
+        <label>${t("Rekouvreman mwa a")} <small class="mut">(%)</small><input type="number" inputmode="numeric" min="1" max="100" name="o_rekouvreman" value="${kf.objektif.rekouvreman}" required></label>
+      </fieldset>
+      <fieldset class="field"><legend>${t("Koulè yo")} <small class="mut">(% ${t("objektif la jiska jodi a")})</small></legend>
+        <div class="grid2"><label><span class="m-vet metrik-leje"><i></i></span>${t("Vèt apati")}<input type="number" min="1" name="vet" value="${kf.vet}" required></label>
+          <label><span class="m-jon metrik-leje"><i></i></span>${t("Jòn apati")}<input type="number" min="0" name="jon" value="${kf.jon}" required></label></div>
+        <p class="mut sm">${t("Anba limit jòn nan, metrik la wouj.")}</p></fieldset>
+      <p class="err-msg" id="err" role="alert"></p>
+      <button class="btn pri" type="submit">${t("Anrejistre")}</button>
+    </form>`;
+  const f = document.getElementById("f");
+  f.onsubmit = async (e) => {
+    e.preventDefault();
+    const err = document.getElementById("err");
+    const n = (x) => Number(f[x].value);
+    const vale = { aktif: [...f.querySelectorAll("input[name=aktif]:checked")].map((x) => x.value),
+      objektif: { mobilizasyon: n("o_mobilizasyon"), kliyan_nouvo: n("o_kliyan_nouvo"), rekouvreman: n("o_rekouvreman") }, vet: n("vet"), jon: n("jon") };
+    if (Object.values(vale.objektif).some((x) => !(x > 0)) || vale.objektif.rekouvreman > 100) return (err.textContent = t("Objektif yo pa bon."));
+    if (!(vale.jon >= 0) || !(vale.vet > vale.jon)) return (err.textContent = t("Limit vèt la dwe pi wo pase limit jòn nan."));
+    if (!navigator.onLine) return (err.textContent = t("Fòk ou gen entènèt pou chanje paramèt sa a."));
+    try {
+      await api.rpc("grandon_paramet_tablo", { p_vale: vale });
+      await S.pull();
+      toast(`${t("Metrik Tablo ajan yo")} ✓`, "ok");
+      go("#/param");
+    } catch (e2) { err.textContent = t(e2.message); }
+  };
+}
 
 // Chif komen pou Epay/Tablo
 function statsEpay(M) {
@@ -3055,6 +3167,7 @@ async function viewParam() {
   ${estManager() ? `<a class="btn block" href="#/aparey">Aparèy ajan yo</a>` : ""}
   ${estManager() ? `<a class="btn block" href="#/feries">Jou ferye</a>` : ""}
   ${moi.admin ? `<a class="btn block" href="#/ajan">Jere ajan yo</a>` : ""}
+  ${estManager() ? `<a class="btn block" href="#/metrik">${t("Metrik Tablo ajan yo")}</a>` : ""}
   ${moi.admin ? `<a class="btn block" href="#/le">${t("Lè operasyon")}</a>` : ""}
   <button class="btn block danger" id="logout">Dekonekte</button>
   <p class="mut sm center">Grandon · vèsyon ${h(APP_VERSION)}</p>`;
@@ -3660,6 +3773,7 @@ async function render() {
   if (r === "#/aparey") return viewAparey();
   if (r === "#/ajan" && moi.admin) return viewAjan();
   if (r === "#/feries") return viewFeries();
+  if (r === "#/metrik") return viewMetrik();
   go("#/");
 }
 
