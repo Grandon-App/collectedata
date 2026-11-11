@@ -776,3 +776,4 @@ html[data-look="b"]:not([data-theme="dark"]) .login-logo img.mak-koule { filter:
 }
 .deb-rap { grid-column: 1 / -1; font-size: .9em; } .mob-h3 { margin: 14px 0 6px; font-size: 1em; }
 .rek-t th small { display: block; font-weight: 400; opacity: .7; font-size: .8em; }
+.no-kane { white-space: nowrap; } .no-kane b { font-weight: 600; }

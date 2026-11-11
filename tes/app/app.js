@@ -30,7 +30,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "4.85";
+const APP_VERSION = "4.86";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin", kesye: "Responsab kès" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
@@ -49,7 +49,7 @@ function savePrefs(p) {
   try { localStorage.setItem("grandon-prefs", JSON.stringify(n)); } catch { /* navigatè prive */ }
   applyPrefs(n);
 }
-const { h, d, gd, datFr, lè, non, JOU, JOU_KOUT, lisJou, tel4, avatar, badgePend, badgeTx, badgeKont, badgeDm, ICO,
+const { kane, h, d, gd, datFr, lè, non, JOU, JOU_KOUT, lisJou, tel4, avatar, badgePend, badgeTx, badgeKont, badgeDm, ICO,
   LABEL_TX, SIY, KLAS, MOTIFS, motifLabel, MOTIF_KOUT, TYPES_FRE, lèKout, datKout } = F;
 const adopteInfo = (r) => ({ id: r.id_personne, prenom: r.prenom, nom: r.nom, code_client: r.code_client, photo_url: r.photo_url, tel4: r.tel4 });
 const go = (hash) => { if (location.hash === hash) render(); else location.hash = hash; };
@@ -218,11 +218,22 @@ function viewLogin(expired) {
 }
 
 // ---------- Lis kliyan (pati komen) ----------
+// Rechèch kont: nimewo kont lan oswa nimewo kanè a (A-BSI-…), san konte tirè ni espas.
+const nòmNo = (x) => String(x || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+function kontKoresponn(k, v) {
+  if (!k) return false;
+  const q = String(v || "").trim().toLowerCase();
+  if (!q) return true;
+  if (String(k.no_compte || "").toLowerCase().includes(q) || String(k.no_kane || "").toLowerCase().includes(q)) return true;
+  const qn = nòmNo(q);
+  return qn.length >= 4 && (nòmNo(k.no_kane).includes(qn) || nòmNo(k.no_compte).includes(qn));
+}
 function lisKliyan(M, filtre) {
   const q = filtre.trim().toLowerCase();
   const qd = q.replace(/\D/g, "");
   return [...M.clients.values()]
-    .filter((c) => !q || non(c).toLowerCase().includes(q) || (qd.length >= 3 && String(c.telephone || c.tel4 || "").replace(/\D/g, "").includes(qd)) || String(c.code_client || "").toLowerCase().includes(q))
+    .filter((c) => !q || non(c).toLowerCase().includes(q) || (qd.length >= 3 && !/[a-z]/.test(q) && String(c.telephone || c.tel4 || "").replace(/\D/g, "").includes(qd)) || String(c.code_client || "").toLowerCase().includes(q)
+      || (/[a-z]/.test(q) && nòmNo(q).length >= 4 && S.comptesDuClient(M, c.id_personne).some((k) => k.no_kane && kontKoresponn(k, q))))
     .sort((a, b) => (b._pending ? 1 : 0) - (a._pending ? 1 : 0) || non(a).localeCompare(non(b)));
 }
 function liKliyan(M, c, href) {
@@ -856,7 +867,7 @@ async function viewRekouvreman() {
 // Koulè: rezilta a konpare ak objektif la jiska jodi a (ritm mwa a). Vèt ≥ limit vèt · Jòn ≥ limit jòn · Wouj anba.
 const METRIK = {
   mobilizasyon: { non: "Moyenne mobilisation", obj: 40000, dek: "Mwayèn depo ajan an fè pa jou travay nan mwa a (lendi–samdi, san jou ferye). Objektif la monte chak mwa depi dat debi ajan an." },
-  kliyan_nouvo: { non: "Nouvo kliyan mwa a", obj: 30, dek: "Kliyan ajan an ouvri premye kont yo nan mwa a." },
+  kliyan_nouvo: { non: "Nouvo kliyan mwa a", obj: 20, dek: "Kliyan ajan an ouvri premye kont yo nan mwa a." },
   rekouvreman: { non: "Rekouvreman mwa a", obj: 90, dek: "Pousantaj sa kliyan pòtfèy la te dwe peye depi 1ye mwa a ki rantre." },
 };
 const ESKALYE_DEF = () => (C?.SEVIS === "epargne" ? [40000, 75000, 100000] : [40000, 75000, 100000, 125000, 150000, 175000]);
@@ -1049,7 +1060,7 @@ async function viewKliyan() {
   $app.innerHTML = `
   <div class="page-head"><h1>Kliyan</h1><a class="btn pri" href="#/kliyan/nouvo">＋ Nouvo kliyan</a></div>
   <div class="search-row">
-    <input id="q" type="search" class="search" placeholder="Chèche non, ID kliyan oswa telefòn…" aria-label="Chèche kliyan" value="${h(rechèch)}" autocomplete="off">
+    <input id="q" type="search" class="search" placeholder="Chèche non, ID kliyan, telefòn oswa nimewo kanè…" aria-label="Chèche kliyan" value="${h(rechèch)}" autocomplete="off">
     <button class="btn gps-btn" id="pre" type="button" title="Toupre m"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/></svg><span>Toupre m</span></button>
     <select id="rayon" aria-label="Distans"><option value="100">100 m</option><option value="300" selected>300 m</option><option value="1000">1 km</option></select>
   </div>
@@ -1399,7 +1410,7 @@ function lisTx(M) {
     if (txF.eta && etaTx(x) !== txF.eta) return false;
     if (!v) return true;
     const k = M.comptes.get(x.id_compte_epargne);
-    return non(k && M.clients.get(k.id_personne)).toLowerCase().includes(v) || String(k?.no_compte || "").toLowerCase().includes(v);
+    return non(k && M.clients.get(k.id_personne)).toLowerCase().includes(v) || kontKoresponn(k, v);
   });
   const dat = (x) => String(x.date_transaction || "");
   const kl = (x) => { const k = M.comptes.get(x.id_compte_epargne); return non(k && M.clients.get(k.id_personne)); };
@@ -1464,7 +1475,7 @@ function rowKont(M, k, swiviJodi) {
     <span class="txr-le" title="${h(t("Dènye depo"))}"><b class="mono">${lèD}</b><small>${jouD}</small></span>
     <a class="kxr-main lnk" href="#/cycle/${h(id)}">
       <span class="txr-t"><b>${d(non(c))}</b> ${badj}</span>
-      <span class="mut sm">${badjKat("epay")} ${d(k.no_compte || t("Cycle poko voye"))} · ${k.plan_lib ? `plan ${t("Lib")} (min ${gd(plan)})` : `plan ${gd(plan)}`}${k.tip_plan === "vip" ? ` · <b class="vip-t">VIP</b>` : ""}${k.frequence_semaine ? ` · ${k.frequence_semaine}×/sem · ${lisJou(k.jours_paiement)}` : ""}</span>
+      <span class="mut sm">${badjKat("epay")} ${d(k.no_compte || t("Cycle poko voye"))}${kane(k)} · ${k.plan_lib ? `plan ${t("Lib")} (min ${gd(plan)})` : `plan ${gd(plan)}`}${k.tip_plan === "vip" ? ` · <b class="vip-t">VIP</b>` : ""}${k.frequence_semaine ? ` · ${k.frequence_semaine}×/sem · ${lisJou(k.jours_paiement)}` : ""}</span>
       <span class="sm kxr-v"><b>${np}/${nv ?? "?"}</b> ${t("vèsman")}${k._aRekipere > 0 ? ` · <span class="err-t">${F.rekipere(k._aRekipere, k._anReta)}</span>` : ""}${estManager() && k._solde != null ? ` · ${t("Balans")}: <b>${gd(k._solde)}</b>` : ""}</span>
       ${nv ? `<span class="kxr-bar" aria-hidden="true"><i style="width:${k._pwosan || 0}%"></i></span>` : ""}</a>
     <span class="kxr-ak">${aksyon}</span></div>`;
@@ -1472,7 +1483,7 @@ function rowKont(M, k, swiviJodi) {
 function lisKont(M, aktif, swiviJodi, v) {
   const l = aktif.filter((k) => (filtKont === "jodi" ? k._jodiPeman : filtKont === "reta" ? k._anReta > 0 : filtKont === "rete" ? k._jodiPeman && k._jodi < Number(k.montant_plan || 0)
       : filtKont === "peye" ? k._jodiPeman && k._jodi >= Number(k.montant_plan || 0) : true))
-    .filter((k) => !v || non(M.clients.get(k.id_personne)).toLowerCase().includes(v) || String(k.no_compte || "").toLowerCase().includes(v));
+    .filter((k) => !v || non(M.clients.get(k.id_personne)).toLowerCase().includes(v) || kontKoresponn(k, v));
   const nm = (k) => non(M.clients.get(k.id_personne));
   const dd = (k) => String(dennyeDepo(k)?.date_transaction || "");
   const CMP = { kliyan: (a, b) => nm(a).localeCompare(nm(b), "fr"), dennye: (a, b) => dd(b).localeCompare(dd(a)) || nm(a).localeCompare(nm(b), "fr"),
@@ -1534,7 +1545,7 @@ function lisFb(M, swivis, semenDe) {
   const l = swivis.filter((x) => (filtFidbak === "jodi" ? jou(x) === M.today : filtFidbak === "semen" ? jou(x) >= semenDe : true))
     .filter((x) => !fbF.motif || (fbF.motif === "lot" ? !MOTIF_KOUT[x.motif] || x.motif === "lot" : x.motif === fbF.motif))
     .filter((x) => !fbF.kw || (fbF.kw === "sispek" ? S.swiviSispèk(x) : x.kontwol === "ok"))
-    .filter((x) => !v || nm(x).toLowerCase().includes(v) || String(M.comptes.get(x.id_compte_epargne)?.no_compte || "").toLowerCase().includes(v));
+    .filter((x) => !v || nm(x).toLowerCase().includes(v) || kontKoresponn(M.comptes.get(x.id_compte_epargne), v));
   const dat = (x) => String(x.capture_le || "");
   l.sort(fbF.tri === "dat_asc" ? (a, b) => dat(a).localeCompare(dat(b)) : fbF.tri === "kliyan" ? (a, b) => nm(a).localeCompare(nm(b), "fr") || dat(b).localeCompare(dat(a)) : (a, b) => dat(b).localeCompare(dat(a)));
   let html = "";
@@ -1612,7 +1623,7 @@ async function viewEpay() {
   const rowsKont = () => {
     const v = filtEpay.trim().toLowerCase();
     const l = aktif.filter((k) => (filtKont === "jodi" ? k._jodiPeman : filtKont === "reta" ? k._anReta > 0 : true))
-      .filter((k) => !v || non(M.clients.get(k.id_personne)).toLowerCase().includes(v) || String(k.no_compte || "").toLowerCase().includes(v));
+      .filter((k) => !v || non(M.clients.get(k.id_personne)).toLowerCase().includes(v) || kontKoresponn(k, v));
     return l.map((k) => P.kontRow(ctxKontRow(M, k, "aktif", swiviJodi))).join("") || `<p class="empty">${v || filtKont !== "tout" ? t("Anyen pa koresponn.") : t("Pa gen kont ak cycle aktif.")}</p>`;
   };
   void rowsKont; // ansyen rann pa look (kontRow) — lis komen an (seksyonKont) ranplase l
@@ -1761,7 +1772,7 @@ function rapoPokoWe(M, l, D, montreAjan) {
   return `<details class="rb card rapo-poko" id="rapo-poko" ${ls.length ? "open" : ""}><summary><b>${t("Kliyan poko wè")}</b><span class="mut sm">${ls.length} · ${t("pa peye, pa gen fidbak")}</span></summary>
     <div class="list tx-lis">${ls.map((k) => { const c = M.clients.get(k.id_personne) || {}, tel = String(c.telephone || "").replace(/\D/g, "");
       return `<div class="row pokor"><a class="pokor-m lnk" href="#/cycle/${h(k.id_compte_epargne)}"><span class="txr-t"><b>${d(non(c))}</b>${k._anReta > 0 ? ` <span class="badge err">${k._anReta} ${t("an reta")}</span>` : ""}</span>
-        <span class="mut sm">${d(k.no_compte || "")} · plan ${gd(k.montant_plan || 0)}${montreAjan ? ` · <span data-brut>${h(nAj(k))}</span>` : ""}</span></a>
+        <span class="mut sm">${d(k.no_compte || "")}${kane(k)} · plan ${gd(k.montant_plan || 0)}${montreAjan ? ` · <span data-brut>${h(nAj(k))}</span>` : ""}</span></a>
         ${tel.length >= 8 ? `<a class="btn sm pokor-tel" href="tel:${h(tel)}" aria-label="${h(t("Rele"))} ${h(non(c))}">📞 ${t("Rele")}</a>` : ""}</div>`; }).join("") || `<p class="empty">${t(D === M.today ? "Tout kliyan jodi a wè deja." : "Tout kliyan jou sa a te wè.")}</p>`}</div></details>`;
 }
 
@@ -2818,7 +2829,7 @@ async function viewKrediNouvo() {
     const ks = S.comptesDuClient(M, id).filter((k) => !k._pending);
     document.getElementById("kr-kont-f").hidden = false;
     document.getElementById("kr-kont").innerHTML = ks.map((k, i) => `<label class="chk"><input type="radio" name="kont" value="${h(k.id_compte_epargne)}" ${ks.length === 1 ? "checked" : ""}>
-      <span><b>${d(k.no_compte || "")}</b> · plan ${gd(k.montant_plan)} ${k._actif ? "" : `<span class="badge mut">${t("Fini")}</span>`}</span></label>`).join("") || `<p class="err-msg">${t("Kliyan sa a pa gen kont epay.")}</p>`;
+      <span><b>${d(k.no_compte || "")}</b>${kane(k)} · plan ${gd(k.montant_plan)} ${k._actif ? "" : `<span class="badge mut">${t("Fini")}</span>`}</span></label>`).join("") || `<p class="err-msg">${t("Kliyan sa a pa gen kont epay.")}</p>`;
     recap();
   };
   document.getElementById("kr-q").oninput = () => { kliyan = null; document.getElementById("kr-kont-f").hidden = true; rannMoun(); recap(); };
@@ -3133,7 +3144,7 @@ async function viewCycle(id) {
     badges: { kont: badgeKont(k), pend: badgePend(k) }, hrefTx: `#/tx/nouvo/${k.id_compte_epargne}`, hrefKliyan: `#/kliyan/${c.id_personne}`,
     errHtml: k._error ? `<p class="note err">${d(t(k._error))} <a href="#/senk">Wè</a></p>` : "",
   };
-  $app.innerHTML = `<div id="cycle"><p class="kkat-l">${badjKat("epay")} <b>${d(k.no_compte || "")}</b></p>${L().parts.cycleTop(ctx)}
+  $app.innerHTML = `<div id="cycle"><p class="kkat-l">${badjKat("epay")} <b>${d(k.no_compte || "")}</b>${kane(k)}</p>${L().parts.cycleTop(ctx)}
   ${!k._pending && !estKesye() ? (() => { const dm = [...M.modif.values()].find((x) => x.kind === "cycle" && x.ref_id === k.id_compte_epargne && x.statut === "an_atant");
     return dm && !man ? `<p class="note info-note">${t("Demann modifikasyon cycle a ap tann manadjè a")} (${(dm.chan || []).map((c0) => t(etikètChan("cycle", c0))).join(", ")}).</p>`
       : `<a class="btn block cycle-mod" href="#/cycle/${h(k.id_compte_epargne)}/modifye">${ICO.modifye || ""}<span>${t(man ? "Modifye cycle a" : "Mande modifikasyon cycle a")}</span></a>`; })() : ""}
@@ -3181,7 +3192,7 @@ async function viewTxNew(compteId) {
   $app.innerHTML = `
   <a href="#/cycle/${k.id_compte_epargne}" class="back">‹ ${d(k.no_compte || t("Cycle"))}</a>
   <h1>Tranzaksyon</h1>
-  <p class="mut">${badjKat("epay")} ${d(non(c))} · ${d(k.no_compte || t("cycle poko voye"))} · plan ${gd(plan)}</p>
+  <p class="mut">${badjKat("epay")} ${d(non(c))} · ${d(k.no_compte || t("cycle poko voye"))}${kane(k)} · plan ${gd(plan)}</p>
   ${gpsBouton(c)}
   <form id="f" class="card form" novalidate>
     <fieldset class="field"><legend class="sr">Tip</legend><div class="seg s4">
@@ -3526,7 +3537,7 @@ function kesFiltre(M, l, kle) {
   const v = kesF.q.trim().toLowerCase();
   return l.filter((x) => (!kesF.ajan || x[kle] === kesF.ajan) && (!v || (() => {
     const k = M.comptes.get(x.id_compte_epargne); const c = k && M.clients.get(k.id_personne);
-    return non(c).toLowerCase().includes(v) || String(k?.no_compte || "").toLowerCase().includes(v);
+    return non(c).toLowerCase().includes(v) || kontKoresponn(k, v);
   })()));
 }
 function rowDepoKes(M, x) {
@@ -3591,7 +3602,7 @@ async function viewKes() {
   const kre = kreDispo ? await kreDone(M) : [];
   const qv = kesF.q.trim().toLowerCase();
   const krF = kre.flatMap((k) => k._tx.filter((y) => y.validation_status === "pending" && !y._pending).map((y) => ({ y, k, montant: y.montant })))
-    .filter(({ y, k }) => (!kesF.ajan || y.created_by === kesF.ajan) && (!qv || non(M.clients.get(k.id_personne)).toLowerCase().includes(qv) || String(k.no_compte || "").toLowerCase().includes(qv)))
+    .filter(({ y, k }) => (!kesF.ajan || y.created_by === kesF.ajan) && (!qv || non(M.clients.get(k.id_personne)).toLowerCase().includes(qv) || kontKoresponn(k, qv)))
     .sort((a, b) => String(a.y.capture_le || a.y.date_transaction).localeCompare(String(b.y.capture_le || b.y.date_transaction)));
   const garF = (M.garanti || []).flatMap((g) => g._tx.filter((y) => y.statut === "pending" && !y._pending).map((y) => ({ y, g, montant: y.montant })))
     .filter(({ y, g }) => (!kesF.ajan || y.created_by === kesF.ajan) && (!qv || non(M.clients.get(g.id_personne)).toLowerCase().includes(qv) || String(g.no_compte).toLowerCase().includes(qv)))

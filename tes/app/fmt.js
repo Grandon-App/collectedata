@@ -44,6 +44,8 @@ export const avatar = (c, cls = "thumb") => c?.photo_url
   : `<span class="${cls} ph" aria-hidden="true">${h(inisyal(c))}</span>`;
 
 // Badj estati
+// Nimewo kanè (ansyen sistèm, egz. A-BSI-XX00000) pou kont ki enpòte; kont ki kreye nan aplikasyon an pa genyen l.
+export const kane = (k) => (k?.no_kane ? ` · <span class="no-kane" title="Nimewo kanè">${t("Kanè")} <b data-brut>${h(k.no_kane)}</b></span>` : "");
 export const badgePend = (o) => (o?._error ? `<span class="badge err">Erè sync</span>` : o?._pending ? `<span class="badge pend">Poko voye</span>` : "");
 export const badgeTx = (x) => x._error ? `<span class="badge err">Erè</span>` : x._pending ? `<span class="badge pend">Poko voye</span>`
   : x.validation_status === "pending" ? `<span class="badge warn">An atant validasyon</span>`
