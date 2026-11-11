@@ -30,7 +30,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "4.84";
+const APP_VERSION = "4.85";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin", kesye: "Responsab kès" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
@@ -704,6 +704,70 @@ function chifAjan(M, a, ids) {
 }
 
 
+// ---------- Rapò mobilizasyon ak nouvo kliyan (manadjè / admin) ----------
+// Mwa an kou a: moyenne mobilisation chak ajan (objektif dapre mwa li), semèn nan, pwojeksyon fen mwa, nouvo kliyan ak lis yo,
+// ak evolisyon moyenne lan sou 6 dènye mwa yo. Ajan ki retire nan rapò yo (Paramèt metrik) pa parèt.
+async function viewMobilizasyon() {
+  if (!estManager()) return go("#/");
+  const M = await S.model();
+  ajans = (await db.meta("ajans")) || {};
+  const kf = konfMetrik(await db.meta("paramet"));
+  const { lis, ids } = await ekipAjan(M);
+  const ajL = lis.filter((a) => a.user_id !== SAN_AJAN && !kf.eskli.includes(a.user_id));
+  const jt = (a, b) => S.joursPeman(a, b, JOU_TRAVAY, M.feries);
+  const mwa1 = M.today.slice(0, 8) + "01";
+  const mwaL = [5, 4, 3, 2, 1].map((n) => { const d = new Date(mwa1 + "T12:00:00Z"); d.setUTCMonth(d.getUTCMonth() - n); return d.toISOString().slice(0, 7); });
+  const nonMwa = (m, o = { month: "short" }) => new Date(m + "-15T12:00:00Z").toLocaleDateString("fr-FR", { ...o, timeZone: "UTC" });
+  // Premye kont chak moun (sèvis sa a) → nouvo kliyan
+  const premye = new Map();
+  for (const k of M.comptes.values()) {
+    const j = S.jouLokal(new Date(k.date_kreye || k.created_at || `${k.date_debut}T12:00:00Z`)), p = premye.get(k.id_personne);
+    if (!p || j < p.j) premye.set(k.id_personne, { j, k });
+  }
+  const depoL = [...M.txs.values()].filter((x) => S.txKind(x) === "depo" && x.validation_status !== "rejected");
+  const rows = ajL.map((a) => {
+    const x = kalkMetrik(M, modèlAjan(M, a.user_id, ids), a.user_id, (id) => id === a.user_id, kf);
+    const evo = mwaL.map((m) => { const m1 = m + "-01", mf = S.ajouteJou(S.ajouteJou(m1, 32).slice(0, 8) + "01", -1);
+      const s = depoL.filter((y) => y.created_by === a.user_id && S.jouTx(y) >= m1 && S.jouTx(y) <= mf).reduce((q, y) => q + Number(y.montant || 0), 0);
+      const n = jt(x.res.mobilizasyon.deb.dat && x.res.mobilizasyon.deb.dat > m1 ? x.res.mobilizasyon.deb.dat : m1, mf); return s && n ? Math.round(s / n) : null; });
+    const nouvo = [...premye.values()].filter((p) => p.j >= mwa1 && p.j <= M.today && p.k.created_by === a.user_id).sort((p, q) => p.j.localeCompare(q.j));
+    const nouvoAvan = (() => { const d = new Date(mwa1 + "T12:00:00Z"); d.setUTCMonth(d.getUTCMonth() - 1); const m = d.toISOString().slice(0, 7);
+      return [...premye.values()].filter((p) => p.j.startsWith(m) && p.k.created_by === a.user_id).length; })();
+    return { a, x, mo: x.res.mobilizasyon, kn: x.res.kliyan_nouvo, evo, nouvo, nouvoAvan };
+  });
+  const x0 = rows[0]?.x;
+  const Td = rows.reduce((s, r) => s + r.mo.depo, 0), Tn = rows.reduce((s, r) => s + r.kn.val, 0), jP = x0?.jPase || jt(mwa1, M.today);
+  const pil = (r) => `<span class="rek-p m-${r.eta}">${r.p}%</span>`;
+  const sèvis = C?.SEVIS === "epargne" ? "Epargne" : "Grandon";
+  $app.innerHTML = `<div id="mobilizasyon"><a href="#/rapo" class="back no-print">‹ ${t("Rapò")}</a>
+    <div class="page-head"><h1>${t("Mobilizasyon ak nouvo kliyan")} · <span data-brut>${sèvis}</span></h1></div>
+    <p class="mut">${nonMwa(mwa1.slice(0, 7), { month: "long", year: "numeric" })} · ${jP}/${x0?.jTotal || "—"} ${t("jou travay")} · ${t("Semèn")} ${datFr(x0?.lendi || M.today).slice(0, 6)} – ${datFr(x0?.samdi || M.today).slice(0, 6)} · ${t("Enprime le")} ${datFr(M.today)}</p>
+    <div class="rek-ch no-print"><button type="button" class="btn pri" id="mob-pdf">${t("Telechaje PDF")}</button></div>
+    <div class="kes-sum rek-sum">
+      <div class="card kes-k"><span>${t("Depo ekip la nan mwa a")}</span><b id="mob-depo">${gd(Td)}</b></div>
+      <div class="card kes-k"><span>${t("Moyenne mobilisation ekip la")}</span><b>${gd(jP ? Td / jP : 0)}</b><small>${t("pa jou travay")}</small></div>
+      <div class="card kes-k"><span>${t("Nouvo kliyan nan mwa a")}</span><b id="mob-nouvo">${Tn}</b><small>${t("objektif")} ${kf.objektif.kliyan_nouvo * rows.length}</small></div>
+    </div>
+    ${rows.length ? `<section class="card rek-blok"><h2>1. ${t("Moyenne mobilisation pa ajan")}</h2><div class="tbl-wrap"><table class="rek-t"><thead><tr><th>${t("Ajan")}</th><th class="n">${t("Objektif / jou")}</th><th class="n">${t("Moyenne")}</th><th class="n">%</th><th class="n">${t("Depo mwa a")}</th><th class="n">${t("Semèn sa a")}</th><th class="n">${t("Fen mwa (ritm sa a)")}</th><th class="n">${t("Bezwen / jou")}</th></tr></thead>
+      <tbody>${rows.map((r) => `<tr data-mob="${h(r.a.user_id)}"><th><span data-brut>${h(r.a.nom)}</span><small>${t("Mwa")} ${r.mo.nMwa}${r.mo.deb.dat ? ` ${t("depi")} ${datFr(r.mo.deb.dat)}${r.mo.deb.oto ? ` (${t("estimasyon")})` : ""}` : ""}</small></th>
+        <td class="n">${gd(r.mo.obj)}</td><td class="n"><b>${gd(r.mo.val)}</b></td><td class="n">${pil(r.mo)}</td><td class="n mob-d">${gd(r.mo.depo)}</td>
+        <td class="n">${gd(r.mo.sem.fe)}<small>${pil(r.mo.sem)} · ${t("obj.")} ${gd(r.mo.sem.obj)}</small></td>
+        <td class="n">${gd(r.mo.fen.proj)}<small>${t("sou")} ${gd(r.mo.fen.objMwa)}</small></td><td class="n">${x0?.jRete ? gd(r.mo.fen.bezwen) : "—"}</td></tr>`).join("")}</tbody></table></div></section>
+    <section class="card rek-blok"><h2>2. ${t("Nouvo kliyan pa ajan")}</h2><div class="tbl-wrap"><table class="rek-t"><thead><tr><th>${t("Ajan")}</th><th class="n">${t("Mwa sa a")}</th><th class="n">${t("Objektif jiska jodi a")}</th><th class="n">%</th><th class="n">${t("Semèn sa a")}</th><th class="n">${t("Fen mwa (ritm sa a)")}</th><th class="n">${t("Mwa pase")}</th></tr></thead>
+      <tbody>${rows.map((r) => `<tr><th data-brut>${h(r.a.nom)}</th><td class="n mob-n"><b>${r.kn.val}</b></td><td class="n">${r.kn.obj}</td><td class="n">${pil(r.kn)}</td><td class="n">${r.kn.sem.fe} / ${r.kn.sem.obj} ${pil(r.kn.sem)}</td><td class="n">${r.kn.fen.proj}<small>${t("sou")} ${r.kn.objMwa}</small></td><td class="n">${r.nouvoAvan}</td></tr>`).join("")}</tbody></table></div>
+      ${rows.some((r) => r.nouvo.length) ? `<h3 class="mob-h3">${t("Nouvo kliyan mwa a")}</h3><div class="tbl-wrap"><table class="rek-t"><thead><tr><th>${t("Ajan")}</th><th>${t("Dat")}</th><th>${t("Kliyan")}</th><th class="n">${t("Plan")}</th></tr></thead>
+      <tbody>${rows.flatMap((r) => r.nouvo.map((p) => `<tr class="mob-k"><td data-brut>${h(r.a.nom)}</td><td>${datFr(p.j).slice(0, 6)}</td><td><a href="#/kliyan/${h(p.k.id_personne)}" data-brut>${d(non(M.clients.get(p.k.id_personne) || {}))}</a><small>${h(p.k.no_compte || "")}</small></td><td class="n">${gd(p.k.montant_plan || 0)}</td></tr>`)).join("")}</tbody></table></div>` : ""}</section>
+    <section class="card rek-blok"><h2>3. ${t("Evolisyon moyenne mobilisation")} <small class="mut">(${t("pa jou travay")})</small></h2><div class="tbl-wrap"><table class="rek-t"><thead><tr><th>${t("Ajan")}</th>${mwaL.map((m) => `<th class="n">${nonMwa(m)}</th>`).join("")}<th class="n">${nonMwa(mwa1.slice(0, 7))}</th></tr></thead>
+      <tbody>${rows.map((r) => `<tr><th data-brut>${h(r.a.nom)}</th>${r.evo.map((v) => `<td class="n">${v == null ? "—" : gd(v)}</td>`).join("")}<td class="n"><b>${gd(r.mo.val)}</b></td></tr>`).join("")}</tbody></table></div></section>`
+    : `<p class="empty">${t("Pa gen ajan teren.")}</p>`}
+    <p class="mut sm rek-not">${t("Moyenne mobilisation = depo ajan an fè (pa rejte, san viman) ÷ jou travay pase nan mwa a (lendi–samdi, san jou ferye). Objektif la swiv eskalye Paramèt la dapre mwa ajan an depi dat debi l. Nouvo kliyan = moun ki gen premye kont yo nan mwa a nan pòtfèy ajan an, konpare ak ritm mwa a. Koulè yo swiv limit Paramèt la.")}</p></div>`;
+  document.getElementById("mob-pdf").onclick = () => {
+    const t0 = document.title; document.title = `Mobilizasyon ${sèvis} ${mwa1.slice(0, 7)}`;
+    document.documentElement.classList.add("enprime"); window.print();
+    setTimeout(() => { document.documentElement.classList.remove("enprime"); document.title = t0; }, 500);
+  };
+}
+
 // ---------- Rapò rekouvreman (manadjè / admin) ----------
 // Pou yon mwa: sa kliyan yo te dwe peye (jou peman depi 1ye mwa a oswa debi cycle la, jiska jodi a oswa fen mwa a, san jou ferye) × plan,
 // sa yo peye nan mwa a (depo ki pa rejte), ak sa yo dwe. Pa ajan pòtfèy, ak lis kliyan ki dwe yo. Bouton PDF = enprime / anrejistre an PDF.
@@ -742,13 +806,13 @@ async function viewRekouvreman() {
   if (!mwaL.includes(rekF.mwa)) rekF.mwa = mwaL[0];
   const nonMwa = (m) => new Date(m + "-15T12:00:00Z").toLocaleDateString("fr-FR", { month: "long", year: "numeric", timeZone: "UTC" });
   const { l, m1, fen } = kalkRekouvreman(M, rekF.mwa);
+  const kf = konfMetrik(await db.meta("paramet"));
   const ajanK = (k) => (ids.has(k.created_by) ? k.created_by : SAN_AJAN);
   const nonA = (id) => lis.find((a) => a.user_id === id)?.nom || (id === SAN_AJAN ? t("San ajan") : ajans[id] || t("Lòt ajan"));
   const gw = new Map();
-  for (const r of l) { const a = ajanK(r.k); if (rekF.ajan && a !== rekF.ajan) continue; if (!gw.has(a)) gw.set(a, []); gw.get(a).push(r); }
+  for (const r of l) { const a = ajanK(r.k); if (kf.eskli.includes(a) || (rekF.ajan && a !== rekF.ajan)) continue; if (!gw.has(a)) gw.set(a, []); gw.get(a).push(r); }
   const som = (L, f) => L.reduce((s, r) => s + r[f], 0);
   const tout = [...gw.values()].flat(), Tpv = som(tout, "pv"), Td = som(tout, "dwe"), Trt = Tpv - Td, P = Tpv ? Math.round((Trt / Tpv) * 100) : 0;
-  const kf = konfMetrik(await db.meta("paramet"));
   const kl = (p) => (p >= kf.objektif.rekouvreman * kf.vet / 100 ? "vet" : p >= kf.objektif.rekouvreman * kf.jon / 100 ? "jon" : "wouj");
   const ajL = [...gw.entries()].map(([a, L]) => { const pv = som(L, "pv"), d = som(L, "dwe"); return { a, L, pv, d, cy: som(L, "cy"), rt: pv - d, p: pv ? Math.round(((pv - d) / pv) * 100) : 0, dw: L.filter((r) => r.dwe > 0 || r.cy > 0) }; })
     .sort((x, y) => y.d + y.cy - x.d - x.cy);
@@ -758,7 +822,7 @@ async function viewRekouvreman() {
     <div class="page-head"><h1>${t("Rapò rekouvreman")} · <span data-brut>${sèvis}</span></h1></div>
     <p class="mut">${nonMwa(rekF.mwa)} · ${datFr(m1)} – ${datFr(fen)}${fen === M.today ? ` (${t("jiska jodi a")})` : ""} · ${t("Enprime le")} ${datFr(M.today)}</p>
     <div class="rek-ch no-print"><label>${t("Mwa")}<select id="rek-mwa">${mwaL.map((m) => `<option value="${m}" ${m === rekF.mwa ? "selected" : ""}>${nonMwa(m)}</option>`).join("")}</select></label>
-      <label>${t("Ajan")}<select id="rek-ajan"><option value="">${t("Tout ajan yo")}</option>${lis.map((a) => `<option value="${h(a.user_id)}" ${a.user_id === rekF.ajan ? "selected" : ""} data-brut>${h(a.nom)}</option>`).join("")}</select></label>
+      <label>${t("Ajan")}<select id="rek-ajan"><option value="">${t("Tout ajan yo")}</option>${lis.filter((a) => !kf.eskli.includes(a.user_id)).map((a) => `<option value="${h(a.user_id)}" ${a.user_id === rekF.ajan ? "selected" : ""} data-brut>${h(a.nom)}</option>`).join("")}</select></label>
       <button type="button" class="btn pri" id="rek-pdf">${t("Telechaje PDF")}</button></div>
     <div class="kes-sum rek-sum">
       <div class="card kes-k"><span>${t("Kliyan te dwe peye")}</span><b>${gd(Tpv)}</b></div>
@@ -801,7 +865,7 @@ function konfMetrik(pa) {
   const obj = Object.fromEntries(Object.entries(METRIK).map(([k, m]) => [k, Number(c.objektif?.[k]) > 0 ? Number(c.objektif[k]) : m.obj]));
   const esk = Array.isArray(c.eskalye) && c.eskalye.length && c.eskalye.every((x) => Number(x) > 0) ? c.eskalye.map(Number) : ESKALYE_DEF();
   return { aktif: Array.isArray(c.aktif) ? c.aktif.filter((k) => METRIK[k]) : Object.keys(METRIK), objektif: obj, eskalye: esk,
-    debut: c.debut && typeof c.debut === "object" ? c.debut : {},
+    debut: c.debut && typeof c.debut === "object" ? c.debut : {}, eskli: Array.isArray(c.eskli) ? c.eskli : [],
     vet: Number(c.vet) > 0 ? Number(c.vet) : 100, jon: Number(c.jon) >= 0 && c.jon != null ? Number(c.jon) : 80 };
 }
 const JOU_TRAVAY = [1, 2, 3, 4, 5, 6];
@@ -845,7 +909,7 @@ function kalkMetrik(M0, Mp, uid, estLi, kf) {
   const T = kf.eskalye[Math.min(nMwa, kf.eskalye.length) - 1];
   const objK = kf.objektif.kliyan_nouvo;
   const res = {
-    mobilizasyon: { val: jPase ? Math.round(depo / jPase) : 0, obj: T, nMwa, deb, sous: `${gd(depo)} / ${jPase} ${t("jou")}`,
+    mobilizasyon: { val: jPase ? Math.round(depo / jPase) : 0, obj: T, nMwa, deb, depo, sous: `${gd(depo)} / ${jPase} ${t("jou")}`,
       sem: { obj: T * sJou, fe: depoS, ...kote(depoS, T * Math.max(sPase, 1)) },
       fen: { proj: jPase ? Math.round((depo / jPase) * jTotal) : 0, objMwa: T * jTotal, bezwen: jRete ? Math.ceil(Math.max(0, T * jTotal - depo) / jRete) : 0 } },
     kliyan_nouvo: { val: nouvo, obj: Math.max(1, Math.round(objK * rit)), objMwa: objK,
@@ -888,7 +952,7 @@ function seksyonMetrik(M0, Mp, uid, estLi, kf) {
 // Manadjè: tablo koulè pou chak ajan (yon kolòn pa metrik aktif).
 function seksyonMetrikEkip(M0, lis, ids, kf) {
   if (!kf.aktif.length || !lis.length) return "";
-  const rows = lis.filter((a) => a.user_id !== SAN_AJAN).map((a) => ({ a, r: kalkMetrik(M0, modèlAjan(M0, a.user_id, ids), a.user_id, (id) => id === a.user_id, kf).res }));
+  const rows = lis.filter((a) => a.user_id !== SAN_AJAN && !kf.eskli.includes(a.user_id)).map((a) => ({ a, r: kalkMetrik(M0, modèlAjan(M0, a.user_id, ids), a.user_id, (id) => id === a.user_id, kf).res }));
   if (!rows.length) return "";
   const sel = (k, r) => r.san ? `<td class="m-san">—</td>` : `<td class="m-${r.eta}" data-eta="${r.eta}"><i aria-hidden="true"></i>${k === "mobilizasyon" ? gd(r.val) : k === "rekouvreman" ? `${r.val}%` : r.val}<small>${r.p}%${k === "mobilizasyon" ? ` · ${t("Mwa")} ${r.nMwa}` : ""}${r.sem ? ` · ${t("sem.")} ${r.sem.p}%` : ""}</small></td>`;
   return `<section class="metrik-sek" id="metrik-ekip"><div class="ekip-sek-h"><h2>${t("Objektif ekip la · mwa a")}</h2><a href="#/metrik" class="sm">${t("Chanje metrik yo")} ›</a></div>
@@ -918,7 +982,8 @@ async function viewMetrik() {
       <fieldset class="field"><legend>${t("Dat debi ajan yo")}</legend>
         <p class="mut sm">${t("Mwa 1 kòmanse dat sa a. Si w pa mete dat, aplikasyon an pran dat premye kont nan pòtfèy ajan an (estimasyon).")}</p>
         ${ajL.map((a) => { const d = debiAjan(M, a.user_id, kf); return `<label class="deb-l"><span data-brut>${h(a.nom)}</span> <small class="mut">${t("Mwa")} ${mwaAjan(d.dat, M.today)}${d.oto && d.dat ? ` · ${t("estimasyon")}` : ""}</small>
-          <input type="date" name="deb" data-u="${h(a.user_id)}" value="${h(kf.debut[a.user_id] || "")}" max="${M.today}"></label>`; }).join("") || `<p class="mut">${t("Pa gen ajan teren.")}</p>`}
+          <input type="date" name="deb" data-u="${h(a.user_id)}" value="${h(kf.debut[a.user_id] || "")}" max="${M.today}">
+          <span class="chk deb-rap"><input type="checkbox" name="nanrapo" data-u="${h(a.user_id)}" ${kf.eskli.includes(a.user_id) ? "" : "checked"}> ${t("Nan rapò yo ak tablo ekip la")}</span></label>`; }).join("") || `<p class="mut">${t("Pa gen ajan teren.")}</p>`}
       </fieldset>
       <fieldset class="field"><legend>${t("Objektif yo")}</legend>
         <label>${t("Nouvo kliyan mwa a")}<input type="number" inputmode="numeric" min="1" name="o_kliyan_nouvo" value="${kf.objektif.kliyan_nouvo}" required></label>
@@ -943,6 +1008,7 @@ async function viewMetrik() {
     const debut = Object.fromEntries([...f.querySelectorAll("input[name=deb]")].filter((x) => x.value).map((x) => [x.dataset.u, x.value]));
     const vale = { aktif: [...f.querySelectorAll("input[name=aktif]:checked")].map((x) => x.value),
       eskalye: [...esk.querySelectorAll("input")].map((x) => Number(x.value)), debut,
+      eskli: [...f.querySelectorAll("input[name=nanrapo]")].filter((x) => !x.checked).map((x) => x.dataset.u),
       objektif: { kliyan_nouvo: n("o_kliyan_nouvo"), rekouvreman: n("o_rekouvreman") }, vet: n("vet"), jon: n("jon") };
     if (!vale.eskalye.length || vale.eskalye.some((x) => !(x > 0))) return (err.textContent = t("Objektif yo pa bon."));
     if (Object.values(vale.objektif).some((x) => !(x > 0)) || vale.objektif.rekouvreman > 100) return (err.textContent = t("Objektif yo pa bon."));
@@ -1672,7 +1738,7 @@ async function viewRapo() {
     const det = detayRapo(M, D, mwen);
     Object.assign(ctx, { jou: [], i: 0, txTit: t("Detay chak ribrik"), txHtml: det.html, nTx: det.n });
   }
-  $app.innerHTML = `<div id="rapo">${sipèvizè ? baRapo(M) : ""}${estManager() ? `<a class="row rek-lyen" href="#/rekouvreman"><div class="grow"><b>${t("Rapò rekouvreman")}</b><div class="mut sm">${t("Kòb kliyan yo dwe pou mwa a, pa ajan · PDF")}</div></div><span aria-hidden="true">›</span></a>` : ""}${L().parts.rapo(ctx)}${rapoPokoWe(M, pokoWe, D, sipèvizè && !rapoF.ajan)}${genKredi ? rapoKredi(M, krPe, krPen, sipèvizè && !rapoF.ajan, sipèvizè) : ""}${M.mod?.garanti && !sipèvizè ? rapoGaranti(M, garTx, garD, garR, false) : ""}</div>`;
+  $app.innerHTML = `<div id="rapo">${sipèvizè ? baRapo(M) : ""}${estManager() ? `<a class="row rek-lyen" href="#/rekouvreman"><div class="grow"><b>${t("Rapò rekouvreman")}</b><div class="mut sm">${t("Kòb kliyan yo dwe pou mwa a, pa ajan · PDF")}</div></div><span aria-hidden="true">›</span></a><a class="row rek-lyen mob-lyen" href="#/mobilizasyon"><div class="grow"><b>${t("Mobilizasyon ak nouvo kliyan")}</b><div class="mut sm">${t("Moyenne mobilisation, nouvo kliyan, evolisyon pa ajan · PDF")}</div></div><span aria-hidden="true">›</span></a>` : ""}${L().parts.rapo(ctx)}${rapoPokoWe(M, pokoWe, D, sipèvizè && !rapoF.ajan)}${genKredi ? rapoKredi(M, krPe, krPen, sipèvizè && !rapoF.ajan, sipèvizè) : ""}${M.mod?.garanti && !sipèvizè ? rapoGaranti(M, garTx, garD, garR, false) : ""}</div>`;
   if (sipèvizè) brancheBaRapo(M);
   $app.querySelectorAll("[data-j]").forEach((b) => (b.onclick = () => { jouRapo = Number(b.dataset.j); viewRapo().then(() => requestAnimationFrame(() => $app.querySelector(`[data-j="${jouRapo}"]`)?.focus({ preventScroll: true }))); }));
 }
@@ -3901,6 +3967,7 @@ async function render() {
   if ((m = r.match(/^#\/kredi\/([\w-]+)$/))) return viewKrediFich(m[1]);
   if (r === "#/rapo") return viewRapo();
   if (r === "#/rekouvreman") return viewRekouvreman();
+  if (r === "#/mobilizasyon") return viewMobilizasyon();
   if (r === "#/kat") { const M = await S.model(); ajans = (await db.meta("ajans")) || {}; return KAT.viewKat({ $app, M, man: estManager(), moi, ajans, getGps, toast }); }
   if (/^#\/(kliyan\/nouvo|cycle\/nouvo|tx\/nouvo|chwazi)/.test(r) && !(await leOk())) return viewLeFèmen();
   if (r === "#/le") return moi.admin ? viewLe() : go("#/");
