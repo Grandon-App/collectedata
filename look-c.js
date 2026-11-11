@@ -229,6 +229,7 @@ export function rapo(ctx) {
       ${L("fre", "Frè", kpi.fre, `<b class="mono mut">${gn(kpi.fre)}</b>`, t("pa nan kach"))}
       ${L("viman", "Viman", kpi.vim, `<b class="mono mut">${gn(kpi.vim)}</b>`, t("pa nan kach"))}
       ${L("deklare", "Balans deklare", kpi.deklare, `<b class="mono${kpi.deklare ? "" : " mut"}">${gn(kpi.deklare)}</b>`, kpi.nDeklare ? `<span class="mono">${kpi.nDeklare}</span> ${t("kont deklare")}` : "")}
+      ${(kpi.ekstra || []).map((x) => L(x.k, x.l, x.v, x.v ? `<b class="mono ${x.out ? "out" : "in"}">${x.out ? "−" : "+"}${gn(x.v)}</b>` : `<b class="mono mut">0</b>`, `<span class="mono">${x.n}</span>`)).join("")}
     </div>
   </div>
   <div>

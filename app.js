@@ -30,7 +30,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "4.73";
+const APP_VERSION = "4.74";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin", kesye: "Responsab kès" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
@@ -1329,6 +1329,11 @@ async function viewRapo() {
     jou: jou.map((date, i) => ({ i, date, label: nonJou(i), on: i === jouRapo })),
     kpi: { depo, nDepo: dep.length, retre, nRetre: ret.length, fre: sum(fre), nFre: fre.length, vim: sum(vim), nVim: vim.length,
       deklare, nDeklare, cycles, swivi, dmAtant, kach: depo - retre + (genKredi ? sum(krPe) + sum(krPen) : 0) + garD - garR,
+      // Liy anplis nan rezime a (kach la): kredi ak kont garanti.
+      ekstra: [...(genKredi ? [{ k: "kredi_pe", l: "Peman kredi", v: sum(krPe), n: krPe.length, sub: `${krPe.length} ${t("peman")}` },
+          { k: "kredi_pen", l: "Penalite kredi", v: sum(krPen), n: krPen.length, sub: `${krPen.length} ${t("penalite")}` }] : []),
+        ...(M.mod?.garanti ? [{ k: "gar_depo", l: "Depo garanti", v: garD, n: garTx.filter((y) => y.tip === "D").length, sub: `${garTx.filter((y) => y.tip === "D").length} depo · ${t("kont garanti")}` },
+          { k: "gar_retre", l: "Retrè garanti", v: garR, n: garTx.filter((y) => y.tip === "R").length, out: true, sub: `${garTx.filter((y) => y.tip === "R").length} ${t("retrè")} · ${t("kont garanti")}` }] : [])],
       ...(genKredi || M.mod?.garanti ? { kachTxt: `${t(M.mod?.garanti ? "Depo + kredi + garanti − retrè peye" : "Depo + peman kredi + penalite − retrè peye")} · ${t("frè ak viman pa ladan l")}` } : {}) },
     swiviStats: { total: jodiKont.length, peye: peyeJou, fidbak: fidbakN, pokoWe: Math.max(0, jodiKont.length - peyeJou - fidbakN) },
     parLe: S.kolekParLe(txs), poko, txHtml: txs.map((x) => liTx(M, x)).join(""), nTx: txs.length,
@@ -1337,7 +1342,7 @@ async function viewRapo() {
     const det = detayRapo(M, D, mwen);
     Object.assign(ctx, { jou: [], i: 0, txTit: t("Detay chak ribrik"), txHtml: det.html, nTx: det.n });
   }
-  $app.innerHTML = `<div id="rapo">${sipèvizè ? baRapo(M) : ""}${L().parts.rapo(ctx)}${rapoPokoWe(M, pokoWe, D, sipèvizè && !rapoF.ajan)}${genKredi ? rapoKredi(M, krPe, krPen, sipèvizè && !rapoF.ajan, sipèvizè) : ""}${M.mod?.garanti ? rapoGaranti(M, garTx, garD, garR, sipèvizè && !rapoF.ajan) : ""}</div>`;
+  $app.innerHTML = `<div id="rapo">${sipèvizè ? baRapo(M) : ""}${L().parts.rapo(ctx)}${rapoPokoWe(M, pokoWe, D, sipèvizè && !rapoF.ajan)}${genKredi ? rapoKredi(M, krPe, krPen, sipèvizè && !rapoF.ajan, sipèvizè) : ""}${M.mod?.garanti && !sipèvizè ? rapoGaranti(M, garTx, garD, garR, false) : ""}</div>`;
   if (sipèvizè) brancheBaRapo(M);
   $app.querySelectorAll("[data-j]").forEach((b) => (b.onclick = () => { jouRapo = Number(b.dataset.j); viewRapo().then(() => requestAnimationFrame(() => $app.querySelector(`[data-j="${jouRapo}"]`)?.focus({ preventScroll: true }))); }));
 }
@@ -3232,6 +3237,23 @@ function detayRapo(M, D, pa) {
         <span class="mut sm">${t(motifLabel(x.motif))} · <a class="lnk" href="#/kredi/${h(x._k.id_compte_credit)}">${d(x._k.no_compte || "")}</a>${ajanTxt(x.agent_id)}</span>${x.note ? `<span class="sm">«${d(x.note)}»</span>` : ""}</span></div>`);
     krN = kt.length + kfb.length;
   }
+  // Ribrik kont garanti yo: depo ak retrè (ak balans kanè avan → apre).
+  let garRib = "", garN = 0;
+  if (M.mod?.garanti) {
+    const gt = (M.garanti || []).flatMap((g) => g._tx.map((y) => ({ ...y, _g: g }))).filter((y) => pa(y) && S.jouLokal(new Date(y.capture_le)) === D)
+      .sort((a, b) => String(a.capture_le).localeCompare(String(b.capture_le)));
+    const okG = (l) => l.filter((y) => y.statut !== "rejected");
+    const rowG = (y) => { const c = M.clients.get(y._g.id_personne), D0 = y.tip === "D";
+      return `<div class="row txr${y.statut === "rejected" ? " txr-anile" : ""}"><span class="txr-le"><b class="mono">${lèKout(y.capture_le) || "—"}</b></span>
+        <span class="txr-main"><span class="txr-t"><b>${d(non(c))}</b> ${etaGarTx(y)}</span>
+          <span class="mut sm">${t(GAR_NON[y._g.kalite])} · <a class="lnk" href="#/kliyan/${h(y._g.id_personne)}">${d(y._g.no_compte)}</a>${ajanTxt(y.created_by)}</span>
+          ${y.solde_apres != null ? `<span class="mut sm">${t("kanè avan")} ${gd(y.solde_avant)} → ${t("kanè apre")} ${gd(y.solde_apres)}</span>` : ""}
+          ${y.statut === "rejected" && y.validation_note ? `<span class="sm err-t">${t("Rezon")}: ${d(y.validation_note)}</span>` : ""}</span>
+        <span class="txr-mon"><b class="${D0 ? "in" : "out"}">${D0 ? "+" : "−"}${gd(y.montant)}</b></span></div>`; };
+    const gD = gt.filter((y) => y.tip === "D"), gR = gt.filter((y) => y.tip === "R");
+    garRib = seksyon("garanti_depo", "Depo garanti", gD, rowG, sumMon(okG(gD))) + seksyon("garanti_retre", "Retrè garanti", gR, rowG, sumMon(okG(gR)));
+    garN = gt.length;
+  }
   const html = seksyon("depo", "Depo ankese", dep, rowT, sumMon(ok(dep)))
     + seksyon("retre", "Retrè peye", ret, rowT, sumMon(ok(ret)))
     + seksyon("fre", "Frè", fre, rowT, sumMon(ok(fre)))
@@ -3243,8 +3265,8 @@ function detayRapo(M, D, pa) {
         <span class="txr-main"><span class="txr-t"><b>${d(nmK(x.id_compte_epargne))}</b> <span class="badge warn">${t(MOTIF_KOUT[x.motif] || "Lòt")}</span> ${estManager() ? badjKontwol(x) : ""}</span>
         <span class="mut sm">${t(motifLabel(x.motif))}${ajanTxt(x.agent_id)}</span>${x.note ? `<span class="sm">«${d(x.note)}»</span>` : ""}</span></div>`)
     + seksyon("demann", "Demann retrè ak viman", dmJ, (x) => liDemande(M, x))
-    + krRib;
-  return { html, n: txJ.length + cyc.length + fb.length + dmJ.length + krN };
+    + krRib + garRib;
+  return { html, n: txJ.length + cyc.length + fb.length + dmJ.length + krN + garN };
 }
 
 // ---------- Istorik modifikasyon pa jou (manadjè) ----------
