@@ -714,3 +714,15 @@ html[data-look="b"]:not([data-theme="dark"]) .login-logo img.mak-koule { filter:
 .pokor-tel { width: auto; white-space: nowrap; }
 @media (min-width: 1024px) { #rapo-poko .tx-lis { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 14px; } }
 .jours.j6 { grid-template-columns: repeat(6, 1fr); }
+.gar-sek { margin-top: 16px; }
+.gar-g { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); gap: 10px; margin-top: 8px; }
+.gar-k { display: flex; flex-direction: column; gap: 8px; }
+.gar-h { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.gar-b { display: flex; flex-direction: column; gap: 2px; }
+.gar-b b { font-size: 1.3rem; }
+.kr-gar { display: flex; flex-direction: column; gap: 6px; margin: 8px 0; }
+.badge.kkat { text-transform: none; letter-spacing: 0; font-weight: 700; border: 1px solid currentColor; background: transparent; }
+.badge.kkat-epay { color: var(--ok); }
+.badge.kkat-gar { color: var(--warn, #b7791f); }
+.badge.kkat-kr { color: var(--info, #2b6cb0); }
+.kkat-l { margin: 0 0 8px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }

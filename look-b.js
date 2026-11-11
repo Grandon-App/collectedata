@@ -227,6 +227,7 @@ export function rapo(ctx) {
     <div class="rl" data-kpi="depo" data-val="${kpi.depo}"><div class="ri g">${ICO.monte}</div><div class="grow"><b>Depo ankese</b><div class="mut sm">${kpi.nDepo} depo${kpi.nDeklare ? ` · ${gd(kpi.deklare)} ${t("balans deklare")}` : ""}</div></div><b class="rv in">${gd(kpi.depo)}</b></div>
     <div class="rl" data-kpi="retre" data-val="${kpi.retre}"><div class="ri r">${ICO.desann}</div><div class="grow"><b>Retrè peye</b><div class="mut sm">${kpi.nRetre} retrè</div></div><b class="rv out">${gd(kpi.retre)}</b></div>
     <div class="rl" data-kpi="fre" data-val="${kpi.fre}"><div class="ri y">${ICO.liy}</div><div class="grow"><b>Frè ak viman</b><div class="mut sm">${kpi.nFre} frè · <span class="vim" data-kpi="viman" data-val="${kpi.vim}">${kpi.nVim} viman <b>${gd(kpi.vim)}</b></span> · ${t("Pa afekte kach la")}</div></div><b class="rv fee">${gd(kpi.fre)}<small>frè</small></b></div>
+    ${(kpi.ekstra || []).map((x) => `<div class="rl" data-kpi="${x.k}" data-val="${x.v}"><div class="ri ${x.out ? "r" : "g"}">${x.out ? ICO.desann : ICO.monte}</div><div class="grow"><b>${t(x.l)}</b><div class="mut sm">${x.sub}</div></div><b class="rv ${x.out ? "out" : "in"}">${gd(x.v)}</b></div>`).join("")}
   </div>
   </div>
   <div class="tiles3 mini">

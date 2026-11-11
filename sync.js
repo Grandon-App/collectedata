@@ -258,6 +258,16 @@ const EXEC = {
       await db.meta("kredi_fb", [{ id: p.id, id_compte_credit: p.credit, motif: p.motif, note: p.note || null, agent_id: api.getSession()?.user?.id, capture_le: p.capture_le }, ...l]);
   },
 
+  // Depo / retrè sou yon kont garanti (an atant jiskaske responsab kès la valide l).
+  async garanti_tx(p) {
+    const r = await api.rpc("grandon_garanti_tranzaksyon", { p_id: p.id, p_garanti: p.garanti, p_tip: p.tip, p_montant: p.montant, ...gpsArgs(p.gps),
+      p_capture_le: p.capture_le, p_appareil: p.appareil, p_note: p.note || null, p_solde_avan: p.solde_avan ?? null, p_solde_apre: p.solde_apre ?? null });
+    const l = (await db.meta("garanti_tx")) || [];
+    if (!l.some((x) => x.id === p.id))
+      await db.meta("garanti_tx", [...l, { id: p.id, id_garanti: p.garanti, tip: p.tip, montant: p.montant, statut: r.statut || "pending",
+        created_by: api.getSession()?.user?.id, capture_le: p.capture_le, _local: true, solde_avant: p.solde_avan ?? null, solde_apres: p.solde_apre ?? null }]);
+  },
+
   // Penalite kredi ajan an ankese (konfime touswit; li parèt nan Kès la).
   async kredi_penalite(p) {
     const r = await api.rpc("grandon_kredi_penalite", { p_id: p.id, p_credit: p.credit, p_montant: p.montant, ...gpsArgs(p.gps),
@@ -410,6 +420,12 @@ export async function pull() {
     if (krt) await db.meta("kredi_tx", krt);
     const krs = kr ? await api.selectAll("grandon_v_kredi_suivis?select=*&order=capture_le.desc").catch(() => null) : null; // fidbak «Pa peye» kredi yo
     if (krs) await db.meta("kredi_fb", krs);
+    // Kont garanti yo (Epargne Bloquée, Fonds Garantie Konfyans): sèlman si paramèt «garanti» a aktive sèvis sit la.
+    if (modAktif(pa && Object.fromEntries(pa.map((x) => [x.kle, x.vale])), "garanti")) {
+      const [gl, gt] = await Promise.all([api.selectAll("grandon_v_garanti?select=*").catch(() => null), api.selectAll("grandon_v_garanti_tx?select=*&order=capture_le").catch(() => null)]);
+      if (gl) await db.meta("garanti", gl);
+      if (gt) await db.meta("garanti_tx", gt);
+    } else { await db.meta("garanti", null); await db.meta("garanti_tx", null); }
   } catch { /* administratè (imèl): pa gen liy grandon_ajan pou yo */ }
   await db.replaceAll("feries", feries);
   await db.replaceAll("suivis", suivis);
@@ -507,7 +523,9 @@ export async function model() {
   M.today = today;
   // Kredi yo (si sèvè a gen modil la): eta chak kredi, epi chak kont epay konnen kredi ki lye ak li (alèt, pwoblèm kredi).
   const [krL, krTx, krFb, krPa] = await Promise.all(["kredi", "kredi_tx", "kredi_fb", "paramet"].map((x) => db.meta(x)));
+  M.mod = { garanti: modAktif(krPa, "garanti") ? krPa.garanti : null, konfyans: modAktif(krPa, "konfyans") ? krPa.konfyans : null };
   M.kredi = Array.isArray(krL) ? kreModel(M, krL, krTx || [], krFb || [], Number(((krPa || {}).kredi_gras || {}).jou ?? 5), api.getSession()?.user?.id) : [];
+  M.garanti = M.mod.garanti ? garModel(M, (await db.meta("garanti")) || [], (await db.meta("garanti_tx")) || [], api.getSession()?.user?.id) : [];
   for (const k of M.comptes.values()) Object.assign(k, { _txs: [], _local: 0, _jodi: 0, _depots: 0, _nDepots: 0, _joursPeye: new Set(), _suivis: [], _demandes: [], _kolekMwa: 0, _alet: [] });
   for (const t of M.txs.values()) {
     const k = M.comptes.get(t.id_compte_epargne);
@@ -602,17 +620,37 @@ function kreModel(M, l, txs0, fbs0, gras, moiId) {
     const jodi = rete > 0 && M.today >= x.date_debut && jours.includes(isoJou(M.today)) && !M.feries.has(M.today);
     const peJodi = tx.filter((y) => y.validation_status !== "rejected" && jouKreTx(y) === M.today).reduce((a, y) => a + Number(y.montant || 0), 0);
     // Penalite: apre dat fen + jou gras yo, chak jou peman kliyan an toujou dwe = 20% peman jounalye a.
-    const penDe = x.date_fin ? ajouteJou(x.date_fin, gras + 1) : null;
+    const konf = x.kalite === "konfyans";
+    const penDe = x.date_fin ? ajouteJou(x.date_fin, konf ? 1 : gras + 1) : null;
     const dPe = tx.find((y) => y.validation_status === "confirmed");
     const penA = final - paye > 0 ? M.today : dPe ? jouKreTx(dPe) : null;
-    const penJou = penDe && penA ? joursPeman(penDe, penA, jours, M.feries) : 0;
-    const penPaJou = Math.round(pj * 0.2 * 100) / 100, penTotal = Math.round(penJou * penPaJou * 100) / 100;
+    // Konfyans: yon penalite fiks (1 000 G) yon sèl fwa apre echeyans lan, sèlman si paramèt la aktive.
+    const kf = M.mod?.konfyans, penKonf = konf && kf?.penalite_aktif && x.date_fin && M.today > x.date_fin && final - paye > 0 ? Number(kf.penalite ?? 1000) : 0;
+    const penJou = konf ? (penKonf ? 1 : 0) : penDe && penA ? joursPeman(penDe, penA, jours, M.feries) : 0;
+    const penPaJou = konf ? penKonf : Math.round(pj * 0.2 * 100) / 100, penTotal = Math.round(penJou * penPaJou * 100) / 100;
     const penPeye = Number(x.penalites || 0) + tout.filter((y) => y.type_transaction === "Penalite" && (y._pending || y._local)).reduce((a, y) => a + Number(y.montant || 0), 0);
     const fb = fbs.filter((y) => y.id_compte_credit === x.id_compte_credit).sort((a, b) => String(b.capture_le).localeCompare(String(a.capture_le)));
     const fbJodi = fb.find((y) => jouLokal(new Date(y.capture_le)) === M.today) || null;
     return { ...x, _jours: jours, _fb: fb, _fbJodi: fbJodi, _tx: tx, _txTout: tout, _atant: atant, _rete: rete, _reta: reta, _jouReta: pj ? Math.ceil(reta / pj - 1e-9) : 0, _jodi: jodi, _peJodi: peJodi, _fini: final > 0 && paye >= final,
       _gras: gras, _penDe: penDe, _penJou: penJou, _penPaJou: penPaJou, _penTotal: penTotal, _penPeye: penPeye, _penDu: Math.max(Math.round((penTotal - penPeye) * 100) / 100, 0),
       _depaseFen: !!x.date_fin && M.today > x.date_fin && rete > 0 };
+  });
+}
+
+// Pwodui ki aktive pa paramèt (garanti, konfyans): { sevis: [...] } gen sèvis sit la ladan l.
+export const modAktif = (pa, kle) => !!pa?.[kle]?.sevis?.includes?.(C.SEVIS || "grandon");
+// Kont garanti yo: balans valide (sèvè) + depo/retrè an atant (sèvè + file a). Bloke = kliyan an gen yon kredi aktif menm kalite.
+function garModel(M, l, txs0, moiId) {
+  const txs = [...txs0];
+  for (const o of M.outbox) if (o.kind === "garanti_tx" && !txs.some((x) => x.id === o.payload.id))
+    txs.push({ id: o.payload.id, id_garanti: o.payload.garanti, tip: o.payload.tip, montant: o.payload.montant, statut: "pending", created_by: moiId,
+      capture_le: o.payload.capture_le, _pending: true, _err: o.status === "error" ? o.error : null, solde_avant: o.payload.solde_avan ?? null, solde_apres: o.payload.solde_apre ?? null });
+  return l.map((g) => {
+    const tx = txs.filter((y) => y.id_garanti === g.id).sort((a, b) => String(b.capture_le).localeCompare(String(a.capture_le)));
+    const at = (tip) => tx.filter((y) => y.tip === tip && y.statut === "pending").reduce((a, y) => a + Number(y.montant || 0), 0);
+    const kr = (M.kredi || []).filter((x) => x.id_personne === g.id_personne && (x.kalite || "klasik") === g.kalite && !x._fini);
+    const balans = Number(g.balans) || 0, atantR = at("R");
+    return { ...g, _tx: tx, _balans: balans, _atantD: at("D"), _atantR: atantR, _dispo: Math.max(balans - atantR, 0), _bloke: !!g.bloke || kr.length > 0, _kredi: kr };
   });
 }
 

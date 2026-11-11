@@ -200,6 +200,7 @@ export function rapo(ctx) {
     <div class="card kpi-l">
       ${R("viman", "Viman", kpi.vim, gd(kpi.vim), `${kpi.nVim} · ${t("pa afekte kach la")}`)}
       ${R("deklare", "Balans deklare (total)", kpi.deklare, gd(kpi.deklare), `${kpi.nDeklare} ${t("kont deklare")}`)}
+      ${(kpi.ekstra || []).map((x) => R(x.k, x.l, x.v, `<span class="${x.out ? "out" : "in"}">${x.v ? (x.out ? "−" : "+") : ""}${gd(x.v)}</span>`, x.sub)).join("")}
       ${R("papeye", "Kliyan ki pa peye", kpi.swivi, kpi.swivi, t("fidbak anrejistre"))}
       ${R("demann", "Demann an atant", kpi.dmAtant, kpi.dmAtant, t("retrè / viman"))}
     </div>
