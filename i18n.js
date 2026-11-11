@@ -5,7 +5,7 @@
 // Fraz → tradiksyon. Pi long yo aplike anvan pi kout yo.
 const FR = {
   // Navigasyon / tit
-  "Tablo de bò": "Tableau de bord", "Tablo": "Tableau", "Kliyan": "Clients", "Epay": "Épargne", "Rapò": "Rapport",
+  "Tablo de bò": "Tableau de bord", "Tablo": "Tableau", "Pòtfèy": "Portefeuille", "Pòtfèy mwen": "Mon portefeuille", "Poko wè": "Pas encore vu", "Pa jou peman": "Pas jour de paiement", "Kliyan": "Clients", "Epay": "Épargne", "Rapò": "Rapport",
   "Paramèt": "Paramètres", "Senkronizasyon": "Synchronisation", "Navigasyon prensipal": "Navigation principale",
   "Paj sa a ap vini byento.": "Cette page arrive bientôt.", "Bonjou": "Bonjour",
   // Koneksyon

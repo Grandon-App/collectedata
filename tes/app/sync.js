@@ -582,7 +582,9 @@ export async function model() {
     k._txs.sort((a, b) => String(b.date_transaction).localeCompare(String(a.date_transaction)));
     k._suivis.sort((a, b) => String(b.capture_le).localeCompare(String(a.capture_le)));
     k._demandes.sort((a, b) => String(b.capture_le).localeCompare(String(a.capture_le)));
-    k._actif = !k.date_fin || k.date_fin >= today;
+    // Kanè kraze: kliyan an retire tout kòb li (balans 0 apre yon retrè/viman) → kont lan fèmen, menm si l pa gen kalandriye oswa dat fen li poko rive.
+    k._kraze = k.gen_kob === false && k._txs.some((t) => (txKind(t) === "retre" || txKind(t) === "viman_out") && t.validation_status !== "rejected");
+    k._actif = !k._kraze && (!k.date_fin || k.date_fin >= today);
     k._jodiPeman = k._actif && !!k.jours_paiement?.includes(isoJou(today)) && k.date_debut <= today && !M.feries.has(today);
     const finCycle = k.date_fin ? ajouteJou(k.date_fin, -1) : null;
     k._prevu = joursPeman(k.date_debut, finCycle && today > finCycle ? finCycle : today, k.jours_paiement, M.feries);
