@@ -30,7 +30,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "4.79";
+const APP_VERSION = "4.80";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin", kesye: "Responsab kès" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
@@ -114,7 +114,7 @@ const TABS = [["tablo", "#/", "Tablo"], ["kliyan", "#/kliyan", "Kliyan"], ["epay
 const TABS_KES = [["kes", "#/kes", "Kès"], ["rapo", "#/rapo", "Rapò"], ["senk", "#/senk", "Senkronizasyon"], ["param", "#/param", "Paramèt"]];
 const TABS_MAN = [TABS[0], ["ekip", "#/ekip", "Ekip"], ["potfey", "#/potfey", "Pòtfèy"], ["alet", "#/alet", "Alèt"], TABS[1], TABS[2], ["kredi", "#/kredi", "Kredi"], ...TABS.slice(3)];
 let kreDispo = false, kreGen = false; // onglè Kredi: sèlman si sèvè a gen modil kredi a; pou ajan yo, sèlman si gen kredi
-const TABS_AJ = [...TABS.slice(0, 3), ["kredi", "#/kredi", "Kredi"], ...TABS.slice(3)];
+const TABS_AJ = [TABS[0], ["potfey", "#/potfey", "Pòtfèy"], ...TABS.slice(1, 3), ["kredi", "#/kredi", "Kredi"], ...TABS.slice(3)];
 const tabs = () => (estKesye() ? TABS_KES : estManager() ? TABS_MAN.filter(([k]) => k !== "kredi" || kreDispo) : TABS_AJ.filter(([k]) => k !== "kredi" || kreGen));
 function tabActif(r) {
   if (/^#\/kes/.test(r)) return "kes";
@@ -137,7 +137,7 @@ function updateNav() {
   $nav.hidden = false;
   if (!window.L?.map) setTimeout(() => KAT.chajeLeaflet().catch(() => {}), 400); // kat la pare menm si entènèt koupe apre
   document.body.classList.add("has-nav");
-  $nav.innerHTML = tabs().map(([k, href, label]) => `<a href="${href}" class="${k === a ? "on" : ""}${k === "senk" || k === "ekip" || k === "alet" || k === "potfey" ? " nav-lap" : ""}" ${k === a ? 'aria-current="page"' : ""}>${ICO[k]}<span>${label}</span></a>`).join("")
+  $nav.innerHTML = tabs().map(([k, href, label]) => `<a href="${href}" class="${k === a ? "on" : ""}${k === "senk" || k === "ekip" || k === "alet" || (k === "potfey" && estManager()) ? " nav-lap" : ""}" ${k === a ? 'aria-current="page"' : ""}>${ICO[k]}<span>${label}</span></a>`).join("")
     + `<div class="nav-foot"><span class="nav-moi" data-brut>${h(moi.nom || "")}</span><span class="nav-wol">${WOL[moi.role] || "Anplwaye"}</span><span class="nav-ver mut">v${h(APP_VERSION)}</span></div>`;
   mezireBar();
 }
@@ -535,11 +535,14 @@ const potF = { ajan: "", jou: null, filt: "" };
 async function viewPotfey() {
   const M = await S.model();
   ajans = (await db.meta("ajans")) || {};
-  const { lis, ids } = await ekipAjan(M);
-  if (!potF.ajan || !lis.some((a) => a.user_id === potF.ajan)) potF.ajan = lis[0]?.user_id || "";
+  // Manadjè: chwazi ajan an. Ajan: pwòp pòtfèy li sèlman.
+  const man = estManager();
+  const { lis, ids } = man ? await ekipAjan(M) : { lis: [{ user_id: moi.id, nom: moi.nom || nonAjan(moi.id) }], ids: new Set([moi.id]) };
+  if (!man) potF.ajan = moi.id;
+  else if (!potF.ajan || !lis.some((a) => a.user_id === potF.ajan)) potF.ajan = lis[0]?.user_id || "";
   potF.jou ||= M.today;
   const D = potF.jou, iso = S.isoJou(D), ferye = M.feries.has(D);
-  const ajanK = (id) => (ids.has(id) ? id : SAN_AJAN);
+  const ajanK = (id) => (man ? (ids.has(id) ? id : SAN_AJAN) : mwenSe(id) ? moi.id : null);
   const mon = (l) => l.reduce((a, x) => a + Number(x.montant || 0), 0);
   // Kont epay pòtfèy la ki te ouvè jou sa a (pa kraze, cycle la te kòmanse epi li poko fini).
   const kont = [...M.comptes.values()].filter((k) => !k._pending && ajanK(k.created_by) === potF.ajan && !k._kraze && k.date_debut <= D && (!k.date_fin || D < k.date_fin));
@@ -573,9 +576,9 @@ async function viewPotfey() {
       <span class="mut sm">${d(x.no || "")} · ${gd(x.plan || 0)} · ${lisJou(x.jours || [])}</span>${det ? `<span class="sm">${det}</span>` : ""}</a>
       ${x.eta === "poko" && tel.length >= 8 ? `<a class="btn sm pokor-tel" href="tel:${h(tel)}">📞 ${t("Rele")}</a>` : ""}</div>`; };
   const tot = liy.filter((x) => x.dwe || x.eta === "peye" || x.eta === "fidbak");
-  $app.innerHTML = `<div id="potfey"><div class="page-head"><h1>${t("Pòtfèy")}</h1></div>
+  $app.innerHTML = `<div id="potfey"><div class="page-head"><h1>${t(man ? "Pòtfèy" : "Pòtfèy mwen")}</h1></div>
     <div class="card rapo-ba">
-      <label class="tx-sel"><span>${t("Ajan")}</span><select id="pot-ajan">${lis.map((a) => `<option value="${h(a.user_id)}" ${a.user_id === potF.ajan ? "selected" : ""}>${h(a.nom)}</option>`).join("")}</select></label>
+      ${man ? `<label class="tx-sel"><span>${t("Ajan")}</span><select id="pot-ajan">${lis.map((a) => `<option value="${h(a.user_id)}" ${a.user_id === potF.ajan ? "selected" : ""}>${h(a.nom)}</option>`).join("")}</select></label>` : ""}
       <label class="tx-sel"><span>${t("Dat")}</span><span class="rapo-dat"><button type="button" class="btn sm" id="pot-prev" aria-label="${t("Jou anvan")}">‹</button>
         <input type="date" id="pot-jou" value="${h(D)}" max="${h(M.today)}"><button type="button" class="btn sm" id="pot-next" aria-label="${t("Jou apre")}" ${D >= M.today ? "disabled" : ""}>›</button></span></label>
     </div>
@@ -590,7 +593,7 @@ async function viewPotfey() {
       .map(([v, l, c0]) => `<button type="button" class="chip ${potF.filt === v ? "on" : ""}" data-pfilt="${v}" aria-pressed="${potF.filt === v}">${t(l)}<small>${c0}</small></button>`).join("")}</div>
     <div class="list tx-lis" id="pot-lis">${vizib.map(row).join("") || `<p class="empty">${t("Anyen pou montre.")}</p>`}</div></div>`;
   const ale = (j) => { if (!j) return; potF.jou = j > M.today ? M.today : j; viewPotfey(); };
-  document.getElementById("pot-ajan").onchange = (e) => { potF.ajan = e.target.value; viewPotfey(); };
+  document.getElementById("pot-ajan")?.addEventListener("change", (e) => { potF.ajan = e.target.value; viewPotfey(); });
   document.getElementById("pot-jou").onchange = (e) => ale(e.target.value);
   document.getElementById("pot-prev").onclick = () => ale(S.ajouteJou(D, -1));
   document.getElementById("pot-next").onclick = () => ale(S.ajouteJou(D, 1));
@@ -3627,7 +3630,7 @@ async function render() {
   if (r === "#/" || r === "#") return viewTablo();
   if (r === "#/ekip") return estManager() ? viewEkip() : go("#/");
   if (r === "#/alet") return estManager() ? viewAlet() : go("#/");
-  if (r === "#/potfey") return estManager() ? viewPotfey() : go("#/");
+  if (r === "#/potfey") return !estKesye() ? viewPotfey() : go("#/");
   if ((m = r.match(/^#\/ekip\/([\w-]+)$/))) return estManager() ? viewTablo(m[1]) : go("#/");
   if (r === "#/kliyan") return viewKliyan();
   if (r === "#/epay") return viewEpay();
