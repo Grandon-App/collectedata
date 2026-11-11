@@ -261,11 +261,11 @@ const EXEC = {
   // Depo / retrè sou yon kont garanti (an atant jiskaske responsab kès la valide l).
   async garanti_tx(p) {
     const r = await api.rpc("grandon_garanti_tranzaksyon", { p_id: p.id, p_garanti: p.garanti, p_tip: p.tip, p_montant: p.montant, ...gpsArgs(p.gps),
-      p_capture_le: p.capture_le, p_appareil: p.appareil, p_note: p.note || null });
+      p_capture_le: p.capture_le, p_appareil: p.appareil, p_note: p.note || null, p_solde_avan: p.solde_avan ?? null, p_solde_apre: p.solde_apre ?? null });
     const l = (await db.meta("garanti_tx")) || [];
     if (!l.some((x) => x.id === p.id))
       await db.meta("garanti_tx", [...l, { id: p.id, id_garanti: p.garanti, tip: p.tip, montant: p.montant, statut: r.statut || "pending",
-        created_by: api.getSession()?.user?.id, capture_le: p.capture_le, _local: true }]);
+        created_by: api.getSession()?.user?.id, capture_le: p.capture_le, _local: true, solde_avant: p.solde_avan ?? null, solde_apres: p.solde_apre ?? null }]);
   },
 
   // Penalite kredi ajan an ankese (konfime touswit; li parèt nan Kès la).
@@ -644,7 +644,7 @@ function garModel(M, l, txs0, moiId) {
   const txs = [...txs0];
   for (const o of M.outbox) if (o.kind === "garanti_tx" && !txs.some((x) => x.id === o.payload.id))
     txs.push({ id: o.payload.id, id_garanti: o.payload.garanti, tip: o.payload.tip, montant: o.payload.montant, statut: "pending", created_by: moiId,
-      capture_le: o.payload.capture_le, _pending: true, _err: o.status === "error" ? o.error : null });
+      capture_le: o.payload.capture_le, _pending: true, _err: o.status === "error" ? o.error : null, solde_avant: o.payload.solde_avan ?? null, solde_apres: o.payload.solde_apre ?? null });
   return l.map((g) => {
     const tx = txs.filter((y) => y.id_garanti === g.id).sort((a, b) => String(b.capture_le).localeCompare(String(a.capture_le)));
     const at = (tip) => tx.filter((y) => y.tip === tip && y.statut === "pending").reduce((a, y) => a + Number(y.montant || 0), 0);
