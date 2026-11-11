@@ -57,6 +57,7 @@ export function joursPeman(debut, fin, jours, feries = new Set()) {
 export async function enqueue(kind, payload, deps = []) {
   await db.put("outbox", { kind, id: payload.id, payload, deps, created: new Date().toISOString(), status: "pending", error: null, tries: 0 });
   notify();
+  if (running) relanse = true; // yon senkronizasyon ap kouri deja: relanse l apre pou operasyon sa a pa tann
   run();
 }
 
@@ -258,6 +259,19 @@ const EXEC = {
       await db.meta("kredi_fb", [{ id: p.id, id_compte_credit: p.credit, motif: p.motif, note: p.note || null, agent_id: api.getSession()?.user?.id, capture_le: p.capture_le }, ...l]);
   },
 
+  // «Peye san kanè»: anrejistre l anvan tranzaksyon an (menm id); kont lan bloke jiskaske yon ajan konfime kanè a ajou.
+  async san_kane(p) {
+    await api.rpc("grandon_san_kane_anrejistre", { p_id: p.tx, p_kind: p.kind, p_ref: p.ref, p_tip: p.tip, p_montant: p.montant, p_kane_apre: p.kane_apre ?? null, p_kreye_le: p.kreye_le });
+    const l = (await db.meta("san_kane")) || [];
+    if (!l.some((x) => x.id === p.tx)) await db.meta("san_kane", [...l, { id: p.tx, kind: p.kind, ref: p.ref, tip: p.tip, montant: p.montant, kane_apre: p.kane_apre ?? null,
+      created_by: api.getSession()?.user?.id, kreye_le: p.kreye_le, konfime_le: null }]);
+  },
+  async kane_konfime(p) {
+    await api.rpc("grandon_kane_konfime", { p_id: p.sk, p_le: p.le });
+    const l = (await db.meta("san_kane")) || [];
+    await db.meta("san_kane", l.map((x) => (x.id === p.sk ? { ...x, konfime_le: p.le } : x)));
+  },
+
   // Depo / retrè sou yon kont garanti (an atant jiskaske responsab kès la valide l).
   async garanti_tx(p) {
     const r = await api.rpc("grandon_garanti_tranzaksyon", { p_id: p.id, p_garanti: p.garanti, p_tip: p.tip, p_montant: p.montant, ...gpsArgs(p.gps),
@@ -302,7 +316,7 @@ const EXEC = {
 };
 
 // ---------- Senkronizasyon ----------
-let running = null;
+let running = null, relanse = false;
 export const isRunning = () => !!running;
 
 // Yon sèl aparèy aktif pa ajan: sèvè a di si aparèy sa a toujou aktif (epi li konnen konbyen operasyon poko voye).
@@ -383,6 +397,7 @@ export function run({ pull: doPull = true } = {}) {
       res.session = e.code === "SESSION";
     } finally {
       running = null;
+      if (relanse) { relanse = false; setTimeout(() => run({ pull: false }), 0); }
       notify();
     }
     return res;
@@ -420,6 +435,9 @@ export async function pull() {
     if (krt) await db.meta("kredi_tx", krt);
     const krs = kr ? await api.selectAll("grandon_v_kredi_suivis?select=*&order=capture_le.desc").catch(() => null) : null; // fidbak «Pa peye» kredi yo
     if (krs) await db.meta("kredi_fb", krs);
+    // Tranzaksyon «san kanè» (kont bloke jiskaske kanè a ajou). null: sèvè a poko gen fonksyon an.
+    const skl = await api.selectAll("grandon_v_san_kane?select=*&order=kreye_le").catch(() => null);
+    await db.meta("san_kane", skl);
     // Kont garanti yo (Epargne Bloquée, Fonds Garantie Konfyans): sèlman si paramèt «garanti» a aktive sèvis sit la.
     if (modAktif(pa && Object.fromEntries(pa.map((x) => [x.kle, x.vale])), "garanti")) {
       const [gl, gt] = await Promise.all([api.selectAll("grandon_v_garanti?select=*").catch(() => null), api.selectAll("grandon_v_garanti_tx?select=*&order=capture_le").catch(() => null)]);
@@ -525,6 +543,18 @@ export async function model() {
   const [krL, krTx, krFb, krPa] = await Promise.all(["kredi", "kredi_tx", "kredi_fb", "paramet"].map((x) => db.meta(x)));
   M.mod = { garanti: modAktif(krPa, "garanti") ? krPa.garanti : null, konfyans: modAktif(krPa, "konfyans") ? krPa.konfyans : null };
   M.kredi = Array.isArray(krL) ? kreModel(M, krL, krTx || [], krFb || [], Number(((krPa || {}).kredi_gras || {}).jou ?? 5), api.getSession()?.user?.id) : [];
+  // San kanè: tranzaksyon ki poko antre nan kanè a (sèvè + file a), pa kont. M.skDispo: sèvè a gen fonksyon an.
+  const skL = await db.meta("san_kane");
+  M.skDispo = Array.isArray(skL);
+  const sk = [...(skL || [])];
+  for (const o of M.outbox) {
+    if (o.kind === "san_kane" && !sk.some((x) => x.id === o.payload.tx))
+      sk.push({ id: o.payload.tx, kind: o.payload.kind, ref: o.payload.ref, tip: o.payload.tip, montant: o.payload.montant, kane_apre: o.payload.kane_apre ?? null,
+        created_by: api.getSession()?.user?.id, kreye_le: o.payload.kreye_le, konfime_le: null, _pending: true });
+    if (o.kind === "kane_konfime") { const x = sk.find((y) => y.id === o.payload.sk); if (x) x.konfime_le = o.payload.le; }
+  }
+  M.sanKane = sk;
+  M.kaneBlok = (kind, ref) => sk.filter((x) => x.kind === kind && x.ref === ref && !x.konfime_le).sort((a, b) => String(a.kreye_le).localeCompare(String(b.kreye_le)))[0] || null;
   M.garanti = M.mod.garanti ? garModel(M, (await db.meta("garanti")) || [], (await db.meta("garanti_tx")) || [], api.getSession()?.user?.id) : [];
   for (const k of M.comptes.values()) Object.assign(k, { _txs: [], _local: 0, _jodi: 0, _depots: 0, _nDepots: 0, _joursPeye: new Set(), _suivis: [], _demandes: [], _kolekMwa: 0, _alet: [] });
   for (const t of M.txs.values()) {
