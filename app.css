@@ -721,3 +721,8 @@ html[data-look="b"]:not([data-theme="dark"]) .login-logo img.mak-koule { filter:
 .gar-b { display: flex; flex-direction: column; gap: 2px; }
 .gar-b b { font-size: 1.3rem; }
 .kr-gar { display: flex; flex-direction: column; gap: 6px; margin: 8px 0; }
+.badge.kkat { text-transform: none; letter-spacing: 0; font-weight: 700; border: 1px solid currentColor; background: transparent; }
+.badge.kkat-epay { color: var(--ok); }
+.badge.kkat-gar { color: var(--warn, #b7791f); }
+.badge.kkat-kr { color: var(--info, #2b6cb0); }
+.kkat-l { margin: 0 0 8px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
