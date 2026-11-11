@@ -30,7 +30,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "4.72";
+const APP_VERSION = "4.73";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin", kesye: "Responsab kès" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
@@ -1348,7 +1348,8 @@ function rapoGaranti(M, l, dep, ret, montreAjan) {
     <div class="list tx-lis">${l.map((y) => { const c = M.clients.get(y._g.id_personne), D0 = y.tip === "D";
       return `<div class="row txr"><span class="txr-le"><b class="mono">${lèKout(y.capture_le) || "—"}</b></span>
         <span class="txr-main"><span class="txr-t"><b>${d(non(c))}</b> <span class="badge ${D0 ? "info" : "warn"}">${D0 ? t("Depo") : t("Retrè")}</span> ${etaGarTx(y)}</span>
-          <span class="mut sm">${t(GAR_NON[y._g.kalite])} · ${d(y._g.no_compte)}${montreAjan ? ` · <span data-brut>${h(nonAjan(y.created_by))}</span>` : ""}</span></span>
+          <span class="mut sm">${t(GAR_NON[y._g.kalite])} · ${d(y._g.no_compte)}${montreAjan ? ` · <span data-brut>${h(nonAjan(y.created_by))}</span>` : ""}</span>
+          ${y.solde_apres != null ? `<span class="mut sm">${t("kanè avan")} ${gd(y.solde_avant)} → ${t("kanè apre")} ${gd(y.solde_apres)}</span>` : ""}</span>
         <span class="txr-mon"><b class="${D0 ? "in" : "out"}">${D0 ? "+" : "−"}${gd(y.montant)}</b></span></div>`; }).join("") || `<p class="empty">${t("Pa gen tranzaksyon garanti jou sa a.")}</p>`}</div></details>`;
 }
 
@@ -2119,21 +2120,36 @@ async function viewGarantiTx(id, tipR) {
     <p><b>${d(non(c))}</b> · ${d(g.no_compte)}</p>
     <p class="mut sm">${t("Balans valide")} ${gd(g._balans)}${!depo ? ` · ${t("disponib pou retrè")} ${gd(g._dispo)}` : ""} · ${t("san frè")}</p>
     <label>${t("Montan (goud)")} *<input name="montant" type="number" inputmode="decimal" min="1" step="any" required></label>
+    <div class="grid2">
+      <label>${t("Balans kanè a avan")} *<input name="solde_avant" type="number" inputmode="decimal" min="0" step="any" required></label>
+      <label>${t("Balans kanè a apre")} *<input name="solde" type="number" inputmode="decimal" min="0" step="any" required></label>
+    </div>
     <p class="mut sm">${t("Tranzaksyon an ap tann responsab kès la valide l anvan li parèt sou balans lan.")}</p>
     <p class="err-msg" id="err" role="alert"></p>
     <button class="btn pri" type="submit">${depo ? t("Anrejistre depo a") : t("Voye retrè a")}</button>
   </form>`;
   const f = document.getElementById("f");
+  // Balans kanè apre = avan ± montan (sof si ajan an chanje l limenm).
+  const autoApre = () => { const av = f.solde_avant.value, m = Number(f.montant.value); if (av === "" || !(m > 0) || f.solde.dataset.manuel) return; f.solde.value = Number(av) + (depo ? m : -m); };
+  f.solde_avant.oninput = autoApre; f.montant.addEventListener("input", autoApre);
+  f.solde.oninput = () => (f.solde.dataset.manuel = "1");
   f.onsubmit = async (e) => {
     e.preventDefault();
     const err = document.getElementById("err"), m = Math.round(Number(f.montant.value) * 100) / 100;
     if (!(m > 0)) return (err.textContent = t("Mete montan an."));
+    for (const [chan, mesaj] of [["solde_avant", "Mete balans kanè a avan."], ["solde", "Mete balans kanè a apre."]]) {
+      const v = f[chan].value.trim(); f[chan].removeAttribute("aria-invalid");
+      if (v === "" || !(Number(v) >= 0)) { f[chan].setAttribute("aria-invalid", "true"); f[chan].focus(); return (err.textContent = t(mesaj)); }
+    }
+    const av = Number(f.solde_avant.value), ap = Number(f.solde.value);
+    if (Math.abs(av + (depo ? m : -m) - ap) > 0.01 && !(await ui.ask({ titre: "Balans kanè yo pa koresponn ak montan an", ikon: "!", ok: "Kontinye",
+      detay: [["Montan (goud)", gd(m)], ["Kanè avan → apre", `${gd(av)} → ${gd(ap)}`], ["Kanè apre dapre montan an", gd(av + (depo ? m : -m))]] }))) return;
     if (!depo && m > g._dispo) return (err.textContent = `${t("Retrè a depase balans valide a")} (${gd(g._dispo)} ${t("disponib")}).`);
     if (!(await leOk())) return montreLeFèmen();
     if (!(await ui.ask({ titre: depo ? "Anrejistre depo garanti sa a?" : "Voye retrè garanti sa a?", ok: "Konfime", ikon: depo ? "+" : "−", foto: c.photo_url,
-      detay: [["Kliyan", non(c)], ["Kont", `${t(GAR_NON[g.kalite])} · ${g.no_compte}`], ["Montan (goud)", gd(m)]] }))) return;
+      detay: [["Kliyan", non(c)], ["Kont", `${t(GAR_NON[g.kalite])} · ${g.no_compte}`], ["Montan (goud)", gd(m)], ["Balans kanè a avan", gd(av)], ["Balans kanè a apre", gd(ap)]] }))) return;
     f.querySelector("button[type=submit]").disabled = true;
-    await S.enqueue("garanti_tx", { id: S.uuid(), garanti: g.id, tip: depo ? "D" : "R", montant: m, gps: await getGps(5000), capture_le: new Date().toISOString(), appareil: S.appareil() });
+    await S.enqueue("garanti_tx", { id: S.uuid(), garanti: g.id, tip: depo ? "D" : "R", montant: m, solde_avan: av, solde_apre: ap, gps: await getGps(5000), capture_le: new Date().toISOString(), appareil: S.appareil() });
     toast(t(depo ? "Depo a anrejistre: l ap tann validasyon responsab kès la." : "Retrè a voye: l ap tann responsab kès la."), "ok", 5000);
     go(`#/kliyan/${g.id_personne}`);
   };
@@ -2144,6 +2160,7 @@ function kesGarantiHtml(M, l) {
     return `<div class="row kesr" data-kes-gar="${h(y.id)}"><span class="txr-le"><b class="mono">${lèKout(y.capture_le) || "—"}</b><small>${S.jouLokal(new Date(y.capture_le)) === M.today ? t("jodi a") : datKout(S.jouLokal(new Date(y.capture_le)))}</small></span>
       <span class="txr-main"><span class="txr-t"><b>${d(non(c))}</b> <span class="badge ${D ? "info" : "warn"}">${D ? t("Depo") : t("Retrè")}</span></span>
         <span class="mut sm">${t(GAR_NON[g.kalite])} · ${d(g.no_compte)} · <span data-brut>${h(nonAjan(y.created_by))}</span></span>
+        ${y.solde_apres != null ? `<span class="mut sm">${t("kanè avan")} ${gd(y.solde_avant)} → ${t("kanè apre")} ${gd(y.solde_apres)}</span>` : ""}
         <span class="mut sm">${t("Balans valide")} ${gd(g._balans)}${g._bloke ? ` · 🔒 ${t("kredi aktif")}` : ""}</span></span>
       <span class="kes-mon"><b class="${D ? "in" : "out"}">${D ? "+" : "−"}${gd(y.montant)}</b>
         <span class="kes-bt"><button type="button" class="btn sm pri" data-gav="${h(y.id)}">Valide</button><button type="button" class="btn sm danger" data-gar="${h(y.id)}">Rejte</button></span></span></div>`; }).join("")}</div>`;
