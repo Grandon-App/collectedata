@@ -5,6 +5,16 @@
 // Fraz → tradiksyon. Pi long yo aplike anvan pi kout yo.
 const FR = {
   // Navigasyon / tit
+  "Moyenne mobilisation": "Moyenne mobilisation", "Nouvo kliyan mwa a": "Nouveaux clients du mois", "Rekouvreman mwa a": "Recouvrement du mois",
+  "Mwayèn depo ajan an fè pa jou travay nan mwa a (lendi–samdi, san jou ferye).": "Moyenne des dépôts de l'agent par jour ouvrable du mois (lundi–samedi, hors jours fériés).",
+  "Kliyan ajan an ouvri premye kont yo nan mwa a.": "Clients dont l'agent a ouvert le premier compte ce mois-ci.",
+  "Pousantaj sa kliyan pòtfèy la te dwe peye depi 1ye mwa a ki rantre.": "Pourcentage de ce que les clients du portefeuille devaient payer depuis le 1er du mois qui est rentré.",
+  "Objektif mwa a": "Objectifs du mois", "Objektif ekip la · mwa a": "Objectifs de l'équipe · ce mois", "Objektif": "Objectif", "jiska jodi a": "à ce jour", "jou travay": "jours ouvrables",
+  "Vèt": "Vert", "Jòn": "Jaune", "Wouj": "Rouge", "Chanje": "Modifier", "Chanje metrik yo": "Modifier les indicateurs",
+  "objektif la jiska jodi a": "de l'objectif à ce jour", "Pa gen peman prevwa nan mwa a.": "Aucun paiement prévu ce mois-ci.",
+  "Metrik Tablo ajan yo": "Indicateurs du tableau des agents", "Chwazi metrik ajan yo wè sou Tablo yo, objektif chak mwa a ak limit koulè yo. Sa aplike pou sèvis sa a sèlman.": "Choisissez les indicateurs affichés sur le tableau des agents, les objectifs mensuels et les seuils de couleur. Cela s'applique à ce service uniquement.",
+  "Metrik ki parèt": "Indicateurs affichés", "Objektif yo": "Objectifs", "goud pa jou": "gourdes par jour", "Koulè yo": "Couleurs", "Vèt apati": "Vert à partir de", "Jòn apati": "Jaune à partir de",
+  "Anba limit jòn nan, metrik la wouj.": "Sous le seuil jaune, l'indicateur est rouge.", "Objektif yo pa bon.": "Objectifs invalides.", "Limit vèt la dwe pi wo pase limit jòn nan.": "Le seuil vert doit être supérieur au seuil jaune.",
   "Tablo de bò": "Tableau de bord", "Tablo": "Tableau", "Pòtfèy": "Portefeuille", "Pòtfèy mwen": "Mon portefeuille", "Poko wè": "Pas encore vu", "Pa jou peman": "Pas jour de paiement", "Kliyan": "Clients", "Epay": "Épargne", "Rapò": "Rapport",
   "Paramèt": "Paramètres", "Senkronizasyon": "Synchronisation", "Navigasyon prensipal": "Navigation principale",
   "Paj sa a ap vini byento.": "Cette page arrive bientôt.", "Bonjou": "Bonjour",
