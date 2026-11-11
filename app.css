@@ -735,7 +735,8 @@ html[data-look="b"]:not([data-theme="dark"]) .login-logo img.mak-koule { filter:
 .metrik-g { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; }
 .metrik { display: flex; flex-direction: column; gap: 4px; border-left: 5px solid var(--mc, var(--line, #ccc)); min-width: 0; }
 .metrik .metrik-n { font-size: .85em; font-weight: 600; opacity: .85; }
-.metrik b { font-size: 1.45em; line-height: 1.1; } .metrik b small { font-size: .55em; font-weight: 500; }
+.metrik > b { font-size: 1.45em; line-height: 1.1; } .metrik > b small { font-size: .55em; font-weight: 500; }
+.metrik-sem b, .metrik-fen b { font-size: 1em; }
 .metrik .metrik-bar i { background: var(--mc); }
 .metrik-eta { font-size: .82em; font-weight: 600; color: var(--mc); overflow-wrap: anywhere; } .metrik-eta .mut { font-weight: 400; }
 .metrik-eta i, .metrik-t td i, .metrik-leje i { display: inline-block; width: .7em; height: .7em; border-radius: 50%; background: var(--mc); margin-right: 5px; vertical-align: baseline; }
@@ -745,3 +746,7 @@ html[data-look="b"]:not([data-theme="dark"]) .login-logo img.mak-koule { filter:
 .metrik-t th, .metrik-t td { padding: 7px 8px; border-bottom: 1px solid color-mix(in srgb, currentColor 12%, transparent); text-align: left; white-space: nowrap; }
 .metrik-t td { color: var(--mc); font-weight: 600; } .metrik-t td small { display: block; font-weight: 400; opacity: .8; }
 .metrik-leje span { margin-right: 10px; white-space: nowrap; }
+.metrik-sem, .metrik-fen { display: flex; flex-direction: column; gap: 2px; margin-top: 8px; padding-top: 8px; border-top: 1px dashed color-mix(in srgb, currentColor 18%, transparent); font-size: .86em; }
+.metrik-sem > span > i, .metrik-fen i { display: inline-block; width: .7em; height: .7em; border-radius: 50%; background: var(--mc); margin-right: 5px; }
+.esk-l { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; }
+.deb-l { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 4px 10px; } .deb-l input { grid-column: 1 / -1; }

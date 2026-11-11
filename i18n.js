@@ -5,6 +5,15 @@
 // Fraz → tradiksyon. Pi long yo aplike anvan pi kout yo.
 const FR = {
   // Navigasyon / tit
+  "Mwa": "Mois", "depi": "depuis", "estimasyon": "estimation", "Semèn sa a": "Cette semaine", "fè deja": "déjà fait", "rete": "reste", "sou": "sur", "pou": "pour", "kliyan pou": "clients pour",
+  "Samdi a, w ap evalye sou total depo semèn nan konpare ak objektif la.": "Samedi, vous serez évalué sur le total des dépôts de la semaine par rapport à l'objectif.",
+  "Samdi a, w ap evalye sou kantite nouvo kliyan semèn nan.": "Samedi, vous serez évalué sur le nombre de nouveaux clients de la semaine.",
+  "Fen mwa a": "Fin du mois", "Si w kenbe ritm sa a": "À ce rythme", "Pou rive sou objektif la": "Pour atteindre l'objectif", "jou ki rete yo": "jours restants",
+  "Rete pou kolekte jiska fen mwa a": "Reste à collecter d'ici la fin du mois", "sem.": "sem.", "goud pa jou, pa mwa ajan an": "gourdes par jour, selon le mois de l'agent",
+  "Yon mwa": "Un mois", "Apre dènye mwa a, objektif la rete menm jan an.": "Après le dernier mois, l'objectif reste le même.", "Dat debi ajan yo": "Date de début des agents",
+  "Mwa 1 kòmanse dat sa a. Si w pa mete dat, aplikasyon an pran dat premye kont nan pòtfèy ajan an (estimasyon).": "Le mois 1 commence à cette date. Sans date, l'application prend la date du premier compte du portefeuille de l'agent (estimation).",
+  "Dat debi a pa ka nan lavni.": "La date de début ne peut pas être dans le futur.",
+  "Mwayèn depo ajan an fè pa jou travay nan mwa a (lendi–samdi, san jou ferye). Objektif la monte chak mwa depi dat debi ajan an.": "Moyenne des dépôts de l'agent par jour ouvrable du mois (lundi–samedi, hors jours fériés). L'objectif augmente chaque mois depuis la date de début de l'agent.",
   "Moyenne mobilisation": "Moyenne mobilisation", "Nouvo kliyan mwa a": "Nouveaux clients du mois", "Rekouvreman mwa a": "Recouvrement du mois",
   "Mwayèn depo ajan an fè pa jou travay nan mwa a (lendi–samdi, san jou ferye).": "Moyenne des dépôts de l'agent par jour ouvrable du mois (lundi–samedi, hors jours fériés).",
   "Kliyan ajan an ouvri premye kont yo nan mwa a.": "Clients dont l'agent a ouvert le premier compte ce mois-ci.",
