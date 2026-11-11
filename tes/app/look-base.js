@@ -116,6 +116,7 @@ export function rapo(ctx) {
     ${K("fre", "Frè", kpi.fre, `<span class="fee">${gd(kpi.fre)}</span>`, `${kpi.nFre} · ${t("pa afekte kach la")}`)}
     ${K("viman", "Viman", kpi.vim, gd(kpi.vim), `${kpi.nVim} · ${t("pa afekte kach la")}`)}
     ${K("deklare", "Balans deklare (total)", kpi.deklare, gd(kpi.deklare), `${kpi.nDeklare} kont deklare`)}
+    ${(kpi.ekstra || []).map((x) => K(x.k, x.l, x.v, `<span class="${x.out ? "out" : "in"}">${gd(x.v)}</span>`, x.sub)).join("")}
     ${K("cycles", "Cycle kreye", kpi.cycles, kpi.cycles, t(nonJou(i)).toLowerCase())}
     ${K("papeye", "Kliyan ki pa peye", kpi.swivi, kpi.swivi, t("fidbak anrejistre"))}
     ${K("demann", "Demann an atant", kpi.dmAtant, kpi.dmAtant, t("retrè / viman"))}
