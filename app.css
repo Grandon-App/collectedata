@@ -785,3 +785,5 @@ html[data-look="b"]:not([data-theme="dark"]) .login-logo img.mak-koule { filter:
 .siyati-opt { margin: 10px 0; border: 1px dashed color-mix(in srgb, currentColor 25%, transparent); border-radius: 12px; padding: 8px 12px; }
 .siyati-opt summary { cursor: pointer; font-weight: 600; padding: 4px 0; }
 .siyati-opt[open] summary { margin-bottom: 8px; }
+.kes-modif { display: block; color: var(--warn); font-weight: 600; margin-top: 2px; }
+.kesr.kes-bloke { background: color-mix(in srgb, var(--warn) 8%, transparent); }

@@ -30,7 +30,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "4.87";
+const APP_VERSION = "4.88";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin", kesye: "Responsab kès" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
@@ -1611,7 +1611,7 @@ async function viewEpay() {
   const jouSwivi = (x) => S.jouLokal(new Date(x.capture_le));
   const semenDe = S.ajouteJou(M.today, -6);
   const nFbJodi = swivis.filter((x) => jouSwivi(x) === M.today).length, nFbSemen = swivis.filter((x) => jouSwivi(x) >= semenDe).length;
-  const modifAtant = [...M0.modif.values()].filter((x) => x.statut === "an_atant" && (x.kind === "kliyan" || x.kind === "cycle" || x.kind === "siyati")).sort((a, b) => String(a.kreye_le).localeCompare(String(b.kreye_le)));
+  const modifAtant = [...M0.modif.values()].filter((x) => x.statut === "an_atant" && (x.kind === "kliyan" || x.kind === "cycle" || x.kind === "siyati" || x.kind === "tx")).sort((a, b) => String(a.kreye_le).localeCompare(String(b.kreye_le)));
   const vipAtant = [...M0.demandes.values()].filter((x) => x.statut === "otorizasyon" && !x._pending).sort((a, b) => String(a.capture_le).localeCompare(String(b.capture_le)));
   const ongs = [["kont", "Kont", null], ["tx", "Tranzaksyon", null], ["fidbak", "Fidbak", nFbJodi || null], ...(man ? [["valid", "Validasyon", modifAtant.length + vipAtant.length || null]] : [])];
   const st = statsEpay(M);
@@ -3638,17 +3638,21 @@ function kesFiltre(M, l, kle) {
     return non(c).toLowerCase().includes(v) || kontKoresponn(k, v);
   })()));
 }
+// Depo ki gen yon demann modifikasyon an atant (oswa apwouve men poko aplike): pa ka valide.
+const modifBloke = (M, id) => [...M.modif.values()].find((m) => m.kind === "tx" && m.ref_id === id && (m.statut === "an_atant" || m.statut === "apwouve"));
 function rowDepoKes(M, x) {
   const k = M.comptes.get(x.id_compte_epargne), c = k && M.clients.get(k.id_personne), j = S.jouTx(x), id = x.id_transaction_epargne;
   const kanè = [x.solde_avant_declare, x.solde_declare].map((v) => (v != null && v !== "" ? gd(v) : "—"));
-  return `<div class="row kesr${kesChwa.has(id) ? " on" : ""}" data-kesr="${h(id)}">
-    <label class="kes-chk"><input type="checkbox" data-chk="${h(id)}" ${kesChwa.has(id) ? "checked" : ""} aria-label="${h(t("Chwazi"))}: ${h(non(c))} ${h(gd(x.montant))}"></label>
+  const dm = modifBloke(M, id);
+  return `<div class="row kesr${kesChwa.has(id) ? " on" : ""}${dm ? " kes-bloke" : ""}" data-kesr="${h(id)}">
+    <label class="kes-chk"><input type="checkbox" data-chk="${h(id)}" ${kesChwa.has(id) ? "checked" : ""} ${dm ? "disabled" : ""} aria-label="${h(t("Chwazi"))}: ${h(non(c))} ${h(gd(x.montant))}"></label>
     <span class="txr-le"><b class="mono">${lèKout(x.date_transaction) || "—"}</b><small>${j === M.today ? t("jodi a") : datKout(j)}</small></span>
     <span class="txr-main"><span class="txr-t"><b>${d(non(c))}</b></span>
       <span class="mut sm">${badjKat("epay")} ${d(k?.no_compte || "")} · plan ${gd(k?.montant_plan || 0)}</span>
-      <span class="mut sm">${t("kanè avan")} ${kanè[0]} → ${t("kanè apre")} ${kanè[1]}</span></span>
+      <span class="mut sm">${t("kanè avan")} ${kanè[0]} → ${t("kanè apre")} ${kanè[1]}</span>
+      ${dm ? `<span class="kes-modif sm" data-modif-atant="${h(id)}">⚠ ${t(dm.statut === "apwouve" ? "Modifikasyon apwouve: ajan an poko korije l" : "Demann modifikasyon an atant")} (${(dm.chan || []).map((k0) => t(etikètChan("tx", k0))).join(", ")}) · ${t("trete l anvan ou valide")}</span>` : ""}</span>
     <span class="kes-mon"><b class="in">+${gd(x.montant)}</b>
-      <span class="kes-bt"><button type="button" class="btn sm pri" data-dv="${h(id)}">Valide</button><button type="button" class="btn sm danger" data-dr="${h(id)}">Rejte</button></span></span>
+      <span class="kes-bt"><button type="button" class="btn sm pri" data-dv="${h(id)}" ${dm ? "disabled" : ""}>Valide</button><button type="button" class="btn sm danger" data-dr="${h(id)}">Rejte</button></span></span>
   </div>`;
 }
 function kesDepoHtml(M, l) {
@@ -3766,6 +3770,10 @@ async function viewKes() {
   $app.querySelectorAll("[data-mnon]").forEach((b) => (b.onclick = () => decideModif(M, b.dataset.mnon, false)));
 }
 async function kesDeside(M, ids, ok) {
+  if (ok) {
+    const bl = ids.filter((id) => modifBloke(M, id));
+    if (bl.length) { ids = ids.filter((id) => !modifBloke(M, id)); if (!ids.length) return ui.info(t("Demann modifikasyon an atant"), t("Depo sa a gen yon demann modifikasyon an atant. Trete demann lan anvan ou valide l.")); toast(`${bl.length} ${t("depo gen demann modifikasyon: yo pa valide")}`, "info", 5000); }
+  }
   if (!ids.length) return;
   if (!navigator.onLine) return ui.info("Pa gen koneksyon.", "Fòk ou gen entènèt pou valide oswa rejte depo yo.");
   const xs = ids.map((id) => M.txs.get(id)).filter(Boolean);
@@ -3784,7 +3792,7 @@ async function kesDeside(M, ids, ok) {
   try {
     const r = await api.rpc("grandon_depo_valide", { p_ids: ids, p_ok: ok, p_motif: motif });
     ids.forEach((i) => kesChwa.delete(i));
-    toast(`${r?.trete ?? ids.length} ${t(ok ? "depo valide" : "depo rejte")} · ${gd(r?.total ?? total)}${r?.deja ? ` · ${r.deja} ${t("te deja trete")}` : ""}`, "ok");
+    toast(`${r?.trete ?? ids.length} ${t(ok ? "depo valide" : "depo rejte")} · ${gd(r?.total ?? total)}${r?.deja ? ` · ${r.deja} ${t("te deja trete")}` : ""}${r?.modif_an_atant ? ` · ${r.modif_an_atant} ${t("gen demann modifikasyon")}` : ""}`, "ok");
     await S.pull();
   } catch (e) { return ui.info("Erè", e.message); }
   render();
