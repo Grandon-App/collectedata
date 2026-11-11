@@ -750,3 +750,27 @@ html[data-look="b"]:not([data-theme="dark"]) .login-logo img.mak-koule { filter:
 .metrik-sem > span > i, .metrik-fen i { display: inline-block; width: .7em; height: .7em; border-radius: 50%; background: var(--mc); margin-right: 5px; }
 .esk-l { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; }
 .deb-l { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 4px 10px; } .deb-l input { grid-column: 1 / -1; }
+/* Rapò rekouvreman */
+.rek-lyen { margin-bottom: 12px; }
+.rek-ch { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; margin: 10px 0; } .rek-ch label { flex: 1 1 160px; } .rek-ch .btn { flex: 0 0 auto; }
+.rek-blok { margin: 12px 0; } .rek-h2 { margin-top: 20px; } .rek-blok h3 { margin: 0; font-size: 1.05em; }
+.rek-t { width: 100%; border-collapse: collapse; font-size: .92em; }
+.rek-t th, .rek-t td { padding: 7px 8px; border-bottom: 1px solid color-mix(in srgb, currentColor 12%, transparent); text-align: left; white-space: nowrap; }
+.rek-t thead th { font-size: .85em; opacity: .75; } .rek-t td small { display: block; opacity: .7; font-size: .8em; }
+.rek-t .n { text-align: right; font-variant-numeric: tabular-nums; } .rek-t tfoot th, .rek-t tfoot td { font-weight: 700; border-bottom: 0; }
+.rek-p { font-weight: 700; color: var(--mc); padding: 2px 8px; border-radius: 99px; background: color-mix(in srgb, var(--mc) 14%, transparent); white-space: nowrap; }
+@media print {
+  html.enprime { --bg: #fff; color-scheme: light; }
+  html.enprime body { background: #fff !important; color: #111 !important; }
+  html.enprime #bar, html.enprime #nav, html.enprime .no-print, html.enprime .toast, html.enprime [class*="toast"], html.enprime aside, html.enprime .sidebar { display: none !important; }
+  html.enprime #app { margin: 0 !important; padding: 0 !important; max-width: none !important; }
+  html.enprime .card { box-shadow: none !important; border: 1px solid #ddd !important; background: #fff !important; color: #111 !important; }
+  html.enprime .tbl-wrap { overflow: visible !important; }
+  html.enprime .rek-ajan { break-inside: avoid-page; } html.enprime .rek-h2 { break-before: page; }
+  html.enprime a { color: inherit !important; text-decoration: none !important; }
+  html.enprime #app, html.enprime #app * { color: #111 !important; }
+  html.enprime #app .err-t, html.enprime #app .out { color: #b42318 !important; } html.enprime #app .in { color: #1e7b45 !important; }
+  html.enprime #app .m-vet { --mc: #1e7b45; } html.enprime #app .m-jon { --mc: #9a5b00; } html.enprime #app .m-wouj { --mc: #b42318; }
+  html.enprime #app .rek-p { color: var(--mc) !important; }
+  @page { size: A4; margin: 12mm; }
+}
