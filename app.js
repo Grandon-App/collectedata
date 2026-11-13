@@ -30,7 +30,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "4.90";
+const APP_VERSION = "4.91";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin", kesye: "Responsab kès" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
@@ -1279,7 +1279,8 @@ async function decideModif(M, id, ok) {
   try {
     await api.rpc("grandon_modif_deside", { p_id: id, p_ok: ok, p_motif: motif });
     toast(ok ? (x.operasyon === "siprime" ? "Fèt." : "Otorizasyon an bay.") : "Demann lan refize.");
-    await S.pull();
+    await S.patch("modif", [id], { statut: !ok ? "refize" : x.operasyon === "siprime" ? "itilize" : "apwouve" });
+    S.pullFon();
   } catch (e) { return ui.info("Erè", e.message); }
   render();
 }
@@ -1359,7 +1360,8 @@ async function decider(M, id, ok) {
   try {
     await api.rpc("grandon_decider", { p_id: id, p_ok: ok, p_motif: motif });
     toast(ok ? "Demann lan apwouve." : "Demann lan refize.");
-    await S.pull();
+    await S.patch("demandes", [id], { statut: ok ? "approuvee" : "refusee" });
+    S.pullFon();
   } catch (e) { return ui.info("Erè", e.message); }
   render();
 }
@@ -2647,7 +2649,8 @@ async function kesGarantiDeside(ids, ok, total) {
   try {
     const r = await api.rpc("grandon_garanti_valide", { p_ids: ids, p_ok: ok, p_motif: motif });
     toast(`${r?.trete ?? ids.length} ${t(ok ? "tranzaksyon valide" : "tranzaksyon rejte")} · ${gd(r?.total ?? total)}`, "ok");
-    await S.pull();
+    await S.patchMeta("garanti_tx", "id", ids, { statut: ok ? "confirmed" : "rejected" });
+    S.pullFon();
   } catch (e) { return ui.info("Erè", t(e.message)); }
   render();
 }
@@ -2771,7 +2774,8 @@ async function kesKrediDeside(ids, ok, total) {
   try {
     const r = await api.rpc("grandon_kredi_valide", { p_ids: ids, p_ok: ok, p_motif: motif });
     toast(`${r?.trete ?? ids.length} ${t(ok ? "peman valide" : "peman rejte")} · ${gd(r?.total ?? total)}`, "ok");
-    await S.pull();
+    await S.patchMeta("kredi_tx", "id_transaction_credit", ids, { validation_status: ok ? "confirmed" : "rejected" });
+    S.pullFon();
   } catch (e) { return ui.info("Erè", e.message); }
   render();
 }
@@ -3804,7 +3808,9 @@ async function kesDeside(M, ids, ok) {
     const r = await api.rpc("grandon_depo_valide", { p_ids: ids, p_ok: ok, p_motif: motif });
     ids.forEach((i) => kesChwa.delete(i));
     toast(`${r?.trete ?? ids.length} ${t(ok ? "depo valide" : "depo rejte")} · ${gd(r?.total ?? total)}${r?.deja ? ` · ${r.deja} ${t("te deja trete")}` : ""}${r?.modif_an_atant ? ` · ${r.modif_an_atant} ${t("gen demann modifikasyon")}` : ""}`, "ok");
-    await S.pull();
+    // Paj la mete l ajou touswit; done sèvè yo (balans, elatriye) rive an awyè plan.
+    if (!r?.modif_an_atant) await S.patch("transactions", ids, { validation_status: ok ? "confirmed" : "rejected" });
+    S.pullFon();
   } catch (e) { return ui.info("Erè", e.message); }
   render();
 }

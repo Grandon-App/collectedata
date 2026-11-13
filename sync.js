@@ -425,36 +425,42 @@ export function run({ pull: doPull = true } = {}) {
 
 export async function pull() {
   const depi = ajouteJou(jodi(), -200);
-  const [clients, comptes, plans, txs] = await Promise.all([
+  const p1 = Promise.all([
     api.selectAll("grandon_v_clients?select=id_personne,prenom,nom,pseudo,telephone,code_client,sexe,date_naissance,piece,numero_piece,adresse,lieu_de_travail,occupation,secteur,activite,point_de_vente,capacite_distribution,photo_url,gps_lat,gps_lng&order=prenom"),
     api.selectAll("grandon_v_comptes?select=*&order=date_debut.desc"),
     api.selectAll("grandon_plans?actif=is.true&select=montant&order=montant"),
     api.selectAll(`grandon_v_transactions?date_transaction=gte.${depi}&select=id_transaction_epargne,id_compte_epargne,type_transaction,montant,date_transaction,validation_status,solde_apres_transactions,created_by,solde_declare,solde_avant_declare,type_frais,virement_from,virement_to&order=date_transaction`),
   ]);
   const depi2 = ajouteJou(jodi(), -90);
-  const [feries, suivis, demandes, alet, modif] = await Promise.all([
+  const p2 = Promise.all([
     api.selectAll("grandon_jours_feries?select=jour,libelle&order=jour"),
     api.selectAll(`grandon_suivis?capture_le=gte.${depi2}&select=id,id_compte_epargne,motif,note,agent_id,capture_le,gps_lat,gps_lng,gps_precision_m,distans_m,kontwol&order=capture_le.desc`),
     api.selectAll(`grandon_demandes?or=${encodeURIComponent(`(statut.eq.en_attente,created_at.gte.${depi2})`)}&select=*&order=created_at.desc`),
     api.selectAll(`grandon_alet?or=${encodeURIComponent(`(fermen_le.is.null,fermen_le.gte.${depi2})`)}&select=*&order=kreye_le.desc`).catch(() => null),
     api.selectAll(`grandon_modif?or=${encodeURIComponent(`(statut.in.(an_atant,apwouve),created_at.gte.${depi2})`)}&select=*&order=kreye_le.desc`).catch(() => null),
   ]);
+  // De gwoup demann yo pati an menm tan.
+  const [[clients, comptes, plans, txs], [feries, suivis, demandes, alet, modif]] = await Promise.all([p1, p2]);
   try { // non ajan yo (manadjè yo wè tout moun; yon ajan wè sèlman pa l)
-    const pa = await api.select("grandon_paramet?select=kle,vale").catch(() => null); // lè operasyon, elatriye
-    const sv = await api.select(`grandon_sevis?kod=eq.${C.SEVIS || "grandon"}&select=kod,non,vesman,plan_lib_min,gen_vip,fre_sevis,fre_dat,fre_lib,fre_lib_elijib`).catch(() => null);
+    // Tout demann sa yo pati an menm tan (avan: youn apre lòt, sa te ralanti chak rechajman).
+    const [pa, sv, aj, kr0, krt0, krs0, skl] = await Promise.all([
+      api.select("grandon_paramet?select=kle,vale").catch(() => null), // lè operasyon, elatriye
+      api.select(`grandon_sevis?kod=eq.${C.SEVIS || "grandon"}&select=kod,non,vesman,plan_lib_min,gen_vip,fre_sevis,fre_dat,fre_lib,fre_lib_elijib`).catch(() => null),
+      api.select("grandon_ajan?select=user_id,nom,role,actif"),
+      api.selectAll("grandon_v_kredi?select=*&order=created_at.desc").catch(() => null), // kredi (sèvis sit la)
+      api.selectAll("grandon_v_kredi_tx?select=*&order=date_transaction").catch(() => null), // peman kredi yo
+      api.selectAll("grandon_v_kredi_suivis?select=*&order=capture_le.desc").catch(() => null), // fidbak «Pa peye» kredi yo
+      // Tranzaksyon «san kanè» (kont bloke jiskaske kanè a ajou). null: sèvè a poko gen fonksyon an.
+      api.selectAll("grandon_v_san_kane?select=*&order=kreye_le").catch(() => null),
+    ]);
+    const kr = kr0, krt = kr ? krt0 : null, krs = kr ? krs0 : null;
     if (sv) await db.meta("sevis_cfg", sv[0] || null);
     if (pa) await db.meta("paramet", Object.fromEntries(pa.map((x) => [x.kle, x.vale])));
-    const aj = await api.select("grandon_ajan?select=user_id,nom,role,actif");
     await db.meta("ajans", Object.fromEntries(aj.map((x) => [x.user_id, x.nom])));
     await db.meta("ekip", aj.map((x) => ({ user_id: x.user_id, nom: x.nom, role: x.role, actif: x.actif })));
-    const kr = await api.selectAll("grandon_v_kredi?select=*&order=created_at.desc").catch(() => null); // kredi (sèvis sit la)
     if (kr) await db.meta("kredi", kr);
-    const krt = kr ? await api.selectAll("grandon_v_kredi_tx?select=*&order=date_transaction").catch(() => null) : null; // peman kredi yo
     if (krt) await db.meta("kredi_tx", krt);
-    const krs = kr ? await api.selectAll("grandon_v_kredi_suivis?select=*&order=capture_le.desc").catch(() => null) : null; // fidbak «Pa peye» kredi yo
     if (krs) await db.meta("kredi_fb", krs);
-    // Tranzaksyon «san kanè» (kont bloke jiskaske kanè a ajou). null: sèvè a poko gen fonksyon an.
-    const skl = await api.selectAll("grandon_v_san_kane?select=*&order=kreye_le").catch(() => null);
     await db.meta("san_kane", skl);
     // Kont garanti yo (Epargne Bloquée, Fonds Garantie Konfyans): sèlman si paramèt «garanti» a aktive sèvis sit la.
     if (modAktif(pa && Object.fromEntries(pa.map((x) => [x.kle, x.vale])), "garanti")) {
@@ -473,6 +479,27 @@ export async function pull() {
   await db.replaceAll("plans", plans);
   await db.replaceAll("transactions", txs);
   await db.meta("last_pull", new Date().toISOString());
+}
+
+// Rechajman an awyè plan: paj la mete l ajou touswit ak chanjman lokal la (patch), epi done sèvè a rive apre.
+// Si yon rechajman deja ap fèt, nou make yon lòt pou apre (pa janm de an menm tan).
+let fonEnKou = null, fonAnkò = false;
+export function pullFon() {
+  if (fonEnKou) { fonAnkò = true; return fonEnKou; }
+  fonEnKou = (async () => {
+    try { do { fonAnkò = false; await pull(); notify(); } while (fonAnkò); }
+    catch (e) { console.warn("pullFon", e); }
+    finally { fonEnKou = null; }
+  })();
+  return fonEnKou;
+}
+// Mete chan yo ajou lokalman (IndexedDB) pou yon lis id, san tann sèvè a.
+export async function patch(store, ids, chan) {
+  for (const id of ids) { const x = await db.get(store, id); if (x) await db.put(store, { ...x, ...chan }); }
+}
+export async function patchMeta(kle, idChan, ids, chan) {
+  const l = await db.meta(kle); if (!Array.isArray(l)) return;
+  const st = new Set(ids); await db.meta(kle, l.map((x) => (st.has(x[idChan]) ? { ...x, ...chan } : x)));
 }
 
 // ---------- Modèl lokal: done sèvè + sa ki nan file a ----------
