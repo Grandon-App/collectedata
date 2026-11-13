@@ -30,7 +30,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "4.89";
+const APP_VERSION = "4.90";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin", kesye: "Responsab kès" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
@@ -3304,7 +3304,7 @@ async function viewTxNew(compteId) {
     <p class="mut sm" id="hint"></p>
     ${skOk ? kaneChk() : ""}
     <div class="grid2" id="kane-chan">
-      <label>Balans kanè a avan *<input name="solde_avant" type="number" inputmode="decimal" min="0" step="any" required></label>
+      <label>Balans kanè a avan *<input name="solde_avant" type="number" inputmode="decimal" min="0" step="any" required${dKane ? ` placeholder="${t("dènye kanè")}: ${Number(dKane.solde_declare)}"` : ""}></label>
       <label>Balans kanè a apre *<input name="solde" type="number" inputmode="decimal" min="0" step="any" required></label>
     </div>
     <p class="err-msg" id="err" role="alert"></p>
@@ -3366,6 +3366,14 @@ async function viewTxNew(compteId) {
       const v = f[chan].value.trim();
       f[chan].removeAttribute("aria-invalid");
       if (v === "" || !(Number(v) >= 0)) { f[chan].setAttribute("aria-invalid", "true"); f[chan].focus(); return (err.textContent = t(mesaj)); }
+    }
+    // Balans avan an dwe swiv dènye balans kanè ki te deklare sou kont lan. Sa kenbe erè kote ajan an chanje plas
+    // montan an ak balans avan an (kalkil avan + montan = apre a toujou bon nan ka sa a).
+    if (!sanKane && dKane) {
+      const dBal = Number(dKane.solde_declare), avS = Number(f.solde_avant.value);
+      if (Math.abs(avS - dBal) > 0.01 && !(await ui.ask({ titre: "Balans kanè avan an pa koresponn ak dènye kanè a", ikon: "!", ok: "Kontinye kanmenm", anile: "Korije",
+        tekst: Math.abs(m - dBal) < 0.01 ? t("Verifye ou pa chanje plas montan an ak balans kanè avan an.") : t("Verifye kanè kliyan an ak montan an."),
+        detay: [["Dènye balans kanè", gd(dBal)], ["Balans avan ou mete", gd(avS)], ["Montan (goud)", gd(m)]] }))) { f.solde_avant.setAttribute("aria-invalid", "true"); f.solde_avant.focus(); return; }
     }
     if (typ === "D" && plan && m < plan && !(await ui.ask({ titre: "Montan an pi piti pase plan an", ikon: "!", ok: "Kontinye",
       detay: [["Montan (goud)", gd(m)], ["Minimòm plan an", gd(plan)]] }))) return;
