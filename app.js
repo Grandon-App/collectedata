@@ -30,7 +30,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "4.88";
+const APP_VERSION = "4.89";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin", kesye: "Responsab kès" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
@@ -3369,7 +3369,10 @@ async function viewTxNew(compteId) {
     }
     if (typ === "D" && plan && m < plan && !(await ui.ask({ titre: "Montan an pi piti pase plan an", ikon: "!", ok: "Kontinye",
       detay: [["Montan (goud)", gd(m)], ["Minimòm plan an", gd(plan)]] }))) return;
-    const kBaz = dKane ? Number(dKane.solde_declare) : null, kAtann = kBaz != null ? kBaz + (typ === "D" ? m : -m) : null;
+    // San kanè: app la ranpli balans avan/apre otomatikman (dènye balans kanè deklare, sinon balans sistèm lan),
+    // pou tranzaksyon an pa parèt ak balans vid.
+    const kSis = k._solde != null ? Number(k._solde) : k.solde_actuel != null ? Number(k.solde_actuel) : null;
+    const kBaz = dKane ? Number(dKane.solde_declare) : kSis, kAtann = kBaz != null ? kBaz + (typ === "D" ? m : -m) : null;
     const av = sanKane ? kBaz : Number(f.solde_avant.value), ap = sanKane ? kAtann : Number(f.solde.value);
     const kd = typ === "V" ? M.comptes.get(f.dest.value) : null;
     const lib = Object.fromEntries(TIP_TX)[typ];
@@ -3377,11 +3380,11 @@ async function viewTxNew(compteId) {
       foto: c?.photo_url, ikon: typ === "D" ? "+" : "−", detay: [["Kliyan", non(c)], ["Kategori kont", t(KAT_KONT.epay)], ["Kont", k.no_compte || t("cycle poko voye")], ["Montan (goud)", gd(m)],
         ...(typ === "FL" ? [["Tip frè", f.type_frais.value]] : []),
         ...(kd ? [["Kont ki resevwa", `${non(M.clients.get(kd.id_personne))} · ${kd.no_compte}`]] : []),
-        ...(sanKane ? [["Kanè", `📒 ${t("San kanè")} · ${t("kont lan ap bloke")}`], ["Balans kanè a dwe vin", ap != null ? gd(ap) : "—"]] : [["Balans kanè a avan", gd(av)], ["Balans kanè a apre", gd(ap)]])] }))) return;
+        ...(sanKane ? [["Kanè", `📒 ${t("San kanè")} · ${t("kont lan ap bloke")}`], ["Balans kanè a avan (oto)", av != null ? gd(av) : "—"], ["Balans kanè a dwe vin (oto)", ap != null ? gd(ap) : "—"]] : [["Balans kanè a avan", gd(av)], ["Balans kanè a apre", gd(ap)]])] }))) return;
     const b = f.querySelector("button[type=submit]"); b.disabled = true;
     const txId = S.uuid();
     if (sanKane) await S.enqueue("san_kane", { id: `sk-${txId}`, tx: txId, kind: "epay", ref: k.id_compte_epargne, tip: typ, montant: m, kane_apre: ap, kreye_le: new Date().toISOString() });
-    const base = { id: txId, compte: k.id_compte_epargne, montant: m, solde_avant_declare: sanKane ? null : av, solde_declare: sanKane ? null : ap,
+    const base = { id: txId, compte: k.id_compte_epargne, montant: m, solde_avant_declare: av, solde_declare: ap,
       note: null, gps: await getGps(5000), capture_le: new Date().toISOString() };
     const deps = [...(k._pending ? [k.id_compte_epargne] : []), ...(sanKane ? [`sk-${txId}`] : [])];
     if (typ === "R" || typ === "V") {

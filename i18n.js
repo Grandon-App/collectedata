@@ -183,7 +183,7 @@ const FR = {
   "Tip frè": "Type de frais", "Chwazi tip frè a.": "Choisissez le type de frais.", "Chwazi kont ki resevwa viman an.": "Choisissez le compte bénéficiaire.",
   "Frè a soti sou kont kliyan an. Li pa afekte kach ou.": "Les frais sont prélevés sur le compte du client, sans effet sur votre caisse.",
   "Kòb la ap soti sou kont sa a pou l antre sou lòt kont lan.": "Le montant sort de ce compte pour entrer sur l'autre compte.",
-  "Frè a anrejistre.": "Frais enregistrés.", "Balans kanè a avan": "Solde du carnet avant", "Balans kanè a apre": "Solde du carnet après",
+  "Frè a anrejistre.": "Frais enregistrés.", "Balans kanè a avan": "Solde du carnet avant", "Balans kanè a avan (oto)": "Solde du carnet avant (auto)", "Balans kanè a dwe vin (oto)": "Le carnet doit devenir (auto)", "Balans kanè a apre": "Solde du carnet après",
   "kanè avan": "carnet avant", "kanè apre": "carnet après", "Pa peye": "N'a pas payé", "Pa peye · Fidbak": "Non payé · Retour",
   "Kliyan an pa peye": "Le client n'a pas payé", "Nòt (opsyonèl)": "Note (facultatif)", "Fidbak la anrejistre.": "Retour enregistré.",
   "Fidbak anrejistre": "Retour enregistré", "Fidbak": "Retours", "Kliyan an di pou m repase": "Le client demande de repasser",
