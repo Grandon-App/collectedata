@@ -30,7 +30,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "5.01";
+const APP_VERSION = "5.02";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin", kesye: "Responsab kès" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
@@ -1005,7 +1005,16 @@ function katEnfo(M0, Mp) {
       <span class="kv"><span>${t("Rete pou ranbouse")}</span><b>${gd(e.rete)}</b></span>
       <span class="kv"><span>${t("Ladan l kapital")}</span><b>${gd(e.kapRete)}</b></span>
       <span class="kv"><span>${t("Kredi prete / balans epay")}</span><b>${e.sol ? Math.round((e.prete / e.sol) * 100) : 0}%</b></span></div></div>` : "";
-  return taf + fre + fin;
+  // Anvlòp kredi: kòb ajan an genyen pou l prete. Li desann lè l bay yon kredi (kapital la soti),
+  // li monte lè kliyan yo ranbouse (pati kapital chak peman). Disponib = anvlòp − kapital ki deyò.
+  const dispo = Math.max(0, KAPASITE_OBJ - e.kapRete), pDispo = Math.round((dispo / KAPASITE_OBJ) * 100);
+  const anv = `<div class="card metrik metrik-enfo ${dispo > 0 ? "m-vet" : "m-info"}" data-metrik="anvlop" title="${h(t("Anvlòp kredi: li desann chak fwa ajan an bay yon kredi, li monte chak fwa yon kliyan ranbouse (pati kapital la)."))}">
+    <span class="metrik-n">${t("Anvlòp kredi")}</span><b>${gd(dispo)}</b><small>${t("disponib pou refinanse mache a")}</small>
+    <span class="ekip-bar metrik-bar" aria-hidden="true"><i style="width:${Math.min(100, pDispo)}%"></i></span>
+    <div class="metrik-fen"><span class="kv"><span>${t("Anvlòp total")}</span><b>${gd(KAPASITE_OBJ)}</b></span>
+      <span class="kv" data-kv="deyo"><span>${t("Kapital ki deyò")}</span><b>${gd(e.kapRete)} <small>· ${e.nAktifKr} ${t("kredi")}</small></b></span>
+      <span class="kv" data-kv="dispo"><span>${t("Disponib")}</span><b>${gd(dispo)} <small>(${pDispo}%)</small></b></span></div></div>`;
+  return taf + fre + fin + anv;
 }
 // Lis pòtfèy la pou enprime: sa chak kont dwe pou mwa a, sa ki kolekte, sa ki rete.
 function enprimePotfey(M0, Mp, nonAjan_) {
