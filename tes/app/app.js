@@ -30,7 +30,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "4.94";
+const APP_VERSION = "4.95";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin", kesye: "Responsab kès" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
@@ -1695,6 +1695,16 @@ async function viewEpay() {
 }
 
 // ---------- 4. Rapò ajan an (3 dènye jou) ----------
+// Balans deklare (Soldes cumulés) : yon balans pa depo/retrè. Si kliyan an peye yon frè (pa « Frais carnet ») menm jou a APRE,
+// se balans apre frè a ki konte. Liy frè yo pa ajoute yon lòt balans (avan : yo te konte 2 fwa).
+function balDekl(txs) {
+  const sd = (x) => x.solde_declare != null && x.solde_declare !== "";
+  const lis = txs.filter((x) => (S.txKind(x) === "depo" || S.txKind(x) === "retre") && sd(x));
+  const fre = txs.filter((f) => S.txKind(f) === "fre" && !freKane(f) && f.validation_status !== "rejected");
+  const tot = lis.reduce((a, x) => a + Number(x.solde_declare) - fre.filter((f) => f.id_compte_epargne === x.id_compte_epargne
+    && String(f.date_transaction) > String(x.date_transaction)).reduce((b, f) => b + Number(f.montant || 0), 0), 0);
+  return { lis, tot };
+}
 let jouRapo = 0;
 async function viewRapo() {
   const M = await S.model();
@@ -1715,7 +1725,7 @@ async function viewRapo() {
   const mnJ = (M.monnen || []).filter((x) => mwen({ created_by: x.agent_id, agent_id: x.agent_id }) && S.jouLokal(new Date(x.capture_le)) === D);
   const mnM = sum(mnJ.filter((x) => x.tip === "monnaie")), mnR = sum(mnJ.filter((x) => x.tip === "remise"));
   const depo = sum(dep), retre = sum(ret);
-  const deklare = txs.reduce((a, x) => a + Number(x.solde_declare || 0), 0);
+  const bD = balDekl(txs), deklare = bD.tot;
   // Kredi (peman ak penalite ajan an ankese jou sa a): kach li tou.
   const krTx = (M.kredi || []).flatMap((k) => k._txTout.map((y) => ({ ...y, _k: k }))).filter((y) => y.validation_status !== "rejected" && mwen(y) && S.jouKreTx(y) === D)
     .sort((a, b) => String(b.capture_le || b.date_transaction).localeCompare(String(a.capture_le || a.date_transaction)));
@@ -1725,7 +1735,7 @@ async function viewRapo() {
   const garTx = (M.garanti || []).flatMap((g) => g._tx.map((y) => ({ ...y, _g: g }))).filter((y) => y.statut !== "rejected" && mwen(y) && S.jouLokal(new Date(y.capture_le)) === D)
     .sort((a, b) => String(b.capture_le).localeCompare(String(a.capture_le)));
   const garD = sum(garTx.filter((y) => y.tip === "D")), garR = sum(garTx.filter((y) => y.tip === "R"));
-  const nDeklare = txs.filter((x) => x.solde_declare != null && x.solde_declare !== "").length;
+  const nDeklare = bD.lis.length;
   const cycles = [...M.comptes.values()].filter((k) => mwen(k) && k.created_at && S.jouLokal(new Date(k.created_at)) === D).length;
   const swivi = [...M.suivis.values()].filter((x) => mwen(x) && S.jouLokal(new Date(x.capture_le)) === D).length;
   const dmAtant = [...M.demandes.values()].filter((x) => mwen(x) && x.statut === "en_attente").length;
@@ -3911,7 +3921,7 @@ function detayRapo(M, D, pa) {
   const par = (k) => txJ.filter((x) => S.txKind(x) === k);
   const ok = (l) => l.filter((x) => x.validation_status !== "rejected");
   const dep = par("depo"), ret = par("retre"), fre = par("fre"), vim = par("viman_out");
-  const dekl = txJ.filter((x) => x.solde_declare != null && x.solde_declare !== "");
+  const bDJ = balDekl(ok(txJ)), dekl = bDJ.lis;
   const cyc = [...M.comptes.values()].filter((k) => pa(k) && k.created_at && S.jouLokal(new Date(k.created_at)) === D);
   const fb = [...M.suivis.values()].filter((x) => pa(x) && S.jouLokal(new Date(x.capture_le)) === D).sort((a, b) => String(a.capture_le).localeCompare(String(b.capture_le)));
   const dmJ = [...M.demandes.values()].filter((x) => pa(x) && x.capture_le && S.jouLokal(new Date(x.capture_le)) === D);
@@ -3960,7 +3970,7 @@ function detayRapo(M, D, pa) {
     + seksyon("retre", "Retrè peye", ret, rowT, sumMon(ok(ret)))
     + seksyon("fre", "Frè", fre, rowT, sumMon(ok(fre)))
     + seksyon("viman", "Viman", vim, rowT, sumMon(ok(vim)))
-    + seksyon("deklare", "Balans deklare", dekl, rowT, dekl.reduce((a, x) => a + Number(x.solde_declare || 0), 0))
+    + seksyon("deklare", "Balans deklare", dekl, rowT, bDJ.tot)
     + seksyon("cycles", "Cycle kreye", cyc, (k) => `<div class="row txr"><span class="txr-le"><b class="mono">${lèKout(k.created_at) || "—"}</b></span>
         <span class="txr-main"><span class="txr-t"><b>${d(nmK(k.id_compte_epargne))}</b></span><span class="mut sm">${d(k.no_compte || "")} · plan ${gd(k.montant_plan || 0)} · ${k.duree_mois || "?"} ${t("mwa")}${ajanTxt(k.created_by)}</span></span></div>`)
     + seksyon("papeye", "Kliyan ki pa peye", fb, (x) => `<div class="row txr"><span class="txr-le"><b class="mono">${lèKout(x.capture_le) || "—"}</b></span>
