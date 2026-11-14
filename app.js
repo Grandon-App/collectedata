@@ -30,7 +30,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "4.97";
+const APP_VERSION = "4.98";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin", kesye: "Responsab kès" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
@@ -646,6 +646,7 @@ async function viewTablo(ajanId = null) {
   if (man && !ajan) { ajans = (await db.meta("ajans")) || {}; montreKontwol(M0); chajeDoublon(); }
   if (!ajan) brancherAlet(M0);
   $app.querySelectorAll("[data-potfey]").forEach((b) => (b.onclick = () => { pòtfèy = b.dataset.potfey; viewTablo(); }));
+  $app.querySelectorAll("[data-enprime-potfey]").forEach((b) => (b.onclick = () => enprimePotfey(M0, M, ajan ? ajan.nom : t("Pòtfèy mwen"))));
   if (ajan) $app.querySelectorAll("[data-papeye]").forEach((b) => (b.onclick = () => { const k = M.comptes.get(b.dataset.papeye); paPeye(k, M.clients.get(k.id_personne) || {}); }));
 }
 const inisyalNon = (n) => String(n || "?").split(/\s+/).filter(Boolean).slice(0, 2).map((x) => x[0]).join("").toUpperCase();
@@ -927,7 +928,8 @@ function kalkMetrik(M0, Mp, uid, estLi, kf) {
       sem: { obj: Math.max(1, Math.round((objK * sJou) / jTotal)), fe: nouvoS, ...kote(nouvoS, Math.max(1, (objK * Math.max(sPase, 1)) / jTotal)) },
       fen: { proj: jPase ? Math.round((nouvo / jPase) * jTotal) : 0, objMwa: objK, bezwen: Math.max(0, objK - nouvo) } },
     rekouvreman: { val: st.mwaPwosan, obj: kf.objektif.rekouvreman, sous: `${gd(st.mwaPlan)} / ${gd(st.mwaPrevu)}`, san: !st.mwaPrevu,
-      fen: { rete: Math.max(0, st.mwaPrevuTotal - st.mwaKolekte) } },
+      fen: { rete: Math.max(0, st.mwaPrevuTotal - st.mwaKolekte), total: st.mwaPrevuTotal, kolekte: st.mwaKolekte,
+        nKont: [...Mp.comptes.values()].filter((k) => k._mwaPrevuTotal > 0).length } },
   };
   for (const r of Object.values(res)) Object.assign(r, kote(r.val, r.obj));
   return { res, jPase, jTotal, jRete, lendi, samdi, sJou };
@@ -948,17 +950,82 @@ function kat1Metrik(k, r, x) {
       ${k === "mobilizasyon" ? `<span>${t("Si w kenbe ritm sa a")}: <b>${gd(r.fen.proj)}</b> ${t("sou")} ${gd(r.fen.objMwa)} (${r.fen.objMwa ? Math.round((r.fen.proj / r.fen.objMwa) * 100) : 0}%)</span>
         ${x.jRete ? `<span>${t("Pou rive sou objektif la")}: <b>${gd(r.fen.bezwen)}</b> / ${t("jou")} ${t("pou")} ${x.jRete} ${t("jou ki rete yo")}</span>` : ""}`
       : k === "kliyan_nouvo" ? `<span>${t("Si w kenbe ritm sa a")}: <b>${r.fen.proj}</b> ${t("sou")} ${r.fen.objMwa} ${t("kliyan")}</span>${r.fen.bezwen ? `<span>${t("Rete")} <b>${r.fen.bezwen}</b> ${t("kliyan pou")} ${x.jRete} ${t("jou ki rete yo")}</span>` : ""}`
-      : `<span>${t("Rete pou kolekte jiska fen mwa a")}: <b>${gd(r.fen.rete)}</b></span>`}</div>` : "";
+      : `<span>${t("Pou tout mwa a")}: <b>${gd(r.fen.total)}</b> · ${t("deja kolekte")} <b>${gd(r.fen.kolekte)}</b> (${r.fen.total ? Math.round((r.fen.kolekte / r.fen.total) * 100) : 0}%)</span>
+        <span>${t("Rete pou kolekte jiska fen mwa a")}: <b>${gd(r.fen.rete)}</b></span>
+        <span>${t("Kont k ap peye mwa a")}: <b>${r.fen.nKont}</b> · ${t("si tout peye dapre kalandriye yo")}: <b>${gd(r.fen.total)}</b></span>
+        <button type="button" class="btn sm" data-enprime-potfey>${t("Enprime lis pòtfèy la")}</button>`}</div>` : "";
   return `<div class="card metrik m-${r.eta}" data-metrik="${k}" data-eta="${r.eta}" title="${h(t(m.dek))}"><span class="metrik-n">${t(m.non)}</span>
     <b>${val}${k === "mobilizasyon" ? `<small> / ${t("jou")}</small>` : ""}</b><small>${obj}</small>
     <span class="ekip-bar metrik-bar" aria-hidden="true"><i style="width:${Math.min(100, r.p)}%"></i></span>
     <span class="metrik-eta"><i aria-hidden="true"></i>${t(ETA_M[r.eta])} · ${r.p}%${r.sous ? ` <span class="mut">· ${r.sous}</span>` : ""}</span>${sem}${fen}</div>`;
 }
+// Kat enfòmasyon pòtfèy la (san objektif): TAF, Frais sèvis, Pòtfèy & finansman (manadjè).
+const KAPASITE_OBJ = 3000000; // kapasite finansman minimòm pa pòtfèy
+function enfoPotfey(M0, Mp) {
+  const jodi = M0.today;
+  const kont = [...Mp.comptes.values()].filter((k) => k._actif !== false && !k._pending);
+  const mounEp = new Set(kont.map((k) => k.id_personne));
+  const kr = (M0.kredi || []).filter((x) => Mp.comptes.has(x.id_compte_epargne));
+  const rete = (x) => Math.max(0, Number(x.montant_final || 0) - Number(x.paiement_cumule || 0));
+  const enKou = kr.filter((x) => !x._fini && rete(x) > 0 && (!x.date_fin || x.date_fin >= jodi)); // pa fini, dat fen pa pase
+  const doute = kr.filter((x) => !x._fini && rete(x) > 0 && x.date_fin && x.date_fin < jodi);  // kreyans dout: dat fen pase, li dwe toujou
+  const mounKr = new Set(enKou.map((x) => x.id_personne));
+  const fre = [...Mp.comptes.values()].filter((k) => k._fre?.pou);
+  const sol = [...Mp.comptes.values()].reduce((a, k) => a + (k.solde_actuel != null ? Number(k.solde_actuel) : 0), 0);
+  const aktifKr = [...enKou, ...doute];
+  const prete = aktifKr.reduce((a, x) => a + Number(x.montant_prete || 0), 0);
+  const kapRete = aktifKr.reduce((a, x) => a + (Number(x.montant_final) > 0 ? rete(x) * Number(x.montant_prete) / Number(x.montant_final) : 0), 0);
+  return { nKont: kont.length, nMoun: mounEp.size, nKr: enKou.length, nMounKr: mounKr.size, nDoute: doute.length,
+    taf: mounEp.size ? Math.round((mounKr.size / mounEp.size) * 100) : 0, fre, freSom: fre.reduce((a, k) => a + Number(k._fre.montan || 0), 0),
+    sol, prete, rete: aktifKr.reduce((a, x) => a + rete(x), 0), kapRete: Math.round(kapRete), nAktifKr: aktifKr.length,
+    genSol: [...Mp.comptes.values()].some((k) => k.solde_actuel != null) };
+}
+function katEnfo(M0, Mp) {
+  const e = enfoPotfey(M0, Mp);
+  const taf = `<div class="card metrik metrik-enfo m-info" data-metrik="taf" title="${h(t("Taux d'Accès au Financement: kliyan epay pòtfèy la ki gen yon kredi an kou (pa kreyans dout) sou tout kliyan epay pòtfèy la."))}">
+    <span class="metrik-n">TAF · ${t("Taux d'Accès au Financement")}</span><b>${e.taf}%</b>
+    <small>${e.nMounKr} ${t("kliyan ak kredi an kou")} / ${e.nMoun} ${t("kliyan epay")}</small>
+    <span class="ekip-bar metrik-bar" aria-hidden="true"><i style="width:${Math.min(100, e.taf)}%"></i></span>
+    <div class="metrik-fen"><span>${t("Kont epay aktif")}: <b>${e.nKont}</b></span><span>${t("Kredi an kou")}: <b>${e.nKr}</b>${e.nDoute ? ` · ${t("kreyans dout")}: <b>${e.nDoute}</b>` : ""}</span></div></div>`;
+  const fre = e.fre.length || [...Mp.comptes.values()].some((k) => k._fre) ? `<div class="card metrik metrik-enfo ${e.fre.length ? "m-jon" : "m-vet"}" data-metrik="fre">
+    <span class="metrik-n">${t("Frais sèvis")}</span><b>${e.fre.length}</b><small>${t("kont elijib ki poko peye frais sèvis la")}</small>
+    <div class="metrik-fen"><span>${t("Total pou pran")}: <b>${gd(e.freSom)}</b></span>${e.fre.length ? `<span class="mut sm" data-brut>${e.fre.slice(0, 8).map((k) => h(k.no_kane || k.no_compte || "")).join(" · ")}${e.fre.length > 8 ? " …" : ""}</span>` : ""}</div></div>` : "";
+  const fin = estManager() && e.genSol ? `<div class="card metrik metrik-enfo m-info" data-metrik="finansman">
+    <span class="metrik-n">${t("Pòtfèy & kapasite finansman")}</span><b>${gd(e.sol)}</b><small>${t("balans total kont epay pòtfèy la")}</small>
+    <span class="ekip-bar metrik-bar" aria-hidden="true"><i style="width:${Math.min(100, Math.round((e.prete / KAPASITE_OBJ) * 100))}%"></i></span>
+    <div class="metrik-fen"><span>${t("Kredi finanse (an kou)")}: <b>${e.nAktifKr}</b> · ${t("kapital prete")} <b>${gd(e.prete)}</b> (${Math.round((e.prete / KAPASITE_OBJ) * 100)}% ${t("objektif")} ${gd(KAPASITE_OBJ)})</span>
+      <span>${t("Rete pou ranbouse")}: <b>${gd(e.rete)}</b> · ${t("ladan l kapital")} <b>${gd(e.kapRete)}</b></span>
+      <span>${t("Kredi prete / balans epay")}: <b>${e.sol ? Math.round((e.prete / e.sol) * 100) : 0}%</b></span></div></div>` : "";
+  return taf + fre + fin;
+}
+// Lis pòtfèy la pou enprime: sa chak kont dwe pou mwa a, sa ki kolekte, sa ki rete.
+function enprimePotfey(M0, Mp, nonAjan_) {
+  const kont = [...Mp.comptes.values()].filter((k) => k._mwaPrevuTotal > 0 || k._kolekMwa > 0)
+    .sort((a, b) => non(Mp.clients.get(a.id_personne)).localeCompare(non(Mp.clients.get(b.id_personne)), "fr"));
+  const som = (f) => kont.reduce((a, k) => a + Number(f(k) || 0), 0);
+  const mwa = new Date(M0.today + "T12:00:00").toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
+  const liy = kont.map((k, i) => `<tr><td>${i + 1}</td><td>${h(non(Mp.clients.get(k.id_personne)))}</td><td>${h(k.no_kane || "")}</td><td>${h(k.no_compte || "")}</td>
+    <td class="n">${gd(k.montant_plan || 0)}</td><td>${h(lisJou(k.jours_paiement || []))}</td><td class="n">${gd(k._mwaPrevuTotal)}</td><td class="n">${gd(k._kolekMwa || 0)}</td>
+    <td class="n">${gd(Math.max(0, k._mwaPrevuTotal - (k._kolekMwa || 0)))}</td></tr>`).join("");
+  const w = window.open("", "_blank");
+  if (!w) return toast(t("Navigatè a bloke fenèt enpresyon an."), "err");
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${h(t("Pòtfèy"))} · ${h(nonAjan_)} · ${h(mwa)}</title>
+    <style>body{font:12px system-ui,sans-serif;margin:16px;color:#111}h1{font-size:16px;margin:0 0 4px}p{margin:0 0 10px;color:#555}table{border-collapse:collapse;width:100%}
+    th,td{border:1px solid #bbb;padding:4px 6px;text-align:left}th{background:#eee}td.n,th.n{text-align:right}tfoot td{font-weight:700;background:#f6f6f6}@media print{button{display:none}}</style></head><body>
+    <h1>${h(t("Lis pòtfèy la"))} · ${h(nonAjan_)}</h1><p>${h(mwa)} · ${kont.length} ${h(t("kont"))} · ${h(t("enprime"))} ${h(datFr(M0.today))}</p>
+    <button onclick="print()">${h(t("Enprime"))}</button>
+    <table><thead><tr><th>#</th><th>${h(t("Kliyan"))}</th><th>${h(t("Kanè"))}</th><th>${h(t("Kont"))}</th><th class="n">${h(t("Plan"))}</th><th>${h(t("Jou"))}</th>
+    <th class="n">${h(t("Dwe pou mwa a"))}</th><th class="n">${h(t("Kolekte"))}</th><th class="n">${h(t("Rete"))}</th></tr></thead><tbody>${liy}</tbody>
+    <tfoot><tr><td colspan="6">${h(t("Total"))}</td><td class="n">${gd(som((k) => k._mwaPrevuTotal))}</td><td class="n">${gd(som((k) => k._kolekMwa))}</td>
+    <td class="n">${gd(som((k) => Math.max(0, k._mwaPrevuTotal - (k._kolekMwa || 0))))}</td></tr></tfoot></table></body></html>`);
+  w.document.close();
+  setTimeout(() => { try { w.print(); } catch (_) {} }, 400);
+}
 function seksyonMetrik(M0, Mp, uid, estLi, kf) {
   if (!kf.aktif.length) return "";
   const x = kalkMetrik(M0, Mp, uid, estLi, kf);
   return `<section class="metrik-sek" id="metrik"><div class="ekip-sek-h"><h2>${t("Objektif mwa a")}</h2><small class="mut">${x.jPase}/${x.jTotal} ${t("jou travay")}${estManager() ? ` · <a href="#/metrik">${t("Chanje")}</a>` : ""}</small></div>
-    <div class="metrik-g">${kf.aktif.map((k) => kat1Metrik(k, x.res[k], x)).join("")}</div></section>`;
+    <div class="metrik-g">${kf.aktif.map((k) => kat1Metrik(k, x.res[k], x)).join("")}${katEnfo(M0, Mp)}</div></section>`;
 }
 // Manadjè: tablo koulè pou chak ajan (yon kolòn pa metrik aktif).
 function seksyonMetrikEkip(M0, lis, ids, kf) {
