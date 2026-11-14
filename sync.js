@@ -608,7 +608,7 @@ export async function model() {
     if (!k) continue;
     k._txs.push(t);
     const kind = txKind(t);
-    if (t._pending) k._local += Number(t.montant) * (kind === "depo" ? 1 : -1);
+    if (t._pending && !(t.type_transaction === "FL" && (t.type_frais ?? t.type_frais_livret) === "Frais carnet")) k._local += Number(t.montant) * (kind === "depo" ? 1 : -1); // nouvo kanè: pa sou kont lan
     if (kind === "depo" && t.validation_status !== "rejected") {
       const j = jouTx(t);
       k._joursPeye.add(j);
