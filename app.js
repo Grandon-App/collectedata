@@ -30,7 +30,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "4.99";
+const APP_VERSION = "5.00";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin", kesye: "Responsab kès" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
@@ -992,7 +992,7 @@ function katEnfo(M0, Mp) {
       <span class="kv"><span>${t("Kredi an kou")}</span><b>${e.nKr}</b></span>${e.nDoute ? `<span class="kv"><span>${t("Kreyans dout")}</span><b>${e.nDoute}</b></span>` : ""}</div></div>`;
   const fre = e.fre.length || [...Mp.comptes.values()].some((k) => k._fre) ? `<div class="card metrik metrik-enfo ${e.fre.length ? "m-jon" : "m-vet"}" data-metrik="fre">
     <span class="metrik-n">${t("Frais sèvis")}</span><b>${e.fre.length}</b><small>${t("kont elijib ki poko peye frais sèvis la")}</small>
-    <div class="metrik-fen"><span class="kv"><span>${t("Total pou pran")}</span><b>${gd(e.freSom)}</b></span>${e.fre.length ? `<span class="metrik-chips" data-brut>${e.fre.slice(0, 12).map((k) => `<a class="chip" href="#/cycle/${h(k.id_compte_epargne)}">${h(k.no_kane || k.no_compte || "")}</a>`).join("")}${e.fre.length > 12 ? `<span class="mut sm">+${e.fre.length - 12}</span>` : ""}</span>` : ""}</div></div>` : "";
+    <div class="metrik-fen"><span class="kv"><span>${t("Total pou pran")}</span><b>${gd(e.freSom)}</b></span>${e.fre.length ? `<span class="metrik-lis">${e.fre.slice(0, 15).map((k) => `<a class="fre-r" href="#/cycle/${h(k.id_compte_epargne)}"><span data-brut>${h(non(Mp.clients.get(k.id_personne)))}<small>${h(k.no_kane || k.no_compte || "")}</small></span><b>${gd(k._fre.montan)}</b></a>`).join("")}${e.fre.length > 15 ? `<span class="mut sm">+${e.fre.length - 15} ${t("lòt")}</span>` : ""}</span>` : ""}</div></div>` : "";
   const fin = estManager() && e.genSol ? `<div class="card metrik metrik-enfo m-info" data-metrik="finansman">
     <span class="metrik-n">${t("Pòtfèy & kapasite finansman")}</span><b>${gd(e.sol)}</b><small>${t("balans total kont epay pòtfèy la")}</small>
     <span class="ekip-bar metrik-bar" aria-hidden="true"><i style="width:${Math.min(100, Math.round((e.prete / KAPASITE_OBJ) * 100))}%"></i></span>
