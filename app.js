@@ -30,7 +30,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "5.00";
+const APP_VERSION = "5.01";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin", kesye: "Responsab kès" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
@@ -967,6 +967,9 @@ function enfoPotfey(M0, Mp) {
   const jodi = M0.today;
   const kont = [...Mp.comptes.values()].filter((k) => k._actif !== false && !k._pending);
   const mounEp = new Set(kont.map((k) => k.id_personne));
+  // Règ Airtable (Statut Activité): kont aktif = gen omwen yon tranzaksyon nan 42 dènye jou yo.
+  const limit42 = S.ajouteJou(jodi, -42);
+  const kont42 = [...Mp.comptes.values()].filter((k) => !k._pending && k._txs.some((x) => x.validation_status !== "rejected" && S.jouTx(x) >= limit42));
   const kr = (M0.kredi || []).filter((x) => Mp.comptes.has(x.id_compte_epargne));
   const rete = (x) => Math.max(0, Number(x.montant_final || 0) - Number(x.paiement_cumule || 0));
   const enKou = kr.filter((x) => !x._fini && rete(x) > 0 && (!x.date_fin || x.date_fin >= jodi)); // pa fini, dat fen pa pase
@@ -977,7 +980,7 @@ function enfoPotfey(M0, Mp) {
   const aktifKr = [...enKou, ...doute];
   const prete = aktifKr.reduce((a, x) => a + Number(x.montant_prete || 0), 0);
   const kapRete = aktifKr.reduce((a, x) => a + (Number(x.montant_final) > 0 ? rete(x) * Number(x.montant_prete) / Number(x.montant_final) : 0), 0);
-  return { nKont: kont.length, nMoun: mounEp.size, nKr: enKou.length, nMounKr: mounKr.size, nDoute: doute.length,
+  return { nKont: kont.length, nMoun: mounEp.size, nKont42: kont42.length, nMoun42: new Set(kont42.map((k) => k.id_personne)).size, nKr: enKou.length, nMounKr: mounKr.size, nDoute: doute.length,
     taf: mounEp.size ? Math.round((mounKr.size / mounEp.size) * 100) : 0, fre, freSom: fre.reduce((a, k) => a + Number(k._fre.montan || 0), 0),
     sol, prete, rete: aktifKr.reduce((a, x) => a + rete(x), 0), kapRete: Math.round(kapRete), nAktifKr: aktifKr.length,
     genSol: [...Mp.comptes.values()].some((k) => k.solde_actuel != null) };
@@ -988,7 +991,8 @@ function katEnfo(M0, Mp) {
     <span class="metrik-n">TAF · ${t("Taux d'Accès au Financement")}</span><b>${e.taf}%</b>
     <small>${e.nMounKr} ${t("kliyan ak kredi an kou")} / ${e.nMoun} ${t("kliyan epay")}</small>
     <span class="ekip-bar metrik-bar" aria-hidden="true"><i style="width:${Math.min(100, e.taf)}%"></i></span>
-    <div class="metrik-fen"><span class="kv"><span>${t("Kont epay aktif")}</span><b>${e.nKont}</b></span><span class="kv"><span>${t("Kliyan epay")}</span><b>${e.nMoun}</b></span>
+    <div class="metrik-fen"><span class="kv" data-kv="aktif42" title="${h(t("Kont ki gen omwen yon tranzaksyon nan 42 dènye jou yo (menm règ ak Statut Activité Airtable)."))}"><span>${t("Kont aktif (42 jou)")}</span><b>${e.nKont42} <small>· ${e.nMoun42} ${t("kliyan")}</small></b></span>
+      <span class="kv" data-kv="sik" title="${h(t("Kont ki gen yon sik ki poko fini (dat fen sik la poko pase)."))}"><span>${t("Sik an kou")}</span><b>${e.nKont} <small>· ${e.nMoun} ${t("kliyan")}</small></b></span>
       <span class="kv"><span>${t("Kredi an kou")}</span><b>${e.nKr}</b></span>${e.nDoute ? `<span class="kv"><span>${t("Kreyans dout")}</span><b>${e.nDoute}</b></span>` : ""}</div></div>`;
   const fre = e.fre.length || [...Mp.comptes.values()].some((k) => k._fre) ? `<div class="card metrik metrik-enfo ${e.fre.length ? "m-jon" : "m-vet"}" data-metrik="fre">
     <span class="metrik-n">${t("Frais sèvis")}</span><b>${e.fre.length}</b><small>${t("kont elijib ki poko peye frais sèvis la")}</small>
