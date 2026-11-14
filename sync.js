@@ -290,6 +290,15 @@ const EXEC = {
     await db.meta("san_kane", l.map((x) => (x.id === p.sk ? { ...x, konfime_le: p.le } : x)));
   },
 
+  // Monnen (Monnaie: ajan an kenbe monnen kliyan an) / Remiz (ajan an remèt li): pa touche balans kont lan, sèlman kach ajan an.
+  async monnen(p) {
+    await api.rpc("grandon_monnen_anrejistre", { p_id: p.id, p_compte: p.compte, p_tip: p.tip, p_montant: p.montant, p_note: p.note || null,
+      p_capture_le: p.capture_le, p_gps_lat: p.gps?.lat ?? null, p_gps_lng: p.gps?.lng ?? null, p_appareil: p.appareil || null });
+    const l = (await db.meta("monnen")) || [];
+    if (!l.some((x) => x.id === p.id)) await db.meta("monnen", [...l, { id: p.id, id_compte_epargne: p.compte, tip: p.tip, montant: p.montant, note: p.note || null,
+      agent_id: api.getSession()?.user?.id, capture_le: p.capture_le }]);
+  },
+
   // Depo / retrè sou yon kont garanti (an atant jiskaske responsab kès la valide l).
   async garanti_tx(p) {
     const r = await api.rpc("grandon_garanti_tranzaksyon", { p_id: p.id, p_garanti: p.garanti, p_tip: p.tip, p_montant: p.montant, ...gpsArgs(p.gps),
@@ -443,7 +452,7 @@ export async function pull() {
   const [[clients, comptes, plans, txs], [feries, suivis, demandes, alet, modif]] = await Promise.all([p1, p2]);
   try { // non ajan yo (manadjè yo wè tout moun; yon ajan wè sèlman pa l)
     // Tout demann sa yo pati an menm tan (avan: youn apre lòt, sa te ralanti chak rechajman).
-    const [pa, sv, aj, kr0, krt0, krs0, skl] = await Promise.all([
+    const [pa, sv, aj, kr0, krt0, krs0, skl, mnl] = await Promise.all([
       api.select("grandon_paramet?select=kle,vale").catch(() => null), // lè operasyon, elatriye
       api.select(`grandon_sevis?kod=eq.${C.SEVIS || "grandon"}&select=kod,non,vesman,plan_lib_min,gen_vip,fre_sevis,fre_dat,fre_lib,fre_lib_elijib`).catch(() => null),
       api.select("grandon_ajan?select=user_id,nom,role,actif"),
@@ -452,6 +461,7 @@ export async function pull() {
       api.selectAll("grandon_v_kredi_suivis?select=*&order=capture_le.desc").catch(() => null), // fidbak «Pa peye» kredi yo
       // Tranzaksyon «san kanè» (kont bloke jiskaske kanè a ajou). null: sèvè a poko gen fonksyon an.
       api.selectAll("grandon_v_san_kane?select=*&order=kreye_le").catch(() => null),
+      api.selectAll("grandon_v_monnen?select=*&order=capture_le").catch(() => null), // monnen / remiz (null: sèvè a poko gen modil la)
     ]);
     const kr = kr0, krt = kr ? krt0 : null, krs = kr ? krs0 : null;
     if (sv) await db.meta("sevis_cfg", sv[0] || null);
@@ -462,6 +472,7 @@ export async function pull() {
     if (krt) await db.meta("kredi_tx", krt);
     if (krs) await db.meta("kredi_fb", krs);
     await db.meta("san_kane", skl);
+    await db.meta("monnen", mnl);
     // Kont garanti yo (Epargne Bloquée, Fonds Garantie Konfyans): sèlman si paramèt «garanti» a aktive sèvis sit la.
     if (modAktif(pa && Object.fromEntries(pa.map((x) => [x.kle, x.vale])), "garanti")) {
       const [gl, gt] = await Promise.all([api.selectAll("grandon_v_garanti?select=*").catch(() => null), api.selectAll("grandon_v_garanti_tx?select=*&order=capture_le").catch(() => null)]);
@@ -600,6 +611,14 @@ export async function model() {
     if (o.kind === "kane_konfime") { const x = sk.find((y) => y.id === o.payload.sk); if (x) x.konfime_le = o.payload.le; }
   }
   M.sanKane = sk;
+  // Monnen: sa kliyan an dwe resevwa (monnaie − remise) pa kont, ak liy ki nan file a.
+  const mnL = await db.meta("monnen");
+  M.monnenDispo = Array.isArray(mnL);
+  M.monnen = [...(mnL || [])];
+  for (const o of M.outbox) if (o.kind === "monnen" && !M.monnen.some((x) => x.id === o.payload.id))
+    M.monnen.push({ id: o.payload.id, id_compte_epargne: o.payload.compte, tip: o.payload.tip, montant: o.payload.montant, note: o.payload.note || null,
+      agent_id: api.getSession()?.user?.id, capture_le: o.payload.capture_le, _pending: true });
+  M.monnenDwe = (compte) => M.monnen.filter((x) => x.id_compte_epargne === compte).reduce((a, x) => a + (x.tip === "monnaie" ? 1 : -1) * Number(x.montant || 0), 0);
   M.kaneBlok = (kind, ref) => sk.filter((x) => x.kind === kind && x.ref === ref && !x.konfime_le).sort((a, b) => String(a.kreye_le).localeCompare(String(b.kreye_le)))[0] || null;
   M.garanti = M.mod.garanti ? garModel(M, (await db.meta("garanti")) || [], (await db.meta("garanti_tx")) || [], api.getSession()?.user?.id) : [];
   for (const k of M.comptes.values()) Object.assign(k, { _txs: [], _local: 0, _jodi: 0, _depots: 0, _nDepots: 0, _joursPeye: new Set(), _suivis: [], _demandes: [], _kolekMwa: 0, _alet: [] });
