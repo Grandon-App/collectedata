@@ -30,7 +30,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "4.91";
+const APP_VERSION = "4.92";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin", kesye: "Responsab kès" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
@@ -50,7 +50,7 @@ function savePrefs(p) {
   applyPrefs(n);
 }
 const { kane, h, d, gd, datFr, lè, non, JOU, JOU_KOUT, lisJou, tel4, avatar, badgePend, badgeTx, badgeKont, badgeDm, ICO,
-  LABEL_TX, SIY, KLAS, MOTIFS, motifLabel, MOTIF_KOUT, TYPES_FRE, lèKout, datKout } = F;
+  LABEL_TX, SIY, KLAS, MOTIFS, motifLabel, MOTIF_KOUT, TYPES_FRE, FRE_LABEL, freKane, lèKout, datKout } = F;
 const adopteInfo = (r) => ({ id: r.id_personne, prenom: r.prenom, nom: r.nom, code_client: r.code_client, photo_url: r.photo_url, tel4: r.tel4 });
 const go = (hash) => { if (location.hash === hash) render(); else location.hash = hash; };
 
@@ -1292,7 +1292,7 @@ async function aksyonTx(M, id) {
   if (tx._pending) return ui.info("Tranzaksyon sa a poko voye.", "Tann li rive sou sèvè a anvan w mande pou modifye l.");
   const chan = chanTx(tx);
   const valè = { montant: tx.montant, solde_avant_declare: tx.solde_avant_declare, solde_declare: tx.solde_declare, type_frais: tx.type_frais, note: tx.note };
-  const fòm = (lis) => lis.map(([k, l]) => ({ k, label: l, type: k === "type_frais" ? "select" : k === "note" ? "text" : "number", value: valè[k] ?? "", options: TYPES_FRE }));
+  const fòm = (lis) => lis.map(([k, l]) => ({ k, label: l, type: k === "type_frais" ? "select" : k === "note" ? "text" : "number", value: valè[k] ?? "", options: [...new Set([...TYPES_FRE, ...(valè[k] && k === "type_frais" ? [valè[k]] : [])])] }));
   const voye = async (otorizasyon, lis, v) => {
     await S.enqueue("modif_aplike", { id: S.uuid(), otorizasyon, kind: "tx", ref: id, chan: lis, vale: v });
     toast("Modifikasyon an anrejistre."); render();
@@ -1710,6 +1710,7 @@ async function viewRapo() {
   const par = (k) => txs.filter((x) => S.txKind(x) === k);
   const sum = (l) => l.reduce((a, x) => a + Number(x.montant || 0), 0);
   const dep = par("depo"), ret = par("retre"), fre = par("fre"), vim = par("viman_out");
+  const kane = fre.filter(freKane); // nouvo kanè: kliyan an peye kach → nan kach ajan an
   const depo = sum(dep), retre = sum(ret);
   const deklare = txs.reduce((a, x) => a + Number(x.solde_declare || 0), 0);
   // Kredi (peman ak penalite ajan an ankese jou sa a): kach li tou.
@@ -1739,9 +1740,9 @@ async function viewRapo() {
     ...ctxBase(M), isoJou: S.isoJou(D), i: jouRapo, D, nonJou,
     jou: jou.map((date, i) => ({ i, date, label: nonJou(i), on: i === jouRapo })),
     kpi: { depo, nDepo: dep.length, retre, nRetre: ret.length, fre: sum(fre), nFre: fre.length, vim: sum(vim), nVim: vim.length,
-      deklare, nDeklare, cycles, swivi, dmAtant, kach: depo - retre + (genKredi ? sum(krPe) + sum(krPen) : 0) + garD - garR,
+      deklare, nDeklare, cycles, swivi, dmAtant, kach: depo - retre + sum(kane) + (genKredi ? sum(krPe) + sum(krPen) : 0) + garD - garR,
       // Liy anplis nan rezime a (kach la): kredi ak kont garanti.
-      ekstra: [...(genKredi ? [{ k: "kredi_pe", l: "Peman kredi", v: sum(krPe), n: krPe.length, sub: `${krPe.length} ${t("peman")}` },
+      ekstra: [...(kane.length ? [{ k: "kane", l: "Nouvo kanè", v: sum(kane), n: kane.length, sub: `${kane.length} ${t("kanè")} · ${t("kach")}` }] : []), ...(genKredi ? [{ k: "kredi_pe", l: "Peman kredi", v: sum(krPe), n: krPe.length, sub: `${krPe.length} ${t("peman")}` },
           { k: "kredi_pen", l: "Penalite kredi", v: sum(krPen), n: krPen.length, sub: `${krPen.length} ${t("penalite")}` }] : []),
         ...(M.mod?.garanti ? [{ k: "gar_depo", l: "Depo garanti", v: garD, n: garTx.filter((y) => y.tip === "D").length, sub: `${garTx.filter((y) => y.tip === "D").length} depo · ${t("kont garanti")}` },
           { k: "gar_retre", l: "Retrè garanti", v: garR, n: garTx.filter((y) => y.tip === "R").length, out: true, sub: `${garTx.filter((y) => y.tip === "R").length} ${t("retrè")} · ${t("kont garanti")}` }] : [])],
@@ -3301,7 +3302,7 @@ async function viewTxNew(compteId) {
       ${TIP_TX.map(([v, l], i) => `<label><input type="radio" name="type" value="${v}" ${i === 0 ? "checked" : ""}><span>${l}</span></label>`).join("")}</div></fieldset>
     <p class="note info-note" id="oto" hidden>Sa a bezwen otorizasyon responsab kès la. Peye kliyan an sèlman lè demann lan apwouve.<br><b>Se sèlman kòb responsab kès la deja valide ki ka retire: depo ki poko valide pa konte.</b></p>
     ${k.tip_plan === "vip" ? `<p class="note warn" id="oto-vip" hidden><b>${t("Kont VIP")}</b> · ${t("Yon manadjè dwe otorize retrè sa a anvan responsab kès la ka valide l.")}</p>` : ""}
-    <label id="l-fre" hidden>Tip frè *<select name="type_frais"><option value="">Chwazi…</option>${TYPES_FRE.filter((x) => x !== "Frais service" || fsTx).map((x) => opt(x, "")).join("")}</select></label>
+    <label id="l-fre" hidden>Tip frè *<select name="type_frais"><option value="">Chwazi…</option>${TYPES_FRE.filter((x) => x !== "Frais service" || fsTx).map((x) => `<option value="${h(x)}">${h(t(x === "Frais service" && fsTx ? `Frais service (${fsTx.regim === "auto" ? "Frais Auto" : "Nouveau Frais"})` : FRE_LABEL[x] || x))}</option>`).join("")}</select></label>
     ${fsTx && !fsTx.deja && fsTx.regim === "auto" ? `<div class="note warn" id="fre-retre" hidden><p><b>${t("Frais Auto")}</b> · ${t("Frais sèvis la poko pran sou kont sa a")} (${gd(fsTx.montan)}). ${t("Pran l anvan retrè a.")}</p><button type="button" class="btn sm pri" id="fre-mete">${t("Pran frais sèvis la")} · ${gd(fsTx.montan)}</button></div>` : ""}
     <label id="l-dest" hidden>Kont ki resevwa viman an *<select name="dest"><option value="">Chwazi…</option>${lòt.map((x) => `<option value="${x.id_compte_epargne}">${h(non(M.clients.get(x.id_personne)))} · ${h(x.no_compte)}</option>`).join("")}</select></label>
     <label>Montan (goud) *<input name="montant" type="number" inputmode="decimal" min="1" step="any" required value="${plan || ""}"></label>
@@ -3334,18 +3335,18 @@ async function viewTxNew(compteId) {
     document.getElementById("kane-chan").hidden = !!f.san_kane?.checked;
     document.getElementById("go").textContent = t(tp === "R" || tp === "V" ? "Voye demann lan" : "Anrejistre");
     document.getElementById("hint").textContent = tp === "D" ? `${t("Minimòm plan an")}: ${gd(plan)}${k._jodi ? ` · ${t("deja peye jodi a")}: ${gd(k._jodi)}` : ""}${S.isoJou(S.jodi()) === 6 && k.jours_paiement?.includes(7) ? ` · ${t("Pòtay la fèmen dimanch: kliyan an ka peye pou dimanch lan jodi a")} (${gd(plan * 2)} ${t("an tout")})` : ""}`
-      : tp === "FL" ? t("Frè a soti sou kont kliyan an. Li pa afekte kach ou.") : tp === "V" ? t("Kòb la ap soti sou kont sa a pou l antre sou lòt kont lan.") : "";
+      : tp === "FL" ? (f.type_frais.value === "Frais carnet" ? t("Kliyan an peye kach pou yon nouvo kanè (li pèdi pa l la). Kòb la antre nan kach ou; li pa soti sou kont lan, balans kanè a pa chanje.") : t("Frè a soti sou kont kliyan an. Li pa afekte kach ou.")) : tp === "V" ? t("Kòb la ap soti sou kont sa a pou l antre sou lòt kont lan.") : "";
   };
   f.querySelectorAll('input[name="type"]').forEach((r) => (r.onchange = () => { f.montant.value = r.value === "D" ? plan || "" : ""; maj(); }));
   maj();
-  f.type_frais.onchange = () => { if (f.type_frais.value === "Frais service" && fsTx) { f.montant.value = fsTx.montan; f.montant.readOnly = true; } else f.montant.readOnly = false; };
+  f.type_frais.onchange = () => { if (f.type_frais.value === "Frais service" && fsTx) { f.montant.value = fsTx.montan; f.montant.readOnly = true; } else f.montant.readOnly = false; maj(); f.solde.dataset.manuel = ""; autoApre(); };
   document.getElementById("fre-mete")?.addEventListener("click", metFre);
   if (fePrefill?.compte === k.id_compte_epargne && fsTx) { metFre(); fePrefill = null; }
   // Si balans avan an ak montan an la, kalkile balans apre a.
   const autoApre = () => {
     const av = f.solde_avant.value, m = Number(f.montant.value);
     if (av === "" || !(m > 0) || f.solde.dataset.manuel) return;
-    f.solde.value = Number(av) + (f.type.value === "D" ? m : -m);
+    f.solde.value = Number(av) + (f.type.value === "D" ? m : f.type.value === "FL" && f.type_frais.value === "Frais carnet" ? 0 : -m);
   };
   f.solde_avant.oninput = autoApre; f.montant.addEventListener("input", autoApre);
   f.solde.oninput = () => (f.solde.dataset.manuel = "1");
@@ -3384,13 +3385,14 @@ async function viewTxNew(compteId) {
     // San kanè: app la ranpli balans avan/apre otomatikman (dènye balans kanè deklare, sinon balans sistèm lan),
     // pou tranzaksyon an pa parèt ak balans vid.
     const kSis = k._solde != null ? Number(k._solde) : k.solde_actuel != null ? Number(k.solde_actuel) : null;
-    const kBaz = dKane ? Number(dKane.solde_declare) : kSis, kAtann = kBaz != null ? kBaz + (typ === "D" ? m : -m) : null;
+    const kaneFre = typ === "FL" && f.type_frais.value === "Frais carnet"; // nouvo kanè: balans lan pa chanje
+    const kBaz = dKane ? Number(dKane.solde_declare) : kSis, kAtann = kBaz != null ? kBaz + (typ === "D" ? m : kaneFre ? 0 : -m) : null;
     const av = sanKane ? kBaz : Number(f.solde_avant.value), ap = sanKane ? kAtann : Number(f.solde.value);
     const kd = typ === "V" ? M.comptes.get(f.dest.value) : null;
     const lib = Object.fromEntries(TIP_TX)[typ];
     if (!(await ui.ask({ titre: typ === "R" || typ === "V" ? `${t("Demann")} · ${t(lib)}` : lib, ok: typ === "R" || typ === "V" ? "Voye demann lan" : "Konfime",
       foto: c?.photo_url, ikon: typ === "D" ? "+" : "−", detay: [["Kliyan", non(c)], ["Kategori kont", t(KAT_KONT.epay)], ["Kont", k.no_compte || t("cycle poko voye")], ["Montan (goud)", gd(m)],
-        ...(typ === "FL" ? [["Tip frè", f.type_frais.value]] : []),
+        ...(typ === "FL" ? [["Tip frè", t(FRE_LABEL[f.type_frais.value] || f.type_frais.value)]] : []),
         ...(kd ? [["Kont ki resevwa", `${non(M.clients.get(kd.id_personne))} · ${kd.no_compte}`]] : []),
         ...(sanKane ? [["Kanè", `📒 ${t("San kanè")} · ${t("kont lan ap bloke")}`], ["Balans kanè a avan (oto)", av != null ? gd(av) : "—"], ["Balans kanè a dwe vin (oto)", ap != null ? gd(ap) : "—"]] : [["Balans kanè a avan", gd(av)], ["Balans kanè a apre", gd(ap)]])] }))) return;
     const b = f.querySelector("button[type=submit]"); b.disabled = true;
