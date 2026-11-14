@@ -705,8 +705,10 @@ async function modelKalkile() {
     if (t._pending && !(t.type_transaction === "FL" && (t.type_frais ?? t.type_frais_livret) === "Frais carnet")) k._local += Number(t.montant) * (kind === "depo" ? 1 : -1); // nouvo kanè: pa sou kont lan
     if (kind === "depo" && t.validation_status !== "rejected") {
       const j = jouTx(t);
-      k._joursPeye.add(j);
-      k._depots += Number(t.montant); k._nDepots++;
+      // Sik la: depo ansyen sik la (plis pase 7 jou anvan kòmansman sik la) pa konte pou vèsman, reta ak pwogrè, pou yon
+      // kont ki gen yon nouvo sik pa parèt «an avans». Depo ouvèti a (souvan 1–3 jou anvan) konte toujou.
+      // Kòb jodi a ak kòb mwa a konte tout depo yo kanmenm.
+      if (!k.date_debut || j >= ajouteJou(k.date_debut, -7)) { k._joursPeye.add(j); k._depots += Number(t.montant); k._nDepots++; }
       if (j === today) k._jodi += Number(t.montant);
       if (j.slice(0, 7) === today.slice(0, 7) && j <= today) k._kolekMwa += Number(t.montant);
     }
