@@ -30,7 +30,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "4.93";
+const APP_VERSION = "4.94";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin", kesye: "Responsab kès" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
@@ -3293,7 +3293,7 @@ function monnenKat(M, k) {
   const id = h(k.id_compte_epargne);
   return `<div class="card monnen-k${dwe > 0 ? " warn" : ""}" data-monnen-dwe="${dwe}"><div class="grow"><span class="mut sm">${t("Monnen kliyan an")}</span>
     <b>${dwe > 0 ? `${gd(dwe)} ${t("pou remèt")}` : t("Okenn monnen pou remèt")}</b></div>
-    <div class="row"><a class="btn sm" href="#/monnen/${id}/monnaie">${t("Kenbe monnen")}</a>${dwe > 0 ? `<a class="btn sm pri" href="#/monnen/${id}/remise">${t("Remèt monnen")}</a>` : ""}</div></div>`;
+    <div class="monnen-b"><a class="btn sm" href="#/monnen/${id}/monnaie">${t("Kenbe monnen")}</a>${dwe > 0 ? `<a class="btn sm pri" href="#/monnen/${id}/remise">${t("Remèt monnen")}</a>` : ""}</div></div>`;
 }
 async function viewMonnen(compteId, tip) {
   const M = await S.model();
@@ -3352,6 +3352,7 @@ async function viewTxNew(compteId) {
   <h1>Tranzaksyon</h1>
   <p class="mut">${badjKat("epay")} ${d(non(c))} · ${d(k.no_compte || t("cycle poko voye"))}${kane(k)} · plan ${gd(plan)}</p>
   ${gpsBouton(c)}
+  ${monnenKat(M, k)}
   <form id="f" class="card form" novalidate>
     <fieldset class="field"><legend class="sr">Tip</legend><div class="seg s4">
       ${TIP_TX.map(([v, l], i) => `<label><input type="radio" name="type" value="${v}" ${i === 0 ? "checked" : ""}><span>${l}</span></label>`).join("")}</div></fieldset>
