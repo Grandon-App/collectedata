@@ -808,3 +808,9 @@ html[data-look="b"]:not([data-theme="dark"]) .login-logo img.mak-koule { filter:
 .siyati-opt[open] summary { margin-bottom: 8px; }
 .kes-modif { display: block; color: var(--warn); font-weight: 600; margin-top: 2px; }
 .kesr.kes-bloke { background: color-mix(in srgb, var(--warn) 8%, transparent); }
+
+/* Kontwòl kanè nan fòm tranzaksyon an */
+.kane-kw{margin:-2px 0 8px;display:grid;gap:4px}
+.kane-kw p{margin:0;padding:8px 10px;border-radius:8px;font-size:13px;line-height:1.35}
+.kane-kw .kw-err{background:color-mix(in srgb,#e8a400 16%,transparent);border:1px solid color-mix(in srgb,#e8a400 55%,transparent)}
+.kane-kw .kw-ok{background:color-mix(in srgb,#2e9e5b 14%,transparent);border:1px solid color-mix(in srgb,#2e9e5b 45%,transparent)}
