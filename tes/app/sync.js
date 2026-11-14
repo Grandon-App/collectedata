@@ -504,20 +504,18 @@ export async function pull() {
 
 // Ekri yon store sèlman si done sèvè a chanje depi dènye fwa nou ekri l (epi pèsonn pa t ekri ladan l depi lè a).
 // Sa kenbe modèl la nan memwa (S.model) lè senkronizasyon an pa pote anyen nouvo.
-const siyDenye = new Map();
 const siyati = (v) => { const s = JSON.stringify(v) || ""; let x = 0; for (let i = 0; i < s.length; i++) x = (x * 31 + s.charCodeAt(i)) | 0; return `${s.length}:${x}`; };
 async function metaSi(k, v) {
-  const g = siyati(v), d = siyDenye.get("m:" + k);
-  const st = () => `${db.genMeta[k] || 0}|${db.genMetaTout}`;
-  if (d && d.g === g && d.st === st()) return;
+  const g = siyati(v);
+  if ((await db.siyGet("m:" + k)) === g) return;
   await db.meta(k, v);
-  siyDenye.set("m:" + k, { g, st: st() });
+  await db.siySet("m:" + k, g);
 }
 async function ranplase(store, rows) {
-  const g = siyati(rows), d = siyDenye.get(store);
-  if (d && d.g === g && d.st === db.genSt[store]) return;
+  const g = siyati(rows);
+  if ((await db.siyGet(store)) === g) return;
   await db.replaceAll(store, rows);
-  siyDenye.set(store, { g, st: db.genSt[store] });
+  await db.siySet(store, g);
 }
 
 // Tranzaksyon epay yo (200 jou): yon fwa pa jou (oswa premye fwa) tout lis la; rès tan an sèlman sa ki chanje depi
