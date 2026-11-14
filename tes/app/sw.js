@@ -1,7 +1,7 @@
 // Service worker: kenbe aplikasyon an sou telefòn nan pou l louvri san entènèt.
 // Chanje VERSION chak fwa ou pibliye yon nouvo vèsyon.
 const CFG = self.GRANDON_SW || { baz: "", lokal: null, non: "prod" };
-const VERSION = `grandon-ajan-v112-${CFG.non}`;
+const VERSION = `grandon-ajan-v113-${CFG.non}`;
 const SHELL_BAZ = [
   "./", "index.html", "app.css", "look-a.css", "look-b.css", "look-c.css",
   "app.js", "db.js", "api.js", "sync.js", "config.js", "ui.js", "i18n.js", "taxonomy.js", "fmt.js",
@@ -77,7 +77,11 @@ self.addEventListener("fetch", (e) => {
     // Aplikasyon an gen yon sèl paj (wout yo nan #). Yon move adrès anndan dosye a (egz. tes/app/)
     // ta chaje paj la ak move chemen relatif e l ta rete bloke sou "Ap chaje": voye l sou bon adrès la.
     const baz = new URL(self.registration.scope).pathname, rel = url.pathname.slice(baz.length);
-    if (url.pathname.startsWith(baz) && rel !== "" && rel !== "index.html") { e.respondWith(Response.redirect(self.registration.scope + url.search, 302)); return; }
+    // Si paj la egziste vre sou sit la (egz. yon lòt zouti tankou likidite/), sèvi l; sinon (404 / offline) voye sou aplikasyon an.
+    if (url.pathname.startsWith(baz) && rel !== "" && rel !== "index.html") {
+      const vin = () => Response.redirect(self.registration.scope + url.search, 302);
+      e.respondWith(fetch(req).then((r) => (r.ok ? r : vin())).catch(vin)); return;
+    }
     e.respondWith(caches.match("index.html").then((r) => r || fetch(req)));
     return;
   }
