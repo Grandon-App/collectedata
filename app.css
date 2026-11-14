@@ -616,9 +616,10 @@ html[data-look] .login h1.wordmark::after { content: ""; position: absolute; lef
 .potfey-not { margin: 0 0 12px; }
 .potfey-k { display: flex; align-items: center; gap: 12px; padding: 10px 14px; margin: 8px 0; }
 .potfey-k .grow { display: flex; flex-direction: column; min-width: 0; }
-.monnen-k { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 12px; padding: 10px 14px; margin: 8px 0; }
-.monnen-k .grow { display: flex; flex-direction: column; min-width: 0; flex: 1; }
-.monnen-k .row { display: flex; gap: 8px; }
+.monnen-k { display: flex; flex-direction: column; align-items: stretch; gap: 10px; padding: 12px 14px; margin: 8px 0; }
+.monnen-k .grow { display: flex; flex-direction: column; min-width: 0; }
+.monnen-k .monnen-b { display: flex; gap: 8px; flex-wrap: wrap; }
+.monnen-k .monnen-b .btn { flex: 1 1 140px; text-align: center; }
 .monnen-k.warn { border-left: 4px solid var(--warn, #b7791f); }
 /* Alèt: jesyon manadjè, Tablo, rapèl */
 .alet-ajan { max-width: 360px; margin: 6px 0 10px; }
