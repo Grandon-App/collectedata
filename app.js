@@ -30,7 +30,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "4.95";
+const APP_VERSION = "4.96";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin", kesye: "Responsab kès" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
@@ -2406,7 +2406,8 @@ async function viewKrediFich(id) {
   const x = (await kreDone(M)).find((k) => k.id_compte_credit === id);
   if (!x) { $app.innerHTML = `<a href="#/kredi" class="back">‹ ${t("Kredi")}</a><p class="empty">${t("Kredi sa a pa sou telefòn nan.")}</p>`; return; }
   const c = M.clients.get(x.id_personne);
-  const dl = [["Kliyan", d(non(c))], ["Kont epay", d(x.no_compte_epargne || "")], ["Montan prete", gd(x.montant_prete)], ["Dire", `${x.duree_credit_mois} ${t("mwa")}`],
+  const kE = M.comptes.get(x.id_compte_epargne); // nimewo kanè a (A-BSI-…) anvan nimewo Supabase la
+  const dl = [["Kliyan", d(non(c))], ["Kont epay", d(kE?.no_kane || x.no_compte_epargne || "") + (kE?.no_kane && x.no_compte_epargne ? ` <span class="mut sm">${d(x.no_compte_epargne)}</span>` : "")], ["Montan prete", gd(x.montant_prete)], ["Dire", `${x.duree_credit_mois} ${t("mwa")}`],
     ["To enterè", `${x.taux_interet}% ${t("pa mwa")}`], ["Kapital final", `<b>${gd(x.montant_final)}</b>`], ["Montan pa vèsman", gd(x.paiement_journalier)],
     ["Kalandriye peman", `${x._jours.length}× / ${t("semèn")} · ${lisJou(x._jours)}`],
     ...(x.kalite === "konfyans" ? [["Kalite kredi", `Konfyans · ${x.dire_jou || x.nb_vesman} ${t("jou peman")}`]] : M.mod?.konfyans ? [["Kalite kredi", t("Kredi klasik")]] : []),
@@ -2942,7 +2943,7 @@ async function viewKrediNouvo() {
     if (!navigator.onLine) return (err.textContent = t("Fòk ou gen entènèt pou kreye yon kredi."));
     const k = M.comptes.get(kont), ge = garEta(v);
     if (!(await ui.ask({ titre: konf() ? "Kreye kredi Konfyans sa a?" : "Kreye kredi sa a?", ok: "Kreye kredi a", foto: kliyan.photo_url, detay: [
-      ["Kliyan", non(kliyan)], ...(KF ? [["Kalite kredi", konf() ? "Konfyans" : t("Kredi klasik")]] : []), ["Kont epay", k?.no_compte || ""], ["Montan prete", gd(v.montan)],
+      ["Kliyan", non(kliyan)], ...(KF ? [["Kalite kredi", konf() ? "Konfyans" : t("Kredi klasik")]] : []), ["Kont epay", k?.no_kane || k?.no_compte || ""], ["Montan prete", gd(v.montan)],
       ["Dire", konf() ? `${v.dire} ${t("jou peman")}` : `${v.duree} ${t("mwa")}`], ["To enterè", konf() ? `${v.taux}%` : `${v.taux}% ${t("pa mwa")}`],
       ["Kapital final", gd(r.final)], ["Montan pa vèsman", gd(v.peman)], ["Kalandriye peman", `${js.length}× · ${lisJou(js)}`], ["Kantite vèsman", String(r.n)],
       ["Dat kòmansman", datFr(v.debut)], ["Dat fen", datFr(r.fin)], ...(GA ? [["Garanti", `${gd(ge.bezwen)} (${v.pous}%) · ${ge.g?.no_compte || ""}`]] : []),
