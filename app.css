@@ -744,6 +744,12 @@ html[data-look="b"]:not([data-theme="dark"]) .login-logo img.mak-koule { filter:
 .metrik-fen .kv > span { opacity: .85; }
 .metrik-fen .kv > b { text-align: right; white-space: nowrap; }
 .metrik-fen .kv small { font-weight: 400; opacity: .75; }
+.metrik-lis { display: flex; flex-direction: column; margin-top: 6px; }
+.metrik-lis .fre-r { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 6px 0; border-top: 1px solid color-mix(in srgb, currentColor 10%, transparent); color: inherit; text-decoration: none; }
+.metrik-lis .fre-r:first-child { border-top: 0; }
+.metrik-lis .fre-r > span { display: flex; flex-direction: column; min-width: 0; }
+.metrik-lis .fre-r small { opacity: .65; font-size: .85em; }
+.metrik-lis .fre-r:hover { background: color-mix(in srgb, currentColor 5%, transparent); }
 .metrik-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
 .metrik-chips .chip { font-size: .85em; padding: 2px 7px; border-radius: 999px; border: 1px solid color-mix(in srgb, currentColor 25%, transparent); text-decoration: none; color: inherit; }
 @media (max-width: 560px) { .metrik-g { grid-template-columns: 1fr; gap: 10px; } .metrik-fen .kv > b { white-space: normal; } }
