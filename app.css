@@ -745,7 +745,8 @@ html[data-look="b"]:not([data-theme="dark"]) .login-logo img.mak-koule { filter:
 .metrik .metrik-bar i { background: var(--mc); }
 .metrik-eta { font-size: .82em; font-weight: 600; color: var(--mc); overflow-wrap: anywhere; } .metrik-eta .mut { font-weight: 400; }
 .metrik-eta i, .metrik-t td i, .metrik-leje i { display: inline-block; width: .7em; height: .7em; border-radius: 50%; background: var(--mc); margin-right: 5px; vertical-align: baseline; }
-.m-vet { --mc: var(--ok); } .m-jon { --mc: var(--warn); } .m-wouj { --mc: var(--err); } .m-san { --mc: var(--mut, #999); }
+.m-vet { --mc: var(--ok); } .m-jon { --mc: var(--warn); } .m-wouj { --mc: var(--err); } .m-san { --mc: var(--mut, #999); } .m-info { --mc: var(--pri, #2f6fd6); }
+.metrik [data-enprime-potfey] { margin-top: 8px; align-self: flex-start; }
 .tbl-wrap { overflow-x: auto; max-width: 100%; }
 .metrik-t { width: 100%; border-collapse: collapse; font-size: .9em; }
 .metrik-t th, .metrik-t td { padding: 7px 8px; border-bottom: 1px solid color-mix(in srgb, currentColor 12%, transparent); text-align: left; white-space: nowrap; }
