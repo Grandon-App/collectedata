@@ -30,7 +30,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "4.96";
+const APP_VERSION = "4.97";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin", kesye: "Responsab kès" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
@@ -2381,7 +2381,7 @@ async function viewKredi() {
       return `<div class="row kxr${x._peJodi ? " kxr-ok" : ""}" data-kredi="${h(x.id_compte_credit)}">
         <span class="txr-le" title="${h(t("Dènye peman"))}"><b class="mono">${dn ? lèKout(dn.capture_le || dn.date_transaction) || "—" : "—"}</b><small>${dn ? (dj === M.today ? t("jodi a") : datKout(dj)) : t("okenn")}</small></span>
         <a class="kxr-main lnk" href="#/kredi/${h(x.id_compte_credit)}"><span class="txr-t"><b>${d(non(c))}</b> ${badjKat(katKredi(x))} ${badjKredi(x)}</span>
-        <span class="mut sm">${d(x.no_compte || "")} · ${gd(x.paiement_journalier)}/${t("vèsman")} · ${x._jours.length}×/sem (${lisJou(x._jours)}) · ${t("fen")} ${datFr(x.date_fin)}</span>
+        <span class="mut sm">${d(x.no_compte || "")}${kane(x)} · ${gd(x.paiement_journalier)}/${t("vèsman")} · ${x._jours.length}×/sem (${lisJou(x._jours)}) · ${t("fen")} ${datFr(x.date_fin)}</span>
         <span class="sm">${t("Prete")} <b>${gd(x.montant_prete)}</b> · ${t("rete")} <b>${gd(x.montant_restant)}</b> / ${gd(x.montant_final)}${x._reta ? ` · <span class="err-t">${t("reta")} ${gd(x._reta)}</span>` : ""}</span>
         <span class="kxr-bar" aria-hidden="true"><i style="width:${pc}%"></i></span></a>
         ${!estKesye() && x._rete > 0 ? `<span class="kxr-ak">${x._peJodi ? `<b class="in">✓ ${gd(x._peJodi)}</b>` : ""}<a class="btn sm${x._peJodi ? "" : " pri"}" href="#/kredi/${h(x.id_compte_credit)}/peye">${t("Peye")}</a>${x._jodi && !x._peJodi && !x._fbJodi ? `<button type="button" class="btn sm" data-kr-papeye="${h(x.id_compte_credit)}">${t("Pa peye")}</button>` : ""}</span>` : ""}</div>`; }).join("") || `<p class="empty">${t("Poko gen kredi.")}</p>`}</div></div>`;
@@ -2419,7 +2419,7 @@ async function viewKrediFich(id) {
     ["Penalite total", x._penJou ? `${gd(x._penTotal)} <small class="mut">(${x._penJou} ${t("jou")} × ${gd(x._penPaJou)})</small>` : t("Okenn")],
     ["Penalite deja ankese", gd(x._penPeye)], ["Penalite pou ankese", x._penDu ? `<b class="err-t">${gd(x._penDu)}</b>` : t("Okenn")],
     ...(x.type_compte_credit ? [["Tip kredi", d(x.type_compte_credit)]] : [])];
-  $app.innerHTML = `<a href="#/kredi" class="back">‹ ${t("Kredi")}</a><div class="page-head"><h1>${d(x.no_compte || t("Kredi"))}</h1>
+  $app.innerHTML = `<a href="#/kredi" class="back">‹ ${t("Kredi")}</a><div class="page-head"><h1>${d(x.no_compte || t("Kredi"))}${x.no_kane ? ` <span class="mut sm" title="${t("Kòd ansyen (Airtable)")}" data-brut>${h(x.no_kane)}</span>` : ""}</h1>
       <span class="kr-ak">${!estKesye() && x._penDu > 0 ? `<a class="btn danger" id="kr-pen" href="#/kredi/${h(x.id_compte_credit)}/penalite">${t("Ankese penalite")}</a>` : ""}
       ${estManager() && !x._fini && x.kalite !== "konfyans" ? `<a class="btn" id="kr-kal" href="#/kredi/${h(x.id_compte_credit)}/kalandriye">${t("Modifye kalandriye")}</a>` : ""}
       ${!estKesye() && x._rete > 0 && !x._peJodi && !x._fbJodi && x._jodi ? `<button type="button" class="btn" id="kr-papeye">${t("Pa peye")}</button>` : ""}
@@ -2469,7 +2469,7 @@ async function viewKrediPeye(id, pen = false) {
     .filter((v, i, a) => a.findIndex((w) => w[1] === v[1]) === i);
   $app.innerHTML = `${back}<h1>${t("Tranzaksyon kredi")}</h1>${tipKreTx(x, "peye")}
   <form id="f" class="card form" novalidate>
-    <p>${badjKat(katKredi(x))} <b>${d(non(c))}</b> · ${d(x.no_compte || "")}</p>
+    <p>${badjKat(katKredi(x))} <b>${d(non(c))}</b> · ${d(x.no_compte || "")}${kane(x)}</p>
     <p class="mut sm">${t("Montan pa vèsman")} ${gd(pj)} · ${lisJou(x._jours)} · ${t("rete")} ${gd(x._rete)}${x._reta ? ` · <span class="err-t">${t("reta")} ${gd(x._reta)} (${x._jouReta} ${t("jou")})</span>` : ""}</p>
     <div class="chips">${sij.map(([l, v]) => `<button type="button" class="chip" data-kr-m="${v}">${h(l)}<small>${gd(v)}</small></button>`).join("")}</div>
     <label>${t("Montan (goud)")} *<input name="montant" type="number" inputmode="decimal" min="1" step="any" value="${Math.min(pj, x._rete)}" required></label>
@@ -2529,7 +2529,7 @@ async function viewKrediPenalite(M, x) {
   const sij = [[t("1 jou"), Math.min(x._penPaJou, x._penDu)], [t("Tout penalite a"), x._penDu]].filter((v, i, a) => a.findIndex((w) => w[1] === v[1]) === i);
   $app.innerHTML = `${back}<h1>${t("Tranzaksyon kredi")}</h1>${tipKreTx(x, "penalite")}
   <form id="f" class="card form" novalidate>
-    <p>${badjKat(katKredi(x))} <b>${d(non(c))}</b> · ${d(x.no_compte || "")}</p>
+    <p>${badjKat(katKredi(x))} <b>${d(non(c))}</b> · ${d(x.no_compte || "")}${kane(x)}</p>
     <p class="mut sm">${t("Dat fen")} ${datFr(x.date_fin)} + ${x._gras} ${t("jou gras")} · ${x._penJou} ${t("jou")} × ${gd(x._penPaJou)} = ${gd(x._penTotal)} · ${t("deja ankese")} ${gd(x._penPeye)}</p>
     <div class="chips">${sij.map(([l, v]) => `<button type="button" class="chip" data-kr-m="${v}">${h(l)}<small>${gd(v)}</small></button>`).join("")}</div>
     <label>${t("Montan (goud)")} *<input name="montant" type="number" inputmode="decimal" min="1" step="any" value="${x._penDu}" required></label>
@@ -2705,7 +2705,7 @@ async function viewKrediKalandriye(id) {
   let jours = [...x._jours], freq = FREK_KREDI.includes(jours.length) ? jours.length : 6;
   $app.innerHTML = `<a href="#/kredi/${h(id)}" class="back">‹ ${d(x.no_compte || t("Kredi"))}</a><h1>${t("Modifye kalandriye peman")}</h1>
   <form id="f" class="card form" novalidate>
-    <p><b>${d(non(c))}</b> · ${d(x.no_compte || "")}</p>
+    <p><b>${d(non(c))}</b> · ${d(x.no_compte || "")}${kane(x)}</p>
     <p class="mut sm">${t("Kalandriye kounye a")}: <b>${x._jours.length}× · ${lisJou(x._jours)}</b> · ${t("dat fen")} ${datFr(x.date_fin)}</p>
     <fieldset class="field"><legend>${t("Frekans")} * <small class="mut">(${t("kantite fwa pa semèn")})</small></legend>
       <div class="seg s4" id="kr-freq">${FREK_KREDI.map((m) => `<label><input type="radio" name="freq" value="${m}" ${m === freq ? "checked" : ""}><span>${m}×</span></label>`).join("")}</div>
