@@ -30,7 +30,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "4.98";
+const APP_VERSION = "4.99";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin", kesye: "Responsab kès" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
@@ -950,10 +950,12 @@ function kat1Metrik(k, r, x) {
       ${k === "mobilizasyon" ? `<span>${t("Si w kenbe ritm sa a")}: <b>${gd(r.fen.proj)}</b> ${t("sou")} ${gd(r.fen.objMwa)} (${r.fen.objMwa ? Math.round((r.fen.proj / r.fen.objMwa) * 100) : 0}%)</span>
         ${x.jRete ? `<span>${t("Pou rive sou objektif la")}: <b>${gd(r.fen.bezwen)}</b> / ${t("jou")} ${t("pou")} ${x.jRete} ${t("jou ki rete yo")}</span>` : ""}`
       : k === "kliyan_nouvo" ? `<span>${t("Si w kenbe ritm sa a")}: <b>${r.fen.proj}</b> ${t("sou")} ${r.fen.objMwa} ${t("kliyan")}</span>${r.fen.bezwen ? `<span>${t("Rete")} <b>${r.fen.bezwen}</b> ${t("kliyan pou")} ${x.jRete} ${t("jou ki rete yo")}</span>` : ""}`
-      : `<span>${t("Pou tout mwa a")}: <b>${gd(r.fen.total)}</b> · ${t("deja kolekte")} <b>${gd(r.fen.kolekte)}</b> (${r.fen.total ? Math.round((r.fen.kolekte / r.fen.total) * 100) : 0}%)</span>
-        <span>${t("Rete pou kolekte jiska fen mwa a")}: <b>${gd(r.fen.rete)}</b></span>
-        <span>${t("Kont k ap peye mwa a")}: <b>${r.fen.nKont}</b> · ${t("si tout peye dapre kalandriye yo")}: <b>${gd(r.fen.total)}</b></span>
-        <button type="button" class="btn sm" data-enprime-potfey>${t("Enprime lis pòtfèy la")}</button>`}</div>` : "";
+      : `<span class="kv"><span>${t("Pou tout mwa a")}</span><b>${gd(r.fen.total)}</b></span>
+        <span class="kv"><span>${t("Deja kolekte")}</span><b>${gd(r.fen.kolekte)} <small>(${r.fen.total ? Math.round((r.fen.kolekte / r.fen.total) * 100) : 0}%)</small></b></span>
+        <span class="kv"><span>${t("Rete pou kolekte")}</span><b>${gd(r.fen.rete)}</b></span>
+        <span class="kv"><span>${t("Kont k ap peye mwa a")}</span><b>${r.fen.nKont}</b></span>
+        <small class="mut">${t("Si tout kont yo peye dapre kalandriye yo, pòtfèy la ap kolekte")} ${gd(r.fen.total)}.</small>
+        <button type="button" class="btn sm" data-enprime-potfey>🖨 ${t("Enprime lis pòtfèy la")}</button>`}</div>` : "";
   return `<div class="card metrik m-${r.eta}" data-metrik="${k}" data-eta="${r.eta}" title="${h(t(m.dek))}"><span class="metrik-n">${t(m.non)}</span>
     <b>${val}${k === "mobilizasyon" ? `<small> / ${t("jou")}</small>` : ""}</b><small>${obj}</small>
     <span class="ekip-bar metrik-bar" aria-hidden="true"><i style="width:${Math.min(100, r.p)}%"></i></span>
@@ -986,16 +988,19 @@ function katEnfo(M0, Mp) {
     <span class="metrik-n">TAF · ${t("Taux d'Accès au Financement")}</span><b>${e.taf}%</b>
     <small>${e.nMounKr} ${t("kliyan ak kredi an kou")} / ${e.nMoun} ${t("kliyan epay")}</small>
     <span class="ekip-bar metrik-bar" aria-hidden="true"><i style="width:${Math.min(100, e.taf)}%"></i></span>
-    <div class="metrik-fen"><span>${t("Kont epay aktif")}: <b>${e.nKont}</b></span><span>${t("Kredi an kou")}: <b>${e.nKr}</b>${e.nDoute ? ` · ${t("kreyans dout")}: <b>${e.nDoute}</b>` : ""}</span></div></div>`;
+    <div class="metrik-fen"><span class="kv"><span>${t("Kont epay aktif")}</span><b>${e.nKont}</b></span><span class="kv"><span>${t("Kliyan epay")}</span><b>${e.nMoun}</b></span>
+      <span class="kv"><span>${t("Kredi an kou")}</span><b>${e.nKr}</b></span>${e.nDoute ? `<span class="kv"><span>${t("Kreyans dout")}</span><b>${e.nDoute}</b></span>` : ""}</div></div>`;
   const fre = e.fre.length || [...Mp.comptes.values()].some((k) => k._fre) ? `<div class="card metrik metrik-enfo ${e.fre.length ? "m-jon" : "m-vet"}" data-metrik="fre">
     <span class="metrik-n">${t("Frais sèvis")}</span><b>${e.fre.length}</b><small>${t("kont elijib ki poko peye frais sèvis la")}</small>
-    <div class="metrik-fen"><span>${t("Total pou pran")}: <b>${gd(e.freSom)}</b></span>${e.fre.length ? `<span class="mut sm" data-brut>${e.fre.slice(0, 8).map((k) => h(k.no_kane || k.no_compte || "")).join(" · ")}${e.fre.length > 8 ? " …" : ""}</span>` : ""}</div></div>` : "";
+    <div class="metrik-fen"><span class="kv"><span>${t("Total pou pran")}</span><b>${gd(e.freSom)}</b></span>${e.fre.length ? `<span class="metrik-chips" data-brut>${e.fre.slice(0, 12).map((k) => `<a class="chip" href="#/cycle/${h(k.id_compte_epargne)}">${h(k.no_kane || k.no_compte || "")}</a>`).join("")}${e.fre.length > 12 ? `<span class="mut sm">+${e.fre.length - 12}</span>` : ""}</span>` : ""}</div></div>` : "";
   const fin = estManager() && e.genSol ? `<div class="card metrik metrik-enfo m-info" data-metrik="finansman">
     <span class="metrik-n">${t("Pòtfèy & kapasite finansman")}</span><b>${gd(e.sol)}</b><small>${t("balans total kont epay pòtfèy la")}</small>
     <span class="ekip-bar metrik-bar" aria-hidden="true"><i style="width:${Math.min(100, Math.round((e.prete / KAPASITE_OBJ) * 100))}%"></i></span>
-    <div class="metrik-fen"><span>${t("Kredi finanse (an kou)")}: <b>${e.nAktifKr}</b> · ${t("kapital prete")} <b>${gd(e.prete)}</b> (${Math.round((e.prete / KAPASITE_OBJ) * 100)}% ${t("objektif")} ${gd(KAPASITE_OBJ)})</span>
-      <span>${t("Rete pou ranbouse")}: <b>${gd(e.rete)}</b> · ${t("ladan l kapital")} <b>${gd(e.kapRete)}</b></span>
-      <span>${t("Kredi prete / balans epay")}: <b>${e.sol ? Math.round((e.prete / e.sol) * 100) : 0}%</b></span></div></div>` : "";
+    <div class="metrik-fen"><span class="kv"><span>${t("Kredi finanse")}</span><b>${e.nAktifKr}</b></span>
+      <span class="kv"><span>${t("Kapital prete")}</span><b>${gd(e.prete)} <small>(${Math.round((e.prete / KAPASITE_OBJ) * 100)}% ${t("sou")} ${gd(KAPASITE_OBJ)})</small></b></span>
+      <span class="kv"><span>${t("Rete pou ranbouse")}</span><b>${gd(e.rete)}</b></span>
+      <span class="kv"><span>${t("Ladan l kapital")}</span><b>${gd(e.kapRete)}</b></span>
+      <span class="kv"><span>${t("Kredi prete / balans epay")}</span><b>${e.sol ? Math.round((e.prete / e.sol) * 100) : 0}%</b></span></div></div>` : "";
   return taf + fre + fin;
 }
 // Lis pòtfèy la pou enprime: sa chak kont dwe pou mwa a, sa ki kolekte, sa ki rete.
@@ -1025,7 +1030,8 @@ function seksyonMetrik(M0, Mp, uid, estLi, kf) {
   if (!kf.aktif.length) return "";
   const x = kalkMetrik(M0, Mp, uid, estLi, kf);
   return `<section class="metrik-sek" id="metrik"><div class="ekip-sek-h"><h2>${t("Objektif mwa a")}</h2><small class="mut">${x.jPase}/${x.jTotal} ${t("jou travay")}${estManager() ? ` · <a href="#/metrik">${t("Chanje")}</a>` : ""}</small></div>
-    <div class="metrik-g">${kf.aktif.map((k) => kat1Metrik(k, x.res[k], x)).join("")}${katEnfo(M0, Mp)}</div></section>`;
+    <div class="metrik-g">${kf.aktif.map((k) => kat1Metrik(k, x.res[k], x)).join("")}</div>
+    <h3 class="metrik-h3">${t("Pòtfèy la")}</h3><div class="metrik-g metrik-g-enfo">${katEnfo(M0, Mp)}</div></section>`;
 }
 // Manadjè: tablo koulè pou chak ajan (yon kolòn pa metrik aktif).
 function seksyonMetrikEkip(M0, lis, ids, kf) {
