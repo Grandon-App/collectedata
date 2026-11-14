@@ -7,7 +7,7 @@ function ouvrir(html, { onOpen } = {}) {
   return new Promise((resolve) => {
     const prev = document.activeElement;
     const wrap = document.createElement("div");
-    wrap.className = "modal-wrap"; wrap.dataset.wout = location.hash;
+    wrap.className = "modal-wrap";
     wrap.innerHTML = `<div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-t">${html}</div>`;
     document.body.appendChild(wrap);
     document.body.classList.add("modal-open");

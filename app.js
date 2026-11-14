@@ -30,7 +30,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "5.04";
+const APP_VERSION = "5.05";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin", kesye: "Responsab kès" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
@@ -2281,11 +2281,7 @@ async function montreAlet(M, ks, lisKredi = null) {
   if (r?.fermen) await fermenAlet(r.fermen, M.alet.get(r.fermen)?.tip === "rapel");
   else if (r?.nouvo) await kreyeAlet(M, ks.find((k) => k._actif) || ks[0], lisKredi ? lisKredi[0]?.kredi || (M.kredi || []).find((x) => x.id_compte_credit === lisKredi[0]?.id_compte_credit) : null);
 }
-addEventListener("hashchange", () => {
-  if (!/^#\/(kliyan|cycle|tx\/nouvo|kredi)\//.test(location.hash)) aletDenye = "";
-  // Popup alèt yon paj fèmen lè ajan an kite paj la (pou 2 popup pa youn sou lòt).
-  document.querySelectorAll(".modal-wrap:not(.out) .alet-lis").forEach((l) => { if (l.closest(".modal-wrap")?.dataset.wout !== location.hash) l.closest(".modal-wrap")?.querySelector("[data-v=ok]")?.click(); });
-});
+addEventListener("hashchange", () => { if (!/^#\/(kliyan|cycle|tx\/nouvo|kredi)\//.test(location.hash)) aletDenye = ""; });
 
 async function viewClient(id) {
   const M = await S.model();

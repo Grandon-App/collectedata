@@ -36,7 +36,8 @@ const done = (t) => new Promise((res, rej) => { t.oncomplete = () => res(); t.on
 
 // Jenerasyon done yo: monte chak fwa yon store chanje (sof foto yo), pou S.model() konnen lè pou l rekalkile.
 export let gen = 0;
-const chanje = (store) => { if (store !== "photos") gen++; };
+export const genSt = {}; // jenerasyon pa store (pou sync.js konnen si yon store chanje depi dènye fwa li ekri l)
+const chanje = (store) => { if (store !== "photos") gen++; genSt[store] = (genSt[store] || 0) + 1; };
 
 export async function get(store, key) {
   const d = await open();
@@ -46,17 +47,17 @@ export async function all(store) {
   const d = await open();
   return rq(d.transaction(store).objectStore(store).getAll());
 }
-export async function put(store, val) {
+export async function put(store, val, sanGen = false) {
   const d = await open();
-  chanje(store);
+  if (!sanGen) chanje(store);
   const t = d.transaction(store, "readwrite");
   const k = await rq(t.objectStore(store).put(val));
   await done(t);
   return k;
 }
-export async function del(store, key) {
+export async function del(store, key, sanGen = false) {
   const d = await open();
-  chanje(store);
+  if (!sanGen) chanje(store);
   const t = d.transaction(store, "readwrite");
   t.objectStore(store).delete(key);
   await done(t);
@@ -64,6 +65,7 @@ export async function del(store, key) {
 export async function clear(store) {
   const d = await open();
   chanje(store);
+  if (store === "meta") genMetaTout++;
   const t = d.transaction(store, "readwrite");
   t.objectStore(store).clear();
   await done(t);
@@ -72,6 +74,7 @@ export async function clear(store) {
 export async function replaceAll(store, rows) {
   const d = await open();
   chanje(store);
+  if (store === "meta") genMetaTout++;
   const t = d.transaction(store, "readwrite");
   const s = t.objectStore(store);
   s.clear();
@@ -86,8 +89,14 @@ export async function putMany(store, rows) {
   for (const r of rows) s.put(r);
   await done(t);
 }
+// Kle meta modèl la pa li (S.model): ekri yo pa fè modèl la rekalkile.
+const META_SAN_GEN = new Set(["last_pull", "tx_sync"]);
+export const genMeta = {};
+export let genMetaTout = 0; // monte lè tout store meta a efase (wipe / clear)
 export async function meta(k, v) {
   if (v === undefined) return (await get("meta", k))?.v;
+  if (META_SAN_GEN.has(k)) return v === null ? del("meta", k, true) : put("meta", { k, v }, true);
+  genMeta[k] = (genMeta[k] || 0) + 1;
   if (v === null) return del("meta", k);
   return put("meta", { k, v });
 }
