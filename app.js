@@ -30,7 +30,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "5.02";
+const APP_VERSION = "5.03";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin", kesye: "Responsab kès" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
@@ -3465,6 +3465,7 @@ async function viewTxNew(compteId) {
       <label>Balans kanè a avan *<input name="solde_avant" type="number" inputmode="decimal" min="0" step="any" required${dKane ? ` placeholder="${t("dènye kanè")}: ${Number(dKane.solde_declare)}"` : ""}></label>
       <label>Balans kanè a apre *<input name="solde" type="number" inputmode="decimal" min="0" step="any" required></label>
     </div>
+    <div class="kane-kw" id="kane-kw" aria-live="polite" hidden></div>
     <p class="err-msg" id="err" role="alert"></p>
     <button class="btn pri" type="submit" id="go">Anrejistre</button>
   </form>`;
@@ -3502,6 +3503,34 @@ async function viewTxNew(compteId) {
     f.solde.value = Number(av) + (f.type.value === "D" ? m : f.type.value === "FL" && f.type_frais.value === "Frais carnet" ? 0 : -m);
   };
   f.solde_avant.oninput = autoApre; f.montant.addEventListener("input", autoApre);
+  // Kontwòl kanè pandan ajan an ap tape: (1) kalkil avan ± montan = apre, (2) balans avan an konpare ak sistèm nan.
+  // Ajan yo pa wè balans sistèm nan: sèvè a reponn sèlman «ok» oswa «diferan». San entènèt: konpare ak dènye kanè a.
+  const kw = { avan: null, rez: null, pwomes: null }, kwEl = document.getElementById("kane-kw");
+  const deltaKane = () => { const m = Number(f.montant.value), tp = f.type.value; return tp === "D" ? m : tp === "FL" && f.type_frais.value === "Frais carnet" ? 0 : -m; };
+  const kontwolSis = (av) => { // 'ok' | 'diferan' | null (pa konnen)
+    if (k._solde != null) return Promise.resolve(Math.abs(Number(k._solde) - av) < 0.01 ? "ok" : "diferan");
+    if (k._pending || !navigator.onLine) return Promise.resolve(null);
+    return Promise.race([api.rpc("grandon_kontwol_kane", { p_compte: k.id_compte_epargne, p_avan: av - (k._local || 0) }).catch(() => null),
+      new Promise((r) => setTimeout(() => r(null), 4000))]).then((r) => (r === "ok" || r === "diferan" ? r : null));
+  };
+  const kalkKw = (av) => { if (kw.avan !== av) { kw.avan = av; kw.rez = null; kw.pwomes = kontwolSis(av).then((r) => { if (kw.avan === av) kw.rez = r; return r; }); } return kw.pwomes; };
+  const montreKw = async () => {
+    const avS = f.solde_avant.value.trim(), apS = f.solde.value.trim(), m = Number(f.montant.value), l = [];
+    if (f.san_kane?.checked || avS === "") { kwEl.hidden = true; return; }
+    const av = Number(avS);
+    if (apS !== "" && m > 0 && Math.abs(av + deltaKane() - Number(apS)) > 0.01)
+      l.push(`<p class="kw-err">⚠ ${t("Kalkil kanè a pa bon")}: ${gd(av)} ${deltaKane() >= 0 ? "+" : "−"} ${gd(Math.abs(deltaKane()))} = <b>${gd(av + deltaKane())}</b>, ${t("men ou mete")} ${gd(Number(apS))}.</p>`);
+    const r = await kalkKw(av);
+    if (f.solde_avant.value.trim() !== avS) return;
+    if (r === "diferan") l.push(`<p class="kw-err">⚠ ${t("Balans kanè avan an pa koresponn ak sa ki nan sistèm nan. Verifye kanè kliyan an anvan w anrejistre.")}</p>`);
+    else if (r === "ok") l.push(`<p class="kw-ok">✓ ${t("Balans kanè avan an koresponn ak sistèm nan.")}</p>`);
+    else if (dKane && Math.abs(av - Number(dKane.solde_declare)) > 0.01) l.push(`<p class="kw-err">⚠ ${t("Balans kanè avan an pa koresponn ak dènye kanè a")} (${gd(Number(dKane.solde_declare))}).</p>`);
+    kwEl.innerHTML = l.join(""); kwEl.hidden = !l.length;
+  };
+  let kwT = 0; const kwPita = () => { clearTimeout(kwT); kwT = setTimeout(montreKw, 450); };
+  [f.solde_avant, f.solde, f.montant].forEach((i) => i.addEventListener("input", kwPita));
+  f.querySelectorAll('input[name="type"]').forEach((r) => r.addEventListener("change", kwPita));
+  f.type_frais.addEventListener("change", kwPita);
   f.solde.oninput = () => (f.solde.dataset.manuel = "1");
   [f.solde_avant, f.solde].forEach((i) => i.addEventListener("input", () => { i.removeAttribute("aria-invalid"); f.solde.removeAttribute("aria-invalid"); }));
   if (f.san_kane) f.san_kane.onchange = maj;
@@ -3527,7 +3556,17 @@ async function viewTxNew(compteId) {
     }
     // Balans avan an dwe swiv dènye balans kanè ki te deklare sou kont lan. Sa kenbe erè kote ajan an chanje plas
     // montan an ak balans avan an (kalkil avan + montan = apre a toujou bon nan ka sa a).
-    if (!sanKane && dKane) {
+    if (!sanKane) {
+      const av0 = Number(f.solde_avant.value), ap0 = Number(f.solde.value), at0 = av0 + deltaKane();
+      if (Math.abs(at0 - ap0) > 0.01 && !(await ui.ask({ titre: "Kalkil kanè a pa bon", ikon: "!", ok: "Kontinye kanmenm", anile: "Korije",
+        tekst: t("Balans apre a dwe egal balans avan an plis/mwens montan an."),
+        detay: [["Balans kanè a avan", gd(av0)], ["Montan (goud)", gd(m)], ["Balans apre a dwe vin", gd(at0)], ["Balans apre ou mete", gd(ap0)]] }))) { f.solde.setAttribute("aria-invalid", "true"); f.solde.focus(); return; }
+    }
+    const rSis = sanKane ? null : await kalkKw(Number(f.solde_avant.value));
+    if (rSis === "diferan" && !(await ui.ask({ titre: "Balans kanè avan an pa koresponn ak sistèm nan", ikon: "!", ok: "Kontinye kanmenm", anile: "Korije",
+      tekst: t("Verifye kanè kliyan an ak montan an. Si kanè a bon, kontinye: manadjè a ap wè diferans lan."),
+      detay: [["Balans avan ou mete", gd(Number(f.solde_avant.value))], ["Montan (goud)", gd(m)]] }))) { f.solde_avant.setAttribute("aria-invalid", "true"); f.solde_avant.focus(); return; }
+    if (!sanKane && dKane && rSis == null) {
       const dBal = Number(dKane.solde_declare), avS = Number(f.solde_avant.value);
       if (Math.abs(avS - dBal) > 0.01 && !(await ui.ask({ titre: "Balans kanè avan an pa koresponn ak dènye kanè a", ikon: "!", ok: "Kontinye kanmenm", anile: "Korije",
         tekst: Math.abs(m - dBal) < 0.01 ? t("Verifye ou pa chanje plas montan an ak balans kanè avan an.") : t("Verifye kanè kliyan an ak montan an."),
