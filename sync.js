@@ -529,7 +529,22 @@ function freEta(k, cfg, today) {
     pou: kreye >= cfg.fre_dat && elijib && !deja && k._actif !== false && today >= k.date_debut };
 }
 
+// Modèl la koute chè pou kalkile (tout kont, tout tranzaksyon): kenbe l nan memwa, epi refè l sèlman lè done yo chanje
+// (db.gen), lè jou a chanje, lè moun ki konekte a chanje, oswa apre 60 s (eta ki depann de lè a). Chak apèl resevwa
+// yon kopi tèt modèl la, pou yon paj pa chanje M.x pou lòt paj yo.
+let mKach = null;
+export function envalideModel() { mKach = null; }
 export async function model() {
+  const kle = `${db.gen}|${jodi()}|${api.getSession()?.user?.id || ""}`;
+  if (!mKach || mKach.kle !== kle || Date.now() - mKach.le > 60000) {
+    const k = { kle, le: Date.now(), p: modelKalkile() };
+    mKach = k;
+    k.p.catch(() => { if (mKach === k) mKach = null; });
+  }
+  const M = await mKach.p;
+  return { ...M, kredi: Array.isArray(M.kredi) ? [...M.kredi] : M.kredi };
+}
+async function modelKalkile() {
   const cfgSv = await db.meta("sevis_cfg");
   const [clients, comptes, txs, outbox, plans, feries, suivis, demandes, alet, modif] = await Promise.all(
     ["clients", "comptes", "transactions", "outbox", "plans", "feries", "suivis", "demandes", "alet", "modif"].map((s) => db.all(s)));
