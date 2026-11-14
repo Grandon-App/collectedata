@@ -829,3 +829,4 @@ html[data-look="b"]:not([data-theme="dark"]) .login-logo img.mak-koule { filter:
 .pot-jn-t tr.on td{background:color-mix(in srgb, currentColor 7%, transparent)}
 .pot-jn-t tfoot td{font-weight:700}
 @media (max-width:560px){.pot-jn-t{font-size:12.5px}.pot-jn-t th,.pot-jn-t td{padding:6px 4px}}
+.pot-jn-t button.lnk{background:none;border:0;padding:0;color:inherit;font:inherit;text-decoration:underline;text-underline-offset:2px;cursor:pointer}
