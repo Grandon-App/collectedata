@@ -30,7 +30,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "5.06";
+const APP_VERSION = "5.07";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin", kesye: "Responsab kès" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
@@ -543,6 +543,37 @@ async function viewAlet() {
 // Ajan teren yo (+ «San ajan» si gen kont ki pa atache ak okenn ajan).
 // ---------- Pòtfèy (manadjè): chwazi yon ajan → kliyan pòtfèy li yo ak sa ki fèt jou a (peye / fidbak / poko wè / pa jou peman) ----------
 const potF = { ajan: "", jou: null, filt: "" };
+// Jounal pa jou pòtfèy la pou mwa dat ki chwazi a: total depo, retrè, frè ak net chak jou (tout kont pòtfèy la).
+// Viman antre konte nan depo, viman soti nan retrè. Tranzaksyon rejte pa konte; sa ki an atant make apa.
+function jounalPotfey(M, ajanK, D) {
+  const mwa = D.slice(0, 7), jou = new Map();
+  for (const k of M.comptes.values()) {
+    if (k._pending || ajanK(k.created_by) !== potF.ajan) continue;
+    for (const x of k._txs) {
+      if (x.validation_status === "rejected") continue;
+      const j = S.jouTx(x); if (j.slice(0, 7) !== mwa) continue;
+      const r = jou.get(j) || { depo: 0, retre: 0, fre: 0, nD: 0, nR: 0, atant: 0 };
+      const kd = S.txKind(x), m = Number(x.montant || 0);
+      if (kd === "depo" || kd === "viman_in") { r.depo += m; r.nD++; }
+      else if (kd === "retre" || kd === "viman_out") { r.retre += m; r.nR++; }
+      else if (kd === "fre") r.fre += m;
+      if (x.validation_status === "pending" || x._pending) r.atant++;
+      jou.set(j, r);
+    }
+  }
+  const l = [...jou].sort((a, b) => b[0].localeCompare(a[0]));
+  const tot = l.reduce((a, [, r]) => ({ depo: a.depo + r.depo, retre: a.retre + r.retre, fre: a.fre + r.fre, nD: a.nD + r.nD, nR: a.nR + r.nR }), { depo: 0, retre: 0, fre: 0, nD: 0, nR: 0 });
+  const net = (r) => r.depo - r.retre - r.fre;
+  const nonMwa = new Date(D + "T12:00:00Z").toLocaleDateString("fr-FR", { month: "long", year: "numeric", timeZone: "UTC" });
+  return `<section class="card pot-jn" id="pot-jounal"><div class="ekip-sek-h"><h2>${t("Jounal pa jou")} · ${h(nonMwa)}</h2><small class="mut">${t("tout kont pòtfèy la")}</small></div>
+    ${l.length ? `<div class="tablewrap"><table class="pot-jn-t"><thead><tr><th>${t("Dat")}</th><th class="n">${t("Depo")}</th><th class="n">${t("Retrè")}</th><th class="n">${t("Frè")}</th><th class="n">${t("Net")}</th></tr></thead>
+    <tbody>${l.map(([j, r]) => `<tr${j === D ? ' class="on"' : ""}><td><button type="button" class="lnk" data-pot-jou="${h(j)}">${h(datFr(j))}</button>${r.atant ? ` <span class="badge mut">${r.atant} ${t("an atant")}</span>` : ""}</td>
+      <td class="n">${gd(r.depo)}<small> · ${r.nD}</small></td><td class="n">${r.retre ? gd(r.retre) : "—"}${r.nR ? `<small> · ${r.nR}</small>` : ""}</td><td class="n">${r.fre ? gd(r.fre) : "—"}</td>
+      <td class="n ${net(r) < 0 ? "err-t" : ""}"><b>${net(r) < 0 ? "−" : "+"}${gd(Math.abs(net(r)))}</b></td></tr>`).join("")}</tbody>
+    <tfoot><tr><td>${t("Total mwa a")}</td><td class="n">${gd(tot.depo)}<small> · ${tot.nD}</small></td><td class="n">${gd(tot.retre)}<small> · ${tot.nR}</small></td><td class="n">${gd(tot.fre)}</td>
+      <td class="n"><b>${net(tot) < 0 ? "−" : "+"}${gd(Math.abs(net(tot)))}</b></td></tr></tfoot></table></div>
+    <p class="mut sm">${t("Viman antre konte nan depo, viman soti nan retrè. Tranzaksyon rejte pa konte.")}</p>` : `<p class="empty">${t("Pa gen tranzaksyon nan mwa sa a.")}</p>`}</section>`;
+}
 async function viewPotfey() {
   const M = await S.model();
   ajans = (await db.meta("ajans")) || {};
@@ -602,13 +633,15 @@ async function viewPotfey() {
     </div>
     <div class="chips filt kx-filt" role="group">${[["", "Tout", liy.length], ["poko", "Poko wè", n("poko")], ["fidbak", "Fidbak", n("fidbak")], ["peye", "Peye", n("peye")], ["pa", "Pa jou peman", n("pa")]]
       .map(([v, l, c0]) => `<button type="button" class="chip ${potF.filt === v ? "on" : ""}" data-pfilt="${v}" aria-pressed="${potF.filt === v}">${t(l)}<small>${c0}</small></button>`).join("")}</div>
-    <div class="list tx-lis" id="pot-lis">${vizib.map(row).join("") || `<p class="empty">${t("Anyen pou montre.")}</p>`}</div></div>`;
+    <div class="list tx-lis" id="pot-lis">${vizib.map(row).join("") || `<p class="empty">${t("Anyen pou montre.")}</p>`}</div>
+    ${jounalPotfey(M, ajanK, D)}</div>`;
   const ale = (j) => { if (!j) return; potF.jou = j > M.today ? M.today : j; viewPotfey(); };
   document.getElementById("pot-ajan")?.addEventListener("change", (e) => { potF.ajan = e.target.value; viewPotfey(); });
   document.getElementById("pot-jou").onchange = (e) => ale(e.target.value);
   document.getElementById("pot-prev").onclick = () => ale(S.ajouteJou(D, -1));
   document.getElementById("pot-next").onclick = () => ale(S.ajouteJou(D, 1));
   $app.querySelectorAll("[data-pfilt]").forEach((b) => (b.onclick = () => { potF.filt = b.dataset.pfilt; viewPotfey(); }));
+  $app.querySelectorAll("[data-pot-jou]").forEach((b) => (b.onclick = () => { ale(b.dataset.potJou); scrollTo({ top: 0, behavior: "smooth" }); }));
 }
 
 async function ekipAjan(M) {
@@ -647,6 +680,7 @@ async function viewTablo(ajanId = null) {
   if (!ajan) brancherAlet(M0);
   $app.querySelectorAll("[data-potfey]").forEach((b) => (b.onclick = () => { pòtfèy = b.dataset.potfey; viewTablo(); }));
   $app.querySelectorAll("[data-enprime-potfey]").forEach((b) => (b.onclick = () => enprimePotfey(M0, M, ajan ? ajan.nom : t("Pòtfèy mwen"))));
+  chajeMwaPotfey();
   if (ajan) $app.querySelectorAll("[data-papeye]").forEach((b) => (b.onclick = () => { const k = M.comptes.get(b.dataset.papeye); paPeye(k, M.clients.get(k.id_personne) || {}); }));
 }
 const inisyalNon = (n) => String(n || "?").split(/\s+/).filter(Boolean).slice(0, 2).map((x) => x[0]).join("").toUpperCase();
@@ -1039,12 +1073,41 @@ function enprimePotfey(M0, Mp, nonAjan_) {
   w.document.close();
   setTimeout(() => { try { w.print(); } catch (_) {} }, 400);
 }
+// Kat administratè: balans pòtfèy la nan fen chak mwa (sèvè a kalkile l sou tout istorik la), ak mouvman chak mwa.
+const mwaPotfeyKach = new Map();
+function katMwaPotfey(uid) {
+  return `<div class="card metrik metrik-enfo m-info" data-metrik="mwa-potfey" data-uid="${h(uid)}">
+    <span class="metrik-n">${t("Balans pòtfèy fen chak mwa")}</span><div class="mwa-pot" aria-live="polite">${rannMwaPotfey(mwaPotfeyKach.get(uid)) || `<small class="mut">${t("Ap chaje…")}</small>`}</div></div>`;
+}
+function rannMwaPotfey(l) {
+  if (!l) return "";
+  if (!l.length) return `<small class="mut">${t("Pa gen done.")}</small>`;
+  const ls = [...l].reverse().filter((x, i, a) => Number(x.solde_fen) > 0 || a.slice(i).some((y) => Number(y.solde_fen) > 0)).slice(0, 12);
+  const dènye = ls[0];
+  const mNon = (m) => new Date(m + "-15T12:00:00Z").toLocaleDateString("fr-FR", { month: "short", year: "numeric", timeZone: "UTC" });
+  return `<b>${gd(dènye.solde_fen)}</b><small>${t("balans fen")} ${h(mNon(dènye.mwa))}${dènye.mwa === M_TODAY().slice(0, 7) ? ` (${t("jiska jodi a")})` : ""}</small>
+    <div class="metrik-fen">${ls.map((x, i) => { const pre = ls[i + 1], v = pre ? Number(x.solde_fen) - Number(pre.solde_fen) : null;
+      return `<span class="kv mwa-r"><span>${h(mNon(x.mwa))}<small class="mut"> ${t("D")} ${gd(x.depo)} · ${t("R")} ${gd(x.retre)}${Number(x.fre) ? ` · ${t("F")} ${gd(x.fre)}` : ""}</small></span>
+        <b>${gd(x.solde_fen)}${v != null ? ` <small class="${v < 0 ? "err-t" : "ok-t"}">${v < 0 ? "−" : "+"}${gd(Math.abs(v))}</small>` : ""}</b></span>`; }).join("")}</div>
+    <small class="mut">${t("Balans dènye tranzaksyon konfime chak kont anvan fen mwa a. D: depo · R: retrè · F: frè.")}</small>`;
+}
+const M_TODAY = () => S.jodi();
+async function chajeMwaPotfey() {
+  for (const el of $app.querySelectorAll('[data-metrik="mwa-potfey"]')) {
+    const uid = el.dataset.uid, box = el.querySelector(".mwa-pot");
+    if (!navigator.onLine) { if (!mwaPotfeyKach.has(uid)) box.innerHTML = `<small class="mut">${t("Bezwen entènèt pou kalkile balans chak mwa.")}</small>`; continue; }
+    try {
+      const l = await api.rpc("grandon_potfey_mwa", { p_ajan: uid, p_n: 12 });
+      if (Array.isArray(l)) { mwaPotfeyKach.set(uid, l); if (box.isConnected) box.innerHTML = rannMwaPotfey(l); }
+    } catch { if (!mwaPotfeyKach.has(uid)) box.innerHTML = `<small class="mut">${t("Pa ka kalkile balans chak mwa kounya.")}</small>`; }
+  }
+}
 function seksyonMetrik(M0, Mp, uid, estLi, kf) {
   if (!kf.aktif.length) return "";
   const x = kalkMetrik(M0, Mp, uid, estLi, kf);
   return `<section class="metrik-sek" id="metrik"><div class="ekip-sek-h"><h2>${t("Objektif mwa a")}</h2><small class="mut">${x.jPase}/${x.jTotal} ${t("jou travay")}${estManager() ? ` · <a href="#/metrik">${t("Chanje")}</a>` : ""}</small></div>
     <div class="metrik-g">${kf.aktif.map((k) => kat1Metrik(k, x.res[k], x)).join("")}</div>
-    <h3 class="metrik-h3">${t("Pòtfèy la")}</h3><div class="metrik-g metrik-g-enfo">${katEnfo(M0, Mp)}</div></section>`;
+    <h3 class="metrik-h3">${t("Pòtfèy la")}</h3><div class="metrik-g metrik-g-enfo">${katEnfo(M0, Mp)}${estManager() ? katMwaPotfey(uid) : ""}</div></section>`;
 }
 // Manadjè: tablo koulè pou chak ajan (yon kolòn pa metrik aktif).
 function seksyonMetrikEkip(M0, lis, ids, kf) {

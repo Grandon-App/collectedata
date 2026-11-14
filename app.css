@@ -814,3 +814,18 @@ html[data-look="b"]:not([data-theme="dark"]) .login-logo img.mak-koule { filter:
 .kane-kw p{margin:0;padding:8px 10px;border-radius:8px;font-size:13px;line-height:1.35}
 .kane-kw .kw-err{background:color-mix(in srgb,#e8a400 16%,transparent);border:1px solid color-mix(in srgb,#e8a400 55%,transparent)}
 .kane-kw .kw-ok{background:color-mix(in srgb,#2e9e5b 14%,transparent);border:1px solid color-mix(in srgb,#2e9e5b 45%,transparent)}
+
+/* Kat balans pòtfèy fen chak mwa */
+.mwa-pot{display:grid;gap:2px}
+.mwa-pot .mwa-r small{display:block;font-size:11px}
+.ok-t{color:var(--ok, #2e9e5b)}
+/* Jounal pa jou pòtfèy la */
+.pot-jn{margin-top:16px}
+.pot-jn .tablewrap{overflow-x:auto}
+.pot-jn-t{width:100%;border-collapse:collapse;font-size:14px}
+.pot-jn-t th,.pot-jn-t td{padding:8px 6px;border-bottom:1px solid var(--line, rgba(127,127,127,.25));text-align:left;white-space:nowrap}
+.pot-jn-t .n{text-align:right}
+.pot-jn-t td small{opacity:.65}
+.pot-jn-t tr.on td{background:color-mix(in srgb, currentColor 7%, transparent)}
+.pot-jn-t tfoot td{font-weight:700}
+@media (max-width:560px){.pot-jn-t{font-size:12.5px}.pot-jn-t th,.pot-jn-t td{padding:6px 4px}}
