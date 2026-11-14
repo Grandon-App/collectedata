@@ -737,7 +737,16 @@ html[data-look="b"]:not([data-theme="dark"]) .login-logo img.mak-koule { filter:
 .kane-chk { margin: 4px 0 6px; align-items: flex-start; }
 /* Metrik Tablo (objektif mwa a): vèt / jòn / wouj */
 .metrik-sek { margin: 14px 0; }
-.metrik-g { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; }
+.metrik-g { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+.metrik-g-enfo { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+.metrik-h3 { margin: 18px 0 8px; font-size: .8em; letter-spacing: .06em; text-transform: uppercase; opacity: .75; }
+.metrik-fen .kv { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding: 1px 0 !important; margin: 0 !important; border: 0 !important; min-height: 0 !important; background: none !important; }
+.metrik-fen .kv > span { opacity: .85; }
+.metrik-fen .kv > b { text-align: right; white-space: nowrap; }
+.metrik-fen .kv small { font-weight: 400; opacity: .75; }
+.metrik-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.metrik-chips .chip { font-size: .85em; padding: 2px 7px; border-radius: 999px; border: 1px solid color-mix(in srgb, currentColor 25%, transparent); text-decoration: none; color: inherit; }
+@media (max-width: 560px) { .metrik-g { grid-template-columns: 1fr; gap: 10px; } .metrik-fen .kv > b { white-space: normal; } }
 .metrik { display: flex; flex-direction: column; gap: 4px; border-left: 5px solid var(--mc, var(--line, #ccc)); min-width: 0; }
 .metrik .metrik-n { font-size: .85em; font-weight: 600; opacity: .85; }
 .metrik > b { font-size: 1.45em; line-height: 1.1; } .metrik > b small { font-size: .55em; font-weight: 500; }
