@@ -30,7 +30,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "4.92";
+const APP_VERSION = "4.93";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin", kesye: "Responsab kès" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
@@ -1711,6 +1711,9 @@ async function viewRapo() {
   const sum = (l) => l.reduce((a, x) => a + Number(x.montant || 0), 0);
   const dep = par("depo"), ret = par("retre"), fre = par("fre"), vim = par("viman_out");
   const kane = fre.filter(freKane); // nouvo kanè: kliyan an peye kach → nan kach ajan an
+  // Monnen (+) ak remiz (−) ajan an fè jou sa a: nan kach li, pa sou kont yo.
+  const mnJ = (M.monnen || []).filter((x) => mwen({ created_by: x.agent_id, agent_id: x.agent_id }) && S.jouLokal(new Date(x.capture_le)) === D);
+  const mnM = sum(mnJ.filter((x) => x.tip === "monnaie")), mnR = sum(mnJ.filter((x) => x.tip === "remise"));
   const depo = sum(dep), retre = sum(ret);
   const deklare = txs.reduce((a, x) => a + Number(x.solde_declare || 0), 0);
   // Kredi (peman ak penalite ajan an ankese jou sa a): kach li tou.
@@ -1740,9 +1743,11 @@ async function viewRapo() {
     ...ctxBase(M), isoJou: S.isoJou(D), i: jouRapo, D, nonJou,
     jou: jou.map((date, i) => ({ i, date, label: nonJou(i), on: i === jouRapo })),
     kpi: { depo, nDepo: dep.length, retre, nRetre: ret.length, fre: sum(fre), nFre: fre.length, vim: sum(vim), nVim: vim.length,
-      deklare, nDeklare, cycles, swivi, dmAtant, kach: depo - retre + sum(kane) + (genKredi ? sum(krPe) + sum(krPen) : 0) + garD - garR,
+      deklare, nDeklare, cycles, swivi, dmAtant, kach: depo - retre + sum(kane) + mnM - mnR + (genKredi ? sum(krPe) + sum(krPen) : 0) + garD - garR,
       // Liy anplis nan rezime a (kach la): kredi ak kont garanti.
-      ekstra: [...(kane.length ? [{ k: "kane", l: "Nouvo kanè", v: sum(kane), n: kane.length, sub: `${kane.length} ${t("kanè")} · ${t("kach")}` }] : []), ...(genKredi ? [{ k: "kredi_pe", l: "Peman kredi", v: sum(krPe), n: krPe.length, sub: `${krPe.length} ${t("peman")}` },
+      ekstra: [...(kane.length ? [{ k: "kane", l: "Nouvo kanè", v: sum(kane), n: kane.length, sub: `${kane.length} ${t("kanè")} · ${t("kach")}` }] : []),
+        ...(mnM ? [{ k: "monnen", l: "Monnen kenbe", v: mnM, n: mnJ.filter((x) => x.tip === "monnaie").length, sub: `${t("kliyan an dwe resevwa l")} · ${t("kach")}` }] : []),
+        ...(mnR ? [{ k: "remiz", l: "Remiz monnen", v: mnR, n: mnJ.filter((x) => x.tip === "remise").length, out: true, sub: `${t("soti nan kach")}` }] : []), ...(genKredi ? [{ k: "kredi_pe", l: "Peman kredi", v: sum(krPe), n: krPe.length, sub: `${krPe.length} ${t("peman")}` },
           { k: "kredi_pen", l: "Penalite kredi", v: sum(krPen), n: krPen.length, sub: `${krPen.length} ${t("penalite")}` }] : []),
         ...(M.mod?.garanti ? [{ k: "gar_depo", l: "Depo garanti", v: garD, n: garTx.filter((y) => y.tip === "D").length, sub: `${garTx.filter((y) => y.tip === "D").length} depo · ${t("kont garanti")}` },
           { k: "gar_retre", l: "Retrè garanti", v: garR, n: garTx.filter((y) => y.tip === "R").length, out: true, sub: `${garTx.filter((y) => y.tip === "R").length} ${t("retrè")} · ${t("kont garanti")}` }] : [])],
@@ -3252,6 +3257,7 @@ async function viewCycle(id) {
       : `<a class="btn block cycle-mod" href="#/cycle/${h(k.id_compte_epargne)}/modifye">${ICO.modifye || ""}<span>${t(man ? "Modifye cycle a" : "Mande modifikasyon cycle a")}</span></a>`; })() : ""}
   ${gpsBouton(c)}
   ${freNot(k, freSevis(k, await db.meta("sevis_cfg")))}
+  ${monnenKat(M, k)}
   ${k.tip_plan === "vip" || k.plan_lib ? `<p class="note info-note kont-tip">${k.tip_plan === "vip" ? `<b>VIP</b> · ${t("Retrè ak viman bezwen otorizasyon yon manadjè anvan responsab kès la.")}` : ""}${k.tip_plan === "vip" && k.plan_lib ? "<br>" : ""}${k.plan_lib ? `<b>${t("Plan Lib")}</b> · ${t("Kliyan an bay sa l vle, men pa mwens pase")} ${gd(k.montant_plan)}.` : ""}</p>` : ""}
   ${man && !k._pending ? `<div class="card potfey-k"><div class="grow"><span class="mut sm">${t("Ajan pòtfèy")}</span><b data-brut>${h(nomAjan(k.created_by) || t("San ajan"))}</b></div>
     <button type="button" class="btn sm" id="chanje-ajan">${t("Chanje ajan")}</button></div>` : ""}
@@ -3278,6 +3284,55 @@ async function viewCycle(id) {
 
 // ---------- Nouvo tranzaksyon: Depo, Frè, Retrè, Viman ----------
 const TIP_TX = [["D", "Depo"], ["FL", "Frè"], ["R", "Retrè"], ["V", "Viman"]];
+// ---------- Monnen ak Remiz ----------
+// Monnen: kliyan an bay plis kòb pase sa l dwe, ajan an pa gen monnen sou li → ajan an kenbe kòb la (kach li ogmante).
+// Remiz: ajan an remèt kliyan an monnen li (kach li diminye). Ni youn ni lòt pa touche balans kont lan ni kanè a.
+function monnenKat(M, k) {
+  if (!M.monnenDispo || k._pending || estKesye()) return "";
+  const dwe = M.monnenDwe(k.id_compte_epargne);
+  const id = h(k.id_compte_epargne);
+  return `<div class="card monnen-k${dwe > 0 ? " warn" : ""}" data-monnen-dwe="${dwe}"><div class="grow"><span class="mut sm">${t("Monnen kliyan an")}</span>
+    <b>${dwe > 0 ? `${gd(dwe)} ${t("pou remèt")}` : t("Okenn monnen pou remèt")}</b></div>
+    <div class="row"><a class="btn sm" href="#/monnen/${id}/monnaie">${t("Kenbe monnen")}</a>${dwe > 0 ? `<a class="btn sm pri" href="#/monnen/${id}/remise">${t("Remèt monnen")}</a>` : ""}</div></div>`;
+}
+async function viewMonnen(compteId, tip) {
+  const M = await S.model();
+  const k = M.comptes.get(compteId), c = k && M.clients.get(k.id_personne);
+  const back = `<a href="#/cycle/${h(compteId)}" class="back">‹ ${d(k?.no_compte || t("Cycle"))}</a>`;
+  if (!k || !M.monnenDispo) { $app.innerHTML = `${back}<p class="empty">${t("Opsyon sa a poko disponib.")}</p>`; return; }
+  const dwe = M.monnenDwe(compteId), rem = tip === "remise";
+  if (rem && dwe <= 0) { $app.innerHTML = `${back}<h1>${t("Remèt monnen")}</h1><p class="empty">${t("Kliyan sa a pa gen monnen pou l resevwa.")}</p>`; return; }
+  const istorik = M.monnen.filter((x) => x.id_compte_epargne === compteId).sort((a, b) => String(b.capture_le).localeCompare(String(a.capture_le))).slice(0, 10);
+  $app.innerHTML = `${back}
+  <h1>${t(rem ? "Remèt monnen" : "Kenbe monnen kliyan an")}</h1>
+  <p class="mut">${badjKat("epay")} ${d(non(c))} · ${d(k.no_compte || "")}</p>
+  <p class="note info-note">${t(rem ? "Ou remèt kliyan an monnen ou te kenbe pou li. Kòb la soti nan kach ou. Balans kont lan ak kanè a pa chanje."
+    : "Kliyan an bay plis kòb pase sa l dwe, epi ou pa gen monnen sou ou. Ou kenbe kòb la: li antre nan kach ou, epi kliyan an gen monnen pou l resevwa. Balans kont lan ak kanè a pa chanje.")}</p>
+  ${dwe > 0 ? `<p class="note warn">${t("Kliyan an dwe resevwa")} <b>${gd(dwe)}</b> ${t("monnen")}.</p>` : ""}
+  <form id="f" class="card form" novalidate>
+    <label>${t("Montan (goud)")} *<input name="montant" type="number" inputmode="decimal" min="1" step="any" required ${rem ? `max="${dwe}" value="${dwe}"` : ""}></label>
+    <label>${t("Nòt (opsyonèl)")}<input name="note" maxlength="200"></label>
+    <p class="err-msg" id="err" role="alert"></p>
+    <button class="btn pri" type="submit">${t(rem ? "Remèt monnen an" : "Anrejistre monnen an")}</button>
+  </form>
+  ${istorik.length ? `<h2>${t("Istorik monnen")}</h2><div class="list">${istorik.map((x) => `<div class="row"><span class="grow"><b>${t(x.tip === "remise" ? "Remiz" : "Monnen")}</b> · ${datFr(S.jouLokal(new Date(x.capture_le)))} <span class="mut sm" data-brut>${h(nonAjan(x.agent_id))}</span>${x._pending ? ` <span class="badge warn">${t("poko voye")}</span>` : ""}${x.note ? `<br><span class="mut sm">${d(x.note)}</span>` : ""}</span><b class="${x.tip === "remise" ? "out" : "in"}">${x.tip === "remise" ? "−" : "+"}${gd(x.montant)}</b></div>`).join("")}</div>` : ""}`;
+  const f = document.getElementById("f");
+  f.onsubmit = async (e) => {
+    e.preventDefault();
+    const err = document.getElementById("err"), m = Number(f.montant.value);
+    if (!(m > 0)) return (err.textContent = t("Mete montan an."));
+    if (rem && m > dwe) return (err.textContent = `${t("Kliyan an dwe resevwa sèlman")} ${gd(dwe)}.`);
+    if (!(await ui.ask({ titre: rem ? "Remèt monnen?" : "Kenbe monnen?", ok: "Konfime", ikon: rem ? "−" : "+", foto: c?.photo_url,
+      detay: [["Kliyan", non(c)], ["Kont", k.no_compte || ""], ["Montan (goud)", gd(m)],
+        ["Kach ou", rem ? `− ${gd(m)}` : `+ ${gd(m)}`], ["Monnen pou remèt apre", gd(dwe + (rem ? -m : m))], ["Balans kont lan", t("pa chanje")]] }))) return;
+    f.querySelector("button[type=submit]").disabled = true;
+    await S.enqueue("monnen", { id: S.uuid(), compte: compteId, tip, montant: m, note: f.note.value.trim() || null, gps: await getGps(5000),
+      capture_le: new Date().toISOString(), appareil: S.appareil() });
+    toast(t(rem ? "Remiz monnen an anrejistre." : "Monnen an anrejistre."), "ok");
+    go(`#/cycle/${compteId}`);
+  };
+}
+
 async function viewTxNew(compteId) {
   const M = await S.model();
   const k = M.comptes.get(compteId);
@@ -3442,7 +3497,7 @@ async function viewFeries() {
 }
 
 // ---------- Senkronizasyon ----------
-const KIND = { client: "Kliyan", adopte: "Kliyan (ajoute)", foto: "Foto kliyan", gps: "GPS kliyan", maj: "Enfòmasyon kliyan an", cycle: "Cycle", tx: "Tranzaksyon", demande: "Demann", suivi: "Fidbak", modif_demann: "Demann modifikasyon", modif_aplike: "Modifikasyon", alet: "Alèt", alet_fermen: "Alèt (fèmen)", kredi_peye: "Peman kredi", kredi_penalite: "Penalite kredi", kredi_suivi: "Fidbak kredi", garanti_tx: "Kont garanti", san_kane: "San kanè", kane_konfime: "Kanè ajou" };
+const KIND = { client: "Kliyan", adopte: "Kliyan (ajoute)", foto: "Foto kliyan", gps: "GPS kliyan", maj: "Enfòmasyon kliyan an", cycle: "Cycle", tx: "Tranzaksyon", demande: "Demann", suivi: "Fidbak", modif_demann: "Demann modifikasyon", modif_aplike: "Modifikasyon", alet: "Alèt", alet_fermen: "Alèt (fèmen)", kredi_peye: "Peman kredi", kredi_penalite: "Penalite kredi", kredi_suivi: "Fidbak kredi", garanti_tx: "Kont garanti", san_kane: "San kanè", kane_konfime: "Kanè ajou", monnen: "Monnen" };
 function resume(o, M) {
   const p = o.payload;
   if (o.kind === "client") return `${p.prenom} ${p.nom} · ${p.telephone}`;
@@ -3455,6 +3510,7 @@ function resume(o, M) {
   if (o.kind === "modif_demann" || o.kind === "modif_aplike") return `${ciblModif(M, p.kind, p.ref)} · ${(p.chan || []).map((k) => t(etikètChan(p.kind, k))).join(", ") || t("Siprime")}`;
   if (o.kind === "alet" || o.kind === "alet_fermen") return p.tit || "";
   if (o.kind === "san_kane") return `${gd(p.montant)} · ${t("san kanè")}`;
+  if (o.kind === "monnen") return `${gd(p.montant)} · ${t(p.tip === "remise" ? "Remiz monnen" : "Monnen")}`;
   if (o.kind === "kane_konfime") return t("Kanè a ajou");
   if (o.kind === "garanti_tx") return `${p.tip === "D" ? t("Depo") : t("Retrè")} ${gd(p.montant)} · ${t("kont garanti")}`;
   if (o.kind === "kredi_suivi") return `${t(motifLabel(p.motif))} · ${t("kredi")}`;
@@ -4116,6 +4172,7 @@ async function render() {
   if ((m = r.match(/^#\/cycle\/([\w-]+)\/modifye$/))) return !estKesye() ? viewCycleNew(null, m[1]) : go(`#/cycle/${m[1]}`);
   if ((m = r.match(/^#\/cycle\/([\w-]+)$/))) return viewCycle(m[1]);
   if ((m = r.match(/^#\/tx\/nouvo\/([\w-]+)$/))) return viewTxNew(m[1]);
+  if ((m = r.match(/^#\/monnen\/([\w-]+)\/(monnaie|remise)$/))) return !estKesye() ? viewMonnen(m[1], m[2]) : go(`#/cycle/${m[1]}`);
   if (r === "#/param") return viewParam();
   if (r === "#/senk") return viewSenk();
   if (r === "#/istorik") return viewIstorik();
