@@ -24,8 +24,18 @@ export const appareil = () => {
 const fmtJou = new Intl.DateTimeFormat("en-CA", { timeZone: C.FUSEAU, year: "numeric", month: "2-digit", day: "2-digit" });
 export const jouLokal = (d = new Date()) => fmtJou.format(d); // "2026-11-04"
 export const jodi = () => jouLokal();
-export const isoJou = (iso) => { const d = new Date(iso + "T12:00:00Z"); return ((d.getUTCDay() + 6) % 7) + 1; }; // 1 = lendi … 7 = dimanch
-export const ajouteJou = (iso, n) => { const d = new Date(iso + "T12:00:00Z"); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+// Kalkil dat yo rele dè milye fwa pou chak kont (kalandriye, heatmap): kenbe rezilta yo nan memwa (menm rezilta, pi vit).
+const kIso = new Map(), kAj = new Map();
+export const isoJou = (iso) => { // 1 = lendi … 7 = dimanch
+  let r = kIso.get(iso); if (r !== undefined) return r;
+  const d = new Date(iso + "T12:00:00Z"); r = ((d.getUTCDay() + 6) % 7) + 1;
+  if (kIso.size > 50000) kIso.clear(); kIso.set(iso, r); return r;
+};
+export const ajouteJou = (iso, n) => {
+  const kle = iso + "|" + n; let r = kAj.get(kle); if (r !== undefined) return r;
+  const d = new Date(iso + "T12:00:00Z"); d.setUTCDate(d.getUTCDate() + n); r = d.toISOString().slice(0, 10);
+  if (kAj.size > 100000) kAj.clear(); kAj.set(kle, r); return r;
+};
 export const ajouteMwa = (iso, n) => {
   const [y, m, d] = iso.split("-").map(Number);
   const t = new Date(Date.UTC(y, m - 1 + n, 1, 12));
@@ -438,7 +448,7 @@ export async function pull() {
     api.selectAll("grandon_v_clients?select=id_personne,prenom,nom,pseudo,telephone,code_client,sexe,date_naissance,piece,numero_piece,adresse,lieu_de_travail,occupation,secteur,activite,point_de_vente,capacite_distribution,photo_url,gps_lat,gps_lng&order=prenom"),
     api.selectAll("grandon_v_comptes?select=*&order=date_debut.desc"),
     api.selectAll("grandon_plans?actif=is.true&select=montant&order=montant"),
-    api.selectAll(`grandon_v_transactions?date_transaction=gte.${depi}&select=id_transaction_epargne,id_compte_epargne,type_transaction,montant,date_transaction,validation_status,solde_apres_transactions,created_by,solde_declare,solde_avant_declare,type_frais,virement_from,virement_to&order=date_transaction`),
+    pullTx(depi),
   ]);
   const depi2 = ajouteJou(jodi(), -90);
   const p2 = Promise.all([
@@ -464,32 +474,84 @@ export async function pull() {
       api.selectAll("grandon_v_monnen?select=*&order=capture_le").catch(() => null), // monnen / remiz (null: sèvè a poko gen modil la)
     ]);
     const kr = kr0, krt = kr ? krt0 : null, krs = kr ? krs0 : null;
-    if (sv) await db.meta("sevis_cfg", sv[0] || null);
-    if (pa) await db.meta("paramet", Object.fromEntries(pa.map((x) => [x.kle, x.vale])));
-    await db.meta("ajans", Object.fromEntries(aj.map((x) => [x.user_id, x.nom])));
-    await db.meta("ekip", aj.map((x) => ({ user_id: x.user_id, nom: x.nom, role: x.role, actif: x.actif })));
-    if (kr) await db.meta("kredi", kr);
-    if (krt) await db.meta("kredi_tx", krt);
-    if (krs) await db.meta("kredi_fb", krs);
-    await db.meta("san_kane", skl);
-    await db.meta("monnen", mnl);
+    if (sv) await metaSi("sevis_cfg", sv[0] || null);
+    if (pa) await metaSi("paramet", Object.fromEntries(pa.map((x) => [x.kle, x.vale])));
+    await metaSi("ajans", Object.fromEntries(aj.map((x) => [x.user_id, x.nom])));
+    await metaSi("ekip", aj.map((x) => ({ user_id: x.user_id, nom: x.nom, role: x.role, actif: x.actif })));
+    if (kr) await metaSi("kredi", kr);
+    if (krt) await metaSi("kredi_tx", krt);
+    if (krs) await metaSi("kredi_fb", krs);
+    await metaSi("san_kane", skl);
+    await metaSi("monnen", mnl);
     // Kont garanti yo (Epargne Bloquée, Fonds Garantie Konfyans): sèlman si paramèt «garanti» a aktive sèvis sit la.
     if (modAktif(pa && Object.fromEntries(pa.map((x) => [x.kle, x.vale])), "garanti")) {
       const [gl, gt] = await Promise.all([api.selectAll("grandon_v_garanti?select=*").catch(() => null), api.selectAll("grandon_v_garanti_tx?select=*&order=capture_le").catch(() => null)]);
-      if (gl) await db.meta("garanti", gl);
-      if (gt) await db.meta("garanti_tx", gt);
-    } else { await db.meta("garanti", null); await db.meta("garanti_tx", null); }
+      if (gl) await metaSi("garanti", gl);
+      if (gt) await metaSi("garanti_tx", gt);
+    } else { await metaSi("garanti", null); await metaSi("garanti_tx", null); }
   } catch { /* administratè (imèl): pa gen liy grandon_ajan pou yo */ }
-  await db.replaceAll("feries", feries);
-  await db.replaceAll("suivis", suivis);
-  await db.replaceAll("demandes", demandes);
-  if (alet) await db.replaceAll("alet", alet); // null: tab la poko la sou sèvè a
-  if (modif) await db.replaceAll("modif", modif);
-  await db.replaceAll("clients", clients);
-  await db.replaceAll("comptes", comptes);
-  await db.replaceAll("plans", plans);
-  await db.replaceAll("transactions", txs);
+  await ranplase("feries", feries);
+  await ranplase("suivis", suivis);
+  await ranplase("demandes", demandes);
+  if (alet) await ranplase("alet", alet); // null: tab la poko la sou sèvè a
+  if (modif) await ranplase("modif", modif);
+  await ranplase("clients", clients);
+  await ranplase("comptes", comptes);
+  await ranplase("plans", plans);
+  await aplikeTx200(txs);
   await db.meta("last_pull", new Date().toISOString());
+}
+
+// Ekri yon store sèlman si done sèvè a chanje depi dènye fwa nou ekri l (epi pèsonn pa t ekri ladan l depi lè a).
+// Sa kenbe modèl la nan memwa (S.model) lè senkronizasyon an pa pote anyen nouvo.
+const siyDenye = new Map();
+const siyati = (v) => { const s = JSON.stringify(v) || ""; let x = 0; for (let i = 0; i < s.length; i++) x = (x * 31 + s.charCodeAt(i)) | 0; return `${s.length}:${x}`; };
+async function metaSi(k, v) {
+  const g = siyati(v), d = siyDenye.get("m:" + k);
+  const st = () => `${db.genMeta[k] || 0}|${db.genMetaTout}`;
+  if (d && d.g === g && d.st === st()) return;
+  await db.meta(k, v);
+  siyDenye.set("m:" + k, { g, st: st() });
+}
+async function ranplase(store, rows) {
+  const g = siyati(rows), d = siyDenye.get(store);
+  if (d && d.g === g && d.st === db.genSt[store]) return;
+  await db.replaceAll(store, rows);
+  siyDenye.set(store, { g, st: db.genSt[store] });
+}
+
+// Tranzaksyon epay yo (200 jou): yon fwa pa jou (oswa premye fwa) tout lis la; rès tan an sèlman sa ki chanje depi
+// dènye fwa a (mod_le), plis sa ki efase. Si sèvè a poko gen mod_le, toujou tout lis la (menm jan ak avan).
+const TX_CHAN = "id_transaction_epargne,id_compte_epargne,type_transaction,montant,date_transaction,validation_status,solde_apres_transactions,created_by,solde_declare,solde_avant_declare,type_frais,virement_from,virement_to";
+const MAJ_MAJ = 10 * 60000; // maj sekirite: tranzaksyon ki te ap fèt pandan dènye senkronizasyon an
+async function pullTx(depi) {
+  const mk = await db.meta("tx_sync"), uid = api.getSession()?.user?.id || "";
+  if (mk?.le && mk.jou === jodi() && mk.uid === uid && mk.depi === depi) {
+    const de = new Date(new Date(mk.le).getTime() - MAJ_MAJ).toISOString();
+    try {
+      const [rows, efase] = await Promise.all([
+        api.selectAll(`grandon_v_transactions?date_transaction=gte.${depi}&mod_le=gt.${encodeURIComponent(de)}&select=${TX_CHAN},mod_le&order=mod_le`),
+        api.rpc("grandon_tx_efase", { p_depi: de }),
+      ]);
+      return { mod: "chanjman", rows, efase: Array.isArray(efase) ? efase : [], mk, uid, depi };
+    } catch (e) { console.warn("pullTx enkremantal → tout", e); }
+  }
+  let rows;
+  try { rows = await api.selectAll(`grandon_v_transactions?date_transaction=gte.${depi}&select=${TX_CHAN},mod_le&order=date_transaction`); }
+  catch { rows = await api.selectAll(`grandon_v_transactions?date_transaction=gte.${depi}&select=${TX_CHAN}&order=date_transaction`); }
+  return { mod: "tout", rows, uid, depi };
+}
+async function aplikeTx200(r) {
+  const maks = (l, de) => l.reduce((a, x) => (x.mod_le && x.mod_le > a ? x.mod_le : a), de || "");
+  if (r.mod === "chanjman") {
+    if (r.rows.length) await db.putMany("transactions", r.rows);
+    for (const id of r.efase) if (await db.get("transactions", id)) await db.del("transactions", id);
+    await db.meta("tx_sync", { ...r.mk, le: maks(r.rows, r.mk.le) });
+  } else {
+    await ranplase("transactions", r.rows);
+    const le = maks(r.rows);
+    await db.meta("tx_sync", le ? { le, jou: jodi(), uid: r.uid, depi: r.depi } : null);
+  }
 }
 
 // Rechajman an awyè plan: paj la mete l ajou touswit ak chanjman lokal la (patch), epi done sèvè a rive apre.
@@ -529,7 +591,22 @@ function freEta(k, cfg, today) {
     pou: kreye >= cfg.fre_dat && elijib && !deja && k._actif !== false && today >= k.date_debut };
 }
 
+// Modèl la koute chè pou kalkile (tout kont, tout tranzaksyon): kenbe l nan memwa, epi refè l sèlman lè done yo chanje
+// (db.gen), lè jou a chanje, lè moun ki konekte a chanje, oswa apre 60 s (eta ki depann de lè a). Chak apèl resevwa
+// yon kopi tèt modèl la, pou yon paj pa chanje M.x pou lòt paj yo.
+let mKach = null;
+export function envalideModel() { mKach = null; }
 export async function model() {
+  const kle = `${db.gen}|${jodi()}|${api.getSession()?.user?.id || ""}`;
+  if (!mKach || mKach.kle !== kle || Date.now() - mKach.le > 60000) {
+    const k = { kle, le: Date.now(), p: modelKalkile() };
+    mKach = k;
+    k.p.catch(() => { if (mKach === k) mKach = null; });
+  }
+  const M = await mKach.p;
+  return { ...M, kredi: Array.isArray(M.kredi) ? [...M.kredi] : M.kredi };
+}
+async function modelKalkile() {
   const cfgSv = await db.meta("sevis_cfg");
   const [clients, comptes, txs, outbox, plans, feries, suivis, demandes, alet, modif] = await Promise.all(
     ["clients", "comptes", "transactions", "outbox", "plans", "feries", "suivis", "demandes", "alet", "modif"].map((s) => db.all(s)));
@@ -830,8 +907,18 @@ export function txKind(t) {
   return "lot";
 }
 
-export const comptesDuClient = (M, id) =>
-  [...M.comptes.values()].filter((k) => k.id_personne === id).sort((a, b) => String(b.date_debut).localeCompare(String(a.date_debut)));
+// Endèks moun → kont yo, kalkile yon sèl fwa pou chak Map kont (avan: chak apèl te pase sou tout kont yo, sa te fè lis kliyan an lan).
+const kontPaMoun = new WeakMap();
+export const comptesDuClient = (M, id) => {
+  let ix = kontPaMoun.get(M.comptes);
+  if (!ix) {
+    ix = new Map();
+    for (const k of M.comptes.values()) { const l = ix.get(k.id_personne); if (l) l.push(k); else ix.set(k.id_personne, [k]); }
+    for (const l of ix.values()) l.sort((a, b) => String(b.date_debut).localeCompare(String(a.date_debut)));
+    kontPaMoun.set(M.comptes, ix);
+  }
+  return [...(ix.get(id) || [])];
+};
 
 // Distans ant kote ajan an te anrejistre fidbak la ak GPS kliyan an. Lim 300 m (menm jan ak sèvè a).
 export const LIM_KONTWOL_M = 300;
