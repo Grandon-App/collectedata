@@ -30,7 +30,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "5.08";
+const APP_VERSION = "5.09";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin", kesye: "Responsab kès" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
@@ -542,7 +542,7 @@ async function viewAlet() {
 
 // Ajan teren yo (+ «San ajan» si gen kont ki pa atache ak okenn ajan).
 // ---------- Pòtfèy (manadjè): chwazi yon ajan → kliyan pòtfèy li yo ak sa ki fèt jou a (peye / fidbak / poko wè / pa jou peman) ----------
-const potF = { ajan: "", jou: null, filt: "" };
+const potF = { ajan: "", jou: null, filt: "", vi: "kliyan" }; // vi: «kliyan» (eta kliyan jou a) · «jounal» (jounal pa jou mwa a)
 // Jounal pa jou pòtfèy la pou mwa dat ki chwazi a: total depo, retrè, frè ak net chak jou (tout kont pòtfèy la).
 // Viman antre konte nan depo, viman soti nan retrè. Tranzaksyon rejte pa konte; sa ki an atant make apa.
 function jounalPotfey(M, ajanK, D) {
@@ -624,6 +624,10 @@ async function viewPotfey() {
       <label class="tx-sel"><span>${t("Dat")}</span><span class="rapo-dat"><button type="button" class="btn sm" id="pot-prev" aria-label="${t("Jou anvan")}">‹</button>
         <input type="date" id="pot-jou" value="${h(D)}" max="${h(M.today)}"><button type="button" class="btn sm" id="pot-next" aria-label="${t("Jou apre")}" ${D >= M.today ? "disabled" : ""}>›</button></span></label>
     </div>
+    <div class="seg s2 pot-vi" role="tablist" aria-label="${h(t("Vi pòtfèy la"))}">
+      <button type="button" role="tab" class="${potF.vi !== "jounal" ? "on" : ""}" aria-selected="${potF.vi !== "jounal"}" data-pot-vi="kliyan">👥 ${t("Kliyan jou a")}</button>
+      <button type="button" role="tab" class="${potF.vi === "jounal" ? "on" : ""}" aria-selected="${potF.vi === "jounal"}" data-pot-vi="jounal">📅 ${t("Jounal pa jou")}</button></div>
+    ${potF.vi === "jounal" ? jounalPotfey(M, ajanK, D) : `<div id="pot-kliyan">
     <p class="mut sm">${datFr(D)}${ferye ? ` · <b>${t("jou ferye")}</b>` : ""} · ${liy.length} ${t("kont nan pòtfèy la")} · ${tot.length} ${t("te dwe peye jou a")}</p>
     <div class="kes-sum kes-sum4">
       <div class="card kes-k" data-n="peye"><span>${t("Peye")}</span><b class="in">${n("peye")}</b><small>${gd(mon(liy.flatMap((x) => x.dep)))}</small></div>
@@ -633,15 +637,15 @@ async function viewPotfey() {
     </div>
     <div class="chips filt kx-filt" role="group">${[["", "Tout", liy.length], ["poko", "Poko wè", n("poko")], ["fidbak", "Fidbak", n("fidbak")], ["peye", "Peye", n("peye")], ["pa", "Pa jou peman", n("pa")]]
       .map(([v, l, c0]) => `<button type="button" class="chip ${potF.filt === v ? "on" : ""}" data-pfilt="${v}" aria-pressed="${potF.filt === v}">${t(l)}<small>${c0}</small></button>`).join("")}</div>
-    <div class="list tx-lis" id="pot-lis">${vizib.map(row).join("") || `<p class="empty">${t("Anyen pou montre.")}</p>`}</div>
-    ${jounalPotfey(M, ajanK, D)}</div>`;
+    <div class="list tx-lis" id="pot-lis">${vizib.map(row).join("") || `<p class="empty">${t("Anyen pou montre.")}</p>`}</div></div>`}</div>`;
   const ale = (j) => { if (!j) return; potF.jou = j > M.today ? M.today : j; viewPotfey(); };
   document.getElementById("pot-ajan")?.addEventListener("change", (e) => { potF.ajan = e.target.value; viewPotfey(); });
   document.getElementById("pot-jou").onchange = (e) => ale(e.target.value);
+  $app.querySelectorAll("[data-pot-vi]").forEach((b) => (b.onclick = () => { potF.vi = b.dataset.potVi; viewPotfey(); }));
   document.getElementById("pot-prev").onclick = () => ale(S.ajouteJou(D, -1));
   document.getElementById("pot-next").onclick = () => ale(S.ajouteJou(D, 1));
   $app.querySelectorAll("[data-pfilt]").forEach((b) => (b.onclick = () => { potF.filt = b.dataset.pfilt; viewPotfey(); }));
-  $app.querySelectorAll("[data-pot-jou]").forEach((b) => (b.onclick = () => { ale(b.dataset.potJou); scrollTo({ top: 0, behavior: "smooth" }); }));
+  $app.querySelectorAll("[data-pot-jou]").forEach((b) => (b.onclick = () => { potF.vi = "kliyan"; ale(b.dataset.potJou); scrollTo({ top: 0, behavior: "smooth" }); }));
 }
 
 async function ekipAjan(M) {
@@ -972,7 +976,8 @@ const ETA_M = { vet: "Vèt", jon: "Jòn", wouj: "Wouj" };
 const pt = (e) => `<i class="m-${e}" aria-hidden="true"></i>`;
 function kat1Metrik(k, r, x) {
   const m = METRIK[k];
-  if (r.san) return `<div class="card metrik m-san" data-metrik="${k}"><span class="metrik-n">${t(m.non)}</span><b>—</b><small>${t("Pa gen peman prevwa nan mwa a.")}</small></div>`;
+  if (r.san) return `<div class="card metrik m-san" data-metrik="${k}"><span class="metrik-n">${t(m.non)}</span><b>—</b><small>${t("Pa gen peman prevwa nan mwa a.")}</small>${k === "rekouvreman" ? `
+    <div class="metrik-fen"><button type="button" class="btn sm" data-enprime-potfey>🖨 ${t("Enprime lis pòtfèy la")}</button></div>` : ""}</div>`;
   const val = k === "mobilizasyon" ? `${gd(r.val)}` : k === "rekouvreman" ? `${r.val}%` : `${r.val}`;
   const obj = k === "mobilizasyon" ? `${t("Objektif")} ${gd(r.obj)} / ${t("jou")} · <span data-mwa="${r.nMwa}">${t("Mwa")} ${r.nMwa}</span>${r.deb.dat ? ` ${t("depi")} ${datFr(r.deb.dat)}${r.deb.oto ? ` (${t("estimasyon")})` : ""}` : ""}`
     : k === "rekouvreman" ? `${t("Objektif")} ${r.obj}%` : `${t("Objektif")} ${r.objMwa} · ${t("jiska jodi a")} ${r.obj}`;
