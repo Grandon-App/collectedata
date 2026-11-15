@@ -837,3 +837,11 @@ html[data-look="b"]:not([data-theme="dark"]) .login-logo img.mak-koule { filter:
 .pot-vi button.on{background:var(--pri);color:var(--pri-ink);border-color:var(--pri)}
 .pot-vi button:focus-visible{outline:2px solid var(--info)}
 #potfey .pot-jn{margin-top:4px}
+
+/* Jounal pa jou: balans pòtfèy la */
+.pot-bal{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:4px 0 14px}
+.pot-bal>div{border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:grid;gap:2px}
+.pot-bal span{font-size:12px;opacity:.75}
+.pot-bal b{font-size:18px}
+.pot-jn-t .pot-bal-c{font-weight:700}
+@media (max-width:560px){.pot-bal{grid-template-columns:1fr}}
