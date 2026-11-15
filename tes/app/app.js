@@ -30,7 +30,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "5.10";
+const APP_VERSION = "5.11";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin", kesye: "Responsab kès" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
@@ -624,10 +624,10 @@ async function viewPotfey() {
       <label class="tx-sel"><span>${t("Dat")}</span><span class="rapo-dat"><button type="button" class="btn sm" id="pot-prev" aria-label="${t("Jou anvan")}">‹</button>
         <input type="date" id="pot-jou" value="${h(D)}" max="${h(M.today)}"><button type="button" class="btn sm" id="pot-next" aria-label="${t("Jou apre")}" ${D >= M.today ? "disabled" : ""}>›</button></span></label>
     </div>
-    <div class="seg s2 pot-vi" role="tablist" aria-label="${h(t("Vi pòtfèy la"))}">
+    ${man ? `<div class="seg s2 pot-vi" role="tablist" aria-label="${h(t("Vi pòtfèy la"))}">
       <button type="button" role="tab" class="${potF.vi !== "jounal" ? "on" : ""}" aria-selected="${potF.vi !== "jounal"}" data-pot-vi="kliyan">👥 ${t("Kliyan jou a")}</button>
-      <button type="button" role="tab" class="${potF.vi === "jounal" ? "on" : ""}" aria-selected="${potF.vi === "jounal"}" data-pot-vi="jounal">📅 ${t("Jounal pa jou")}</button></div>
-    ${potF.vi === "jounal" ? jounalPotfey(M, ajanK, D) : `<div id="pot-kliyan">
+      <button type="button" role="tab" class="${potF.vi === "jounal" ? "on" : ""}" aria-selected="${potF.vi === "jounal"}" data-pot-vi="jounal">📅 ${t("Jounal pa jou")}</button></div>` : ""}
+    ${man && potF.vi === "jounal" ? jounalPotfey(M, ajanK, D) : `<div id="pot-kliyan">
     <p class="mut sm">${datFr(D)}${ferye ? ` · <b>${t("jou ferye")}</b>` : ""} · ${liy.length} ${t("kont nan pòtfèy la")} · ${tot.length} ${t("te dwe peye jou a")}</p>
     <div class="kes-sum kes-sum4">
       <div class="card kes-k" data-n="peye"><span>${t("Peye")}</span><b class="in">${n("peye")}</b><small>${gd(mon(liy.flatMap((x) => x.dep)))}</small></div>
