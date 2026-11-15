@@ -830,3 +830,10 @@ html[data-look="b"]:not([data-theme="dark"]) .login-logo img.mak-koule { filter:
 .pot-jn-t tfoot td{font-weight:700}
 @media (max-width:560px){.pot-jn-t{font-size:12.5px}.pot-jn-t th,.pot-jn-t td{padding:6px 4px}}
 .pot-jn-t button.lnk{background:none;border:0;padding:0;color:inherit;font:inherit;text-decoration:underline;text-underline-offset:2px;cursor:pointer}
+
+/* Pòtfèy: chwa vi (kliyan jou a / jounal pa jou) */
+.pot-vi{margin:12px 0}
+.pot-vi button{min-height:44px;font:inherit;font-weight:600;font-size:.9rem;border-radius:10px;border:1px solid var(--line);background:var(--card, transparent);color:inherit;cursor:pointer;padding:6px}
+.pot-vi button.on{background:var(--pri);color:var(--pri-ink);border-color:var(--pri)}
+.pot-vi button:focus-visible{outline:2px solid var(--info)}
+#potfey .pot-jn{margin-top:4px}
