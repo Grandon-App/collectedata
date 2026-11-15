@@ -30,7 +30,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "5.10";
+const APP_VERSION = "5.12";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin", kesye: "Responsab kès" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
@@ -547,11 +547,19 @@ const potF = { ajan: "", jou: null, filt: "", vi: "kliyan" }; // vi: «kliyan» 
 // Viman antre konte nan depo, viman soti nan retrè. Tranzaksyon rejte pa konte; sa ki an atant make apa.
 function jounalPotfey(M, ajanK, D) {
   const mwa = D.slice(0, 7), jou = new Map();
+  // Balans pòtfèy la (manadjè: solde_actuel vizib): balans jodi a, epi nou retounen dèyè jou pa jou ak efè chak
+  // tranzaksyon konfime (depo +, retrè −, frè −, sof «Frais carnet» ki pa touche balans lan).
+  let bJodi = 0, genBal = false; const efe = new Map();
+  const efè = (x) => { const kd = S.txKind(x), m = Number(x.montant || 0);
+    return kd === "depo" || kd === "viman_in" ? m : kd === "retre" || kd === "viman_out" || x.type_transaction === "V" ? -m : kd === "fre" && (x.type_frais ?? x.type_frais_livret) !== "Frais carnet" ? -m : 0; };
   for (const k of M.comptes.values()) {
     if (k._pending || ajanK(k.created_by) !== potF.ajan) continue;
+    if (k.solde_actuel != null) { bJodi += Number(k.solde_actuel); genBal = true; }
     for (const x of k._txs) {
       if (x.validation_status === "rejected") continue;
-      const j = S.jouTx(x); if (j.slice(0, 7) !== mwa) continue;
+      const j = S.jouTx(x);
+      if (!x._pending && (x.validation_status === "confirmed" || x.validation_status == null)) efe.set(j, (efe.get(j) || 0) + efè(x));
+      if (j.slice(0, 7) !== mwa) continue;
       const r = jou.get(j) || { depo: 0, retre: 0, fre: 0, nD: 0, nR: 0, atant: 0 };
       const kd = S.txKind(x), m = Number(x.montant || 0);
       if (kd === "depo" || kd === "viman_in") { r.depo += m; r.nD++; }
@@ -565,14 +573,22 @@ function jounalPotfey(M, ajanK, D) {
   const tot = l.reduce((a, [, r]) => ({ depo: a.depo + r.depo, retre: a.retre + r.retre, fre: a.fre + r.fre, nD: a.nD + r.nD, nR: a.nR + r.nR }), { depo: 0, retre: 0, fre: 0, nD: 0, nR: 0 });
   const net = (r) => r.depo - r.retre - r.fre;
   const nonMwa = new Date(D + "T12:00:00Z").toLocaleDateString("fr-FR", { month: "long", year: "numeric", timeZone: "UTC" });
-  return `<section class="card pot-jn" id="pot-jounal"><div class="ekip-sek-h"><h2>${t("Jounal pa jou")} · ${h(nonMwa)}</h2><small class="mut">${t("tout kont pòtfèy la")}</small></div>
-    ${l.length ? `<div class="tablewrap"><table class="pot-jn-t"><thead><tr><th>${t("Dat")}</th><th class="n">${t("Depo")}</th><th class="n">${t("Retrè")}</th><th class="n">${t("Frè")}</th><th class="n">${t("Net")}</th></tr></thead>
+  const balFen = (j) => bJodi - [...efe].reduce((a, [d0, v]) => a + (d0 > j ? v : 0), 0); // balans pòtfèy la nan fen jou j
+  const mwa1 = mwa + "-01", balDebi = balFen(S.ajouteJou(mwa1, -1)), dènyeJ = l.length ? l[0][0] : null;
+  const balFenMwa = balFen(S.ajouteJou(S.ajouteMwa(mwa1, 1), -1) < M.today ? S.ajouteJou(S.ajouteMwa(mwa1, 1), -1) : M.today), vary = balFenMwa - balDebi;
+  void dènyeJ;
+  const tèt = genBal ? `<div class="pot-bal">
+      <div><span>${t("Balans pòtfèy kòmansman mwa a")}</span><b>${gd(balDebi)}</b></div>
+      <div><span>${t("Mouvman nan mwa a")}</span><b class="${vary < 0 ? "err-t" : "ok-t"}">${vary < 0 ? "−" : "+"}${gd(Math.abs(vary))}</b></div>
+      <div><span>${S.ajouteJou(S.ajouteMwa(mwa1, 1), -1) < M.today ? t("Balans pòtfèy fen mwa a") : t("Balans pòtfèy jodi a")}</span><b>${gd(balFenMwa)}</b></div></div>` : "";
+  return `<section class="card pot-jn" id="pot-jounal"><div class="ekip-sek-h"><h2>${t("Jounal pa jou")} · ${h(nonMwa)}</h2><small class="mut">${t("tout kont pòtfèy la")}</small></div>${tèt}
+    ${l.length ? `<div class="tablewrap"><table class="pot-jn-t"><thead><tr><th>${t("Dat")}</th><th class="n">${t("Depo")}</th><th class="n">${t("Retrè")}</th><th class="n">${t("Frè")}</th><th class="n">${t("Net")}</th>${genBal ? `<th class="n">${t("Balans pòtfèy")}</th>` : ""}</tr></thead>
     <tbody>${l.map(([j, r]) => `<tr${j === D ? ' class="on"' : ""}><td><button type="button" class="lnk" data-pot-jou="${h(j)}">${h(datFr(j))}</button>${r.atant ? ` <span class="badge mut">${r.atant} ${t("an atant")}</span>` : ""}</td>
       <td class="n">${gd(r.depo)}<small> · ${r.nD}</small></td><td class="n">${r.retre ? gd(r.retre) : "—"}${r.nR ? `<small> · ${r.nR}</small>` : ""}</td><td class="n">${r.fre ? gd(r.fre) : "—"}</td>
-      <td class="n ${net(r) < 0 ? "err-t" : ""}"><b>${net(r) < 0 ? "−" : "+"}${gd(Math.abs(net(r)))}</b></td></tr>`).join("")}</tbody>
+      <td class="n ${net(r) < 0 ? "err-t" : ""}"><b>${net(r) < 0 ? "−" : "+"}${gd(Math.abs(net(r)))}</b></td>${genBal ? `<td class="n pot-bal-c">${gd(balFen(j))}</td>` : ""}</tr>`).join("")}</tbody>
     <tfoot><tr><td>${t("Total mwa a")}</td><td class="n">${gd(tot.depo)}<small> · ${tot.nD}</small></td><td class="n">${gd(tot.retre)}<small> · ${tot.nR}</small></td><td class="n">${gd(tot.fre)}</td>
-      <td class="n"><b>${net(tot) < 0 ? "−" : "+"}${gd(Math.abs(net(tot)))}</b></td></tr></tfoot></table></div>
-    <p class="mut sm">${t("Viman antre konte nan depo, viman soti nan retrè. Tranzaksyon rejte pa konte.")}</p>` : `<p class="empty">${t("Pa gen tranzaksyon nan mwa sa a.")}</p>`}</section>`;
+      <td class="n"><b>${net(tot) < 0 ? "−" : "+"}${gd(Math.abs(net(tot)))}</b></td>${genBal ? `<td class="n pot-bal-c">${gd(balFenMwa)}</td>` : ""}</tr></tfoot></table></div>
+    <p class="mut sm">${t("Viman antre konte nan depo, viman soti nan retrè. Tranzaksyon rejte pa konte.")}${genBal ? ` ${t("Balans pòtfèy: total balans tout kont pòtfèy la nan fen jou a (tranzaksyon konfime sèlman).")}` : ""}</p>` : `<p class="empty">${t("Pa gen tranzaksyon nan mwa sa a.")}</p>`}</section>`;
 }
 async function viewPotfey() {
   const M = await S.model();
@@ -624,10 +640,10 @@ async function viewPotfey() {
       <label class="tx-sel"><span>${t("Dat")}</span><span class="rapo-dat"><button type="button" class="btn sm" id="pot-prev" aria-label="${t("Jou anvan")}">‹</button>
         <input type="date" id="pot-jou" value="${h(D)}" max="${h(M.today)}"><button type="button" class="btn sm" id="pot-next" aria-label="${t("Jou apre")}" ${D >= M.today ? "disabled" : ""}>›</button></span></label>
     </div>
-    <div class="seg s2 pot-vi" role="tablist" aria-label="${h(t("Vi pòtfèy la"))}">
+    ${man ? `<div class="seg s2 pot-vi" role="tablist" aria-label="${h(t("Vi pòtfèy la"))}">
       <button type="button" role="tab" class="${potF.vi !== "jounal" ? "on" : ""}" aria-selected="${potF.vi !== "jounal"}" data-pot-vi="kliyan">👥 ${t("Kliyan jou a")}</button>
-      <button type="button" role="tab" class="${potF.vi === "jounal" ? "on" : ""}" aria-selected="${potF.vi === "jounal"}" data-pot-vi="jounal">📅 ${t("Jounal pa jou")}</button></div>
-    ${potF.vi === "jounal" ? jounalPotfey(M, ajanK, D) : `<div id="pot-kliyan">
+      <button type="button" role="tab" class="${potF.vi === "jounal" ? "on" : ""}" aria-selected="${potF.vi === "jounal"}" data-pot-vi="jounal">📅 ${t("Jounal pa jou")}</button></div>` : ""}
+    ${man && potF.vi === "jounal" ? jounalPotfey(M, ajanK, D) : `<div id="pot-kliyan">
     <p class="mut sm">${datFr(D)}${ferye ? ` · <b>${t("jou ferye")}</b>` : ""} · ${liy.length} ${t("kont nan pòtfèy la")} · ${tot.length} ${t("te dwe peye jou a")}</p>
     <div class="kes-sum kes-sum4">
       <div class="card kes-k" data-n="peye"><span>${t("Peye")}</span><b class="in">${n("peye")}</b><small>${gd(mon(liy.flatMap((x) => x.dep)))}</small></div>
