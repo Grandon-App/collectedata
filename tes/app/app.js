@@ -30,7 +30,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "5.12";
+const APP_VERSION = "5.13";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin", kesye: "Responsab kès" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
@@ -1901,6 +1901,9 @@ async function viewRapo() {
     .sort((a, b) => String(b.capture_le || b.date_transaction).localeCompare(String(a.capture_le || a.date_transaction)));
   const krPe = krTx.filter((y) => y.type_transaction === "Paiement"), krPen = krTx.filter((y) => y.type_transaction === "Penalite");
   const genKredi = (M.kredi || []).length > 0 || krTx.length > 0;
+  // Vèsman deklare (kredi): total vèsman apre (kanè kredi) tout peman kredi ajan an fè jou sa a, menm jan ak balans deklare a pou epay.
+  const krVs = krPe.filter((y) => y.versement_apres != null && y.versement_apres !== "");
+  const vesman = Math.round(krVs.reduce((a, y) => a + Number(y.versement_apres), 0) * 100) / 100;
   // Kont garanti: depo (+) ak retrè (−) ajan an fè jou sa a.
   const garTx = (M.garanti || []).flatMap((g) => g._tx.map((y) => ({ ...y, _g: g }))).filter((y) => y.statut !== "rejected" && mwen(y) && S.jouLokal(new Date(y.capture_le)) === D)
     .sort((a, b) => String(b.capture_le).localeCompare(String(a.capture_le)));
@@ -1923,7 +1926,7 @@ async function viewRapo() {
     ...ctxBase(M), isoJou: S.isoJou(D), i: jouRapo, D, nonJou,
     jou: jou.map((date, i) => ({ i, date, label: nonJou(i), on: i === jouRapo })),
     kpi: { depo, nDepo: dep.length, retre, nRetre: ret.length, fre: sum(fre), nFre: fre.length, vim: sum(vim), nVim: vim.length,
-      deklare, nDeklare, cycles, swivi, dmAtant, kach: depo - retre + sum(kane) + mnM - mnR + (genKredi ? sum(krPe) + sum(krPen) : 0) + garD - garR,
+      deklare, nDeklare, vesman, nVesman: krVs.length, genKredi, cycles, swivi, dmAtant, kach: depo - retre + sum(kane) + mnM - mnR + (genKredi ? sum(krPe) + sum(krPen) : 0) + garD - garR,
       // Liy anplis nan rezime a (kach la): kredi ak kont garanti.
       ekstra: [...(kane.length ? [{ k: "kane", l: "Nouvo kanè", v: sum(kane), n: kane.length, sub: `${kane.length} ${t("kanè")} · ${t("kach")}` }] : []),
         ...(mnM ? [{ k: "monnen", l: "Monnen kenbe", v: mnM, n: mnJ.filter((x) => x.tip === "monnaie").length, sub: `${t("kliyan an dwe resevwa l")} · ${t("kach")}` }] : []),
