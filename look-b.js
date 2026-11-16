@@ -235,6 +235,7 @@ export function rapo(ctx) {
     <div class="tile n" data-kpi="papeye" data-val="${kpi.swivi}"><b>${kpi.swivi}</b><span><span aria-hidden="true">Pa peye</span><span class="sr">Kliyan ki pa peye</span></span></div>
     <div class="tile n" data-kpi="demann" data-val="${kpi.dmAtant}"><b>${kpi.dmAtant}</b><span><span aria-hidden="true">Demann</span><span class="sr">Demann an atant</span></span></div>
     <div class="tile n wide dek" data-kpi="deklare" data-val="${kpi.deklare}"><span>Balans deklare (total)</span><b class="amt">${gd(kpi.deklare)}</b><em>${kpi.nDeklare} ${t("kont deklare")}</em></div>
+    ${kpi.genKredi ? `<div class="tile n wide dek" data-kpi="vesman" data-val="${kpi.vesman}"><span>${t("Vèsman deklare (total)")}</span><b class="amt">${gn(kpi.vesman)}</b><em>${kpi.nVesman} ${t("peman kredi")}</em></div>` : ""}
   </div>
   ${sw && sw.total ? `<div class="swv"><b>Swivi kliyan yo</b><span class="ok-t">${sw.peye} ${t("Peye")}</span><span class="warn-t">${sw.fidbak} ${t("fidbak anrejistre")}</span>${i === 0 ? `<span class="mut">${sw.pokoWe} ${t("poko wè")}</span>` : ""}</div>` : ""}
   ${poko ? `<p class="note warn">${poko} tranzaksyon poko voye: yo konte nan rapò a, men sèvè a poko resevwa yo.</p>` : ""}

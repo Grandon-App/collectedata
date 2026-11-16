@@ -1,6 +1,6 @@
 // Pati "baz": rann aktyèl la (ble marin senp). Chak look kòmanse ak yo, epi ranplase yo ak pwòp vèsyon li.
 // Kontra ctx yo: LOOKS.md.
-import { kane, h, d, gd, datFr, lè, non, JOU, lisJou, avatar, badgePend, badgeKont, ICO, pct, t } from "./fmt.js";
+import { kane, h, d, gd, gn, datFr, lè, non, JOU, lisJou, avatar, badgePend, badgeKont, ICO, pct, t } from "./fmt.js";
 
 export function tablo(ctx) {
   const { moi, today, stats } = ctx;
@@ -116,6 +116,7 @@ export function rapo(ctx) {
     ${K("fre", "Frè", kpi.fre, `<span class="fee">${gd(kpi.fre)}</span>`, `${kpi.nFre} · ${t("pa afekte kach la")}`)}
     ${K("viman", "Viman", kpi.vim, gd(kpi.vim), `${kpi.nVim} · ${t("pa afekte kach la")}`)}
     ${K("deklare", "Balans deklare (total)", kpi.deklare, gd(kpi.deklare), `${kpi.nDeklare} kont deklare`)}
+    ${kpi.genKredi ? K("vesman", "Vèsman deklare (total)", kpi.vesman, gn(kpi.vesman), `${kpi.nVesman} ${t("peman kredi")}`) : ""}
     ${(kpi.ekstra || []).map((x) => K(x.k, x.l, x.v, `<span class="${x.out ? "out" : "in"}">${gd(x.v)}</span>`, x.sub)).join("")}
     ${K("cycles", "Cycle kreye", kpi.cycles, kpi.cycles, t(nonJou(i)).toLowerCase())}
     ${K("papeye", "Kliyan ki pa peye", kpi.swivi, kpi.swivi, t("fidbak anrejistre"))}
