@@ -30,7 +30,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "5.13";
+const APP_VERSION = "5.14";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin", kesye: "Responsab kès" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
@@ -4155,7 +4155,7 @@ function detayRapo(M, D, pa) {
         <span class="txr-mon"><b class="in">+${gd(y.montant)}</b></span></div>`; };
     krRib = seksyon("kredi_peman", "Peman kredi", kPe, rowK, sumMon(okK(kPe)))
       + seksyon("kredi_penalite", "Penalite kredi", kPen, rowK, sumMon(okK(kPen)))
-      + `<details class="rb card" data-rb="kredi_vesman" ${kVs.length ? "open" : ""}><summary><b>${t("Vèsman deklare (kredi)")}</b><span class="mut sm">${kVs.length} · ${Math.round(okK(kVs).reduce((a, y) => a + Number(y.versement_apres) - Number(y.versement_avant || 0), 0) * 100) / 100} ${t("vèsman")}</span></summary>
+      + `<details class="rb card" data-rb="kredi_vesman" ${kVs.length ? "open" : ""}><summary><b>${t("Vèsman deklare (kredi)")}</b><span class="mut sm">${kVs.length} · ${t("total vèsman apre")} <b data-vesman-tot="${Math.round(okK(kVs).reduce((a, y) => a + Number(y.versement_apres), 0) * 100) / 100}">${F.gn(Math.round(okK(kVs).reduce((a, y) => a + Number(y.versement_apres), 0) * 100) / 100)}</b> · ${Math.round(okK(kVs).reduce((a, y) => a + Number(y.versement_apres) - Number(y.versement_avant || 0), 0) * 100) / 100} ${t("vèsman peye")}</span></summary>
         <div class="list tx-lis">${kVs.map(rowK).join("") || `<p class="empty">${t("Anyen.")}</p>`}</div></details>`
       + seksyon("kredi_papeye", "Kliyan kredi ki pa peye", kfb, (x) => `<div class="row txr"><span class="txr-le"><b class="mono">${lèKout(x.capture_le) || "—"}</b></span>
         <span class="txr-main"><span class="txr-t"><b>${d(non(M.clients.get(x._k.id_personne)))}</b> <span class="badge warn">${t(MOTIF_KOUT[x.motif] || "Lòt")}</span></span>
