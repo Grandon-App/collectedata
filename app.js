@@ -30,7 +30,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "5.14";
+const APP_VERSION = "5.15";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin", kesye: "Responsab kès" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
@@ -3330,6 +3330,21 @@ async function chanjeAjanPòtfèy(k, c) {
   } catch (e) { toast(t(e.message), "err"); }
 }
 
+// Relouvri yon kanè kraze (admin): kliyan an te retire tout kòb li, men li kontinye peye menm kanè a.
+// Sèvè a mete reouvri_le sou sik la; kont lan rete aktif jiskaske yon nouvo retrè fèt.
+async function relouvriKont(k, c) {
+  if (!navigator.onLine) return ui.info("Pa gen koneksyon.", "Fòk ou gen entènèt pou relouvri yon kont.");
+  if (!(await ui.ask({ titre: "Relouvri kont lan?", foto: c.photo_url, ok: "Relouvri",
+    tekst: t("Kont lan ap aktif ankò: ajan an ap ka pran depo sou menm kanè a. Si kliyan an retire tout kòb li ankò, kont lan ap fèmen otomatikman."),
+    detay: [["Kliyan", non(c)], ["Kont", k.no_compte || "—"], ["Ajan pòtfèy", nomAjan(k.created_by) || t("San ajan")]] }))) return;
+  try {
+    await api.rpc("grandon_kont_relouvri", { p_compte: k.id_compte_epargne });
+    await S.pull();
+    toast(t("Kont lan relouvri ✓"), "ok");
+    viewCycle(k.id_compte_epargne);
+  } catch (e) { toast(t(e.message), "err"); }
+}
+
 // ---------- Moun ki gen dwa siyati (yon sèl cycle) ----------
 // Pa obligatwa. Non konplè, tip pyès, nimewo (NIF/CIN/Paspò), foto pyès la (oswa foto moun nan si l pa gen pyès).
 // Ajan: demann → manadjè a valide. Manadjè / admin: aplike touswit.
@@ -3436,6 +3451,8 @@ async function viewCycle(id) {
     errHtml: k._error ? `<p class="note err">${d(t(k._error))} <a href="#/senk">Wè</a></p>` : "",
   };
   $app.innerHTML = `<div id="cycle"><p class="kkat-l">${badjKat("epay")} <b>${d(k.no_compte || "")}</b>${kane(k)}</p>${L().parts.cycleTop(ctx)}
+  ${k._kraze && !k._pending ? `<div class="card kraze-k" id="kraze-k"><div class="grow"><b>${t("Kanè kraze")}</b><p class="mut sm">${t("Kliyan an retire tout kòb li: kont lan fèmen, li pa parèt pou depo ankò.")}${moi?.admin ? ` ${t("Si kliyan an kontinye peye menm kanè a, relouvri kont lan.")}` : ""}</p></div>
+    ${moi?.admin ? `<button type="button" class="btn sm pri" id="relouvri">${t("Relouvri kont lan")}</button>` : ""}</div>` : ""}
   ${!k._pending && !estKesye() ? (() => { const dm = [...M.modif.values()].find((x) => x.kind === "cycle" && x.ref_id === k.id_compte_epargne && x.statut === "an_atant");
     return dm && !man ? `<p class="note info-note">${t("Demann modifikasyon cycle a ap tann manadjè a")} (${(dm.chan || []).map((c0) => t(etikètChan("cycle", c0))).join(", ")}).</p>`
       : `<a class="btn block cycle-mod" href="#/cycle/${h(k.id_compte_epargne)}/modifye">${ICO.modifye || ""}<span>${t(man ? "Modifye cycle a" : "Mande modifikasyon cycle a")}</span></a>`; })() : ""}
@@ -3457,6 +3474,7 @@ async function viewCycle(id) {
   <div class="list">${k._txs.map((x) => liTx(M, x, { kliyan: false, bouton: true })).join("") || `<p class="empty">Poko gen tranzaksyon.</p>`}</div></div>`;
   document.getElementById("papeye")?.addEventListener("click", () => paPeye(k, c));
   document.getElementById("chanje-ajan")?.addEventListener("click", () => chanjeAjanPòtfèy(k, c));
+  document.getElementById("relouvri")?.addEventListener("click", () => relouvriKont(k, c));
   brancheFre(M, await db.meta("sevis_cfg"));
   brancheGpsBouton(c);
   $app.querySelectorAll("[data-tx]").forEach((b) => (b.onclick = () => aksyonTx(M, b.dataset.tx)));

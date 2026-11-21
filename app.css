@@ -616,6 +616,9 @@ html[data-look] .login h1.wordmark::after { content: ""; position: absolute; lef
 .potfey-not { margin: 0 0 12px; }
 .potfey-k { display: flex; align-items: center; gap: 12px; padding: 10px 14px; margin: 8px 0; }
 .potfey-k .grow { display: flex; flex-direction: column; min-width: 0; }
+.kraze-k { display: flex; align-items: center; gap: 12px; padding: 10px 14px; margin: 8px 0; border-left: 4px solid var(--out, #c0392b); }
+.kraze-k .grow { min-width: 0; }
+.kraze-k p { margin: 2px 0 0; }
 .monnen-k { display: flex; flex-direction: column; align-items: stretch; gap: 10px; padding: 12px 14px; margin: 8px 0; }
 .monnen-k .grow { display: flex; flex-direction: column; min-width: 0; }
 .monnen-k .monnen-b { display: flex; gap: 8px; flex-wrap: wrap; }
