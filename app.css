@@ -570,6 +570,21 @@ details.rb > .list { padding: 0 10px 10px; }
   .row.kesr .kes-chk { grid-column: 1; } .row.kesr .txr-le { grid-column: 2; grid-row: auto; } .row.kesr .txr-main { grid-column: 3; } .row.kesr .kes-mon { grid-column: 4; grid-row: auto; }
 }
 
+/* Rapò (kès ak ajan) sou telefòn: liy detay yo pa kwense nan bwat la.
+   Lè + non + montan sou premye liy lan, detay yo (kont, kanè) anba sou tout lajè a. */
+@media (max-width: 719px) {
+  details.rb > .list { padding: 0 6px 8px; }
+  details.rb > summary { padding: 10px 12px; flex-wrap: wrap; }
+  details.rb > summary > .mut { text-align: right; }
+  details.rb .row.txr { grid-template-columns: auto minmax(0, 1fr) auto; column-gap: 10px; row-gap: 2px; align-items: start; padding: 10px; }
+  details.rb .row.txr .txr-le { grid-row: auto; padding-top: 1px; }
+  details.rb .row.txr .txr-main { grid-column: 2 / 4; grid-row: 1 / span 3; display: contents; }
+  details.rb .row.txr .txr-main > * { grid-column: 1 / -1; }
+  details.rb .row.txr .txr-main > .txr-t { grid-column: 2; grid-row: 1; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; }
+  details.rb .row.txr .txr-mon { grid-column: 3; grid-row: 1; }
+  details.rb .badge { white-space: nowrap; }
+}
+
 /* Logo tipografik «Grandon» (pa gen ikòn nan aplikasyon an) */
 .wordmark { font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Times New Roman", serif; font-weight: 700; letter-spacing: .06em; font-style: normal; line-height: 1.1; }
 html[data-look] .brand .wordmark { font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Times New Roman", serif; font-size: 1.3rem; letter-spacing: .06em; }
