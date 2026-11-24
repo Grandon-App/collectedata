@@ -30,7 +30,7 @@ const $bar = document.getElementById("bar");
 const C = window.GRANDON_CONFIG;
 
 // ---------- Ti zouti ----------
-const APP_VERSION = "5.16";
+const APP_VERSION = "5.17";
 const WOL = { agent: "Ajan", manager: "Manadjè", admin: "Admin", kesye: "Responsab kès" };
 // Preferans aparans: pou aparèy sa a sèlman.
 const PREFS_DEFO = { tem: "auto", teks: "n", look: looks.LOOK_DEFO, son: true };
@@ -2938,7 +2938,7 @@ function kesKrediHtml(M, l) {
   if (!l.length) return `<p class="empty">${kesF.q || kesF.ajan ? t("Anyen pa koresponn.") : t("Pa gen peman kredi an atant validasyon.")}</p>`;
   return `<div class="kes-tout"><span>${l.length} ${t("peman")} · <b class="in">${gd(sumMon(l))}</b></span> <button type="button" class="btn sm pri" id="kes-kr-tout">${t("Valide tout")}</button></div>
     <div class="list tx-lis">${l.map(({ y, k }) => { const c = M.clients.get(k.id_personne);
-      return `<div class="row kesr" data-kes-kr="${h(y.id_transaction_credit)}"><span class="txr-le"><b class="mono">${lèKout(y.capture_le || y.date_transaction) || "—"}</b><small>${jouKreTx(y) === M.today ? t("jodi a") : datKout(jouKreTx(y))}</small></span>
+      return `<div class="row kesr kesr-kr" data-kes-kr="${h(y.id_transaction_credit)}"><span class="txr-le"><b class="mono">${lèKout(y.capture_le || y.date_transaction) || "—"}</b><small>${jouKreTx(y) === M.today ? t("jodi a") : datKout(jouKreTx(y))}</small></span>
       <span class="txr-main"><span class="txr-t"><b>${d(non(c))}</b> ${badjKat(katKredi(k))}</span><span class="mut sm">${d(k.no_compte || "")} · <span data-brut>${h(nonAjan(y.created_by))}</span></span>
         <span class="mut sm">${y.versement_apres != null ? `${t("vèsman")} ${Number(y.versement_avant)} → ${Number(y.versement_apres)} · ` : ""}${t("rete")} ${gd(k.montant_restant)} / ${gd(k.montant_final)}</span></span>
       <span class="kes-mon"><b class="in">+${gd(y.montant)}</b>
