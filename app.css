@@ -528,6 +528,9 @@ html[data-look] .chips.filt.kx-filt .chip { flex: 0 0 auto; min-width: max-conte
 .kes-chk { display: flex; align-items: center; justify-content: center; min-height: 44px; cursor: pointer; }
 .kes-mon { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
 .kes-mon > b { font-size: 1.05rem; white-space: nowrap; }
+/* Peman kredi (Kès): pa gen ti kare pou chwazi → pa gen kolòn 28px la */
+.row.kesr.kesr-kr { grid-template-columns: 52px minmax(0, 1fr); }
+.row.kesr.kesr-kr .txr-le, .row.kesr.kesr-kr .txr-main { grid-row: auto; }
 .kes-bt { display: flex; gap: 8px; }
 .kes-bt .btn { min-width: 84px; }
 .kes-ba { position: sticky; bottom: calc(96px + env(safe-area-inset-bottom, 0px)); z-index: 5; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
@@ -549,6 +552,8 @@ details.rb > .list { padding: 0 10px 10px; }
 @media (min-width: 720px) {
   .kes-tool { grid-template-columns: minmax(220px, 2fr) minmax(200px, 1fr); }
   .row.kesr { grid-template-columns: 28px 60px minmax(0, 1fr) auto; }
+  .row.kesr.kesr-kr { grid-template-columns: 60px minmax(0, 1fr) auto; }
+  .row.kesr.kesr-kr .kes-mon { grid-column: 3; }
   .kes-mon { grid-column: 4; flex-direction: column; align-items: flex-end; }
   .rapo-ba { grid-template-columns: minmax(200px, 1fr) minmax(260px, 1fr); }
 }
@@ -567,6 +572,8 @@ details.rb > .list { padding: 0 10px 10px; }
   #kes .row.txr .txr-le, details.rb .row.txr .txr-le { grid-row: auto; }
   #kes .row.txr .txr-mon, details.rb .row.txr .txr-mon { grid-column: 3; grid-row: auto; }
   .row.kesr { grid-template-columns: 28px 64px minmax(0, 1fr) auto; }
+  .row.kesr.kesr-kr { grid-template-columns: 64px minmax(0, 1fr) auto; }
+  .row.kesr.kesr-kr .txr-le { grid-column: 1; } .row.kesr.kesr-kr .txr-main { grid-column: 2; } .row.kesr.kesr-kr .kes-mon { grid-column: 3; }
   .row.kesr .kes-chk { grid-column: 1; } .row.kesr .txr-le { grid-column: 2; grid-row: auto; } .row.kesr .txr-main { grid-column: 3; } .row.kesr .kes-mon { grid-column: 4; grid-row: auto; }
 }
 
