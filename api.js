@@ -12,6 +12,16 @@ export class ApiError extends Error {
   }
 }
 
+// Modil Kontwòl (A3): yon tranzaksyon Sèvis Kontwòl la korije pa ka modifye ni anile ankò (SQLSTATE 42501).
+// Mesaj sèvè a an franse, ak yon endikasyon (hint): nou montre l an kreyòl, ak nimewo koreksyon an.
+// Lòt erè yo: endikasyon sèvè a (si genyen) mete apre mesaj la.
+export function mesajKontwol(msg, hint) {
+  const m = String(msg || "");
+  const kor = m.match(/corrig[ée]e par le Service Contr[ôo]le\s*\(([^)]+)\)/i);
+  if (kor) return `Tranzaksyon sa a te korije pa Sèvis Kontwòl la (${kor[1]}): li pa ka modifye ni anile ankò. Pou chanje l, mande Sèvis Kontwòl la yon nouvo koreksyon.`;
+  return hint && !m.includes(hint) ? `${m} ${hint}` : m;
+}
+
 let session = null;
 export const getSession = () => session;
 export async function loadSession() {
@@ -72,7 +82,7 @@ async function raw(path, { method = "GET", body, headers = {}, auth = true, blob
   let data = null;
   try { data = text ? JSON.parse(text) : null; } catch { data = text; }
   if (!r.ok) {
-    const msg = data?.["erè"] || data?.message || data?.msg || data?.error_description || data?.error || `Erè ${r.status}`;
+    const msg = mesajKontwol(data?.["erè"] || data?.message || data?.msg || data?.error_description || data?.error || `Erè ${r.status}`, data?.hint);
     const retry = r.status >= 500 || r.status === 408 || r.status === 429;
     throw new ApiError(msg, { status: r.status, code: data?.code ?? data?.statusCode ?? null, retry });
   }
