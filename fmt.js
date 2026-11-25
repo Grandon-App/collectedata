@@ -47,9 +47,11 @@ export const avatar = (c, cls = "thumb") => c?.photo_url
 // Nimewo kanè (ansyen sistèm, egz. A-BSI-XX00000) pou kont ki enpòte; kont ki kreye nan aplikasyon an pa genyen l.
 export const kane = (k) => (k?.no_kane ? ` · <span class="no-kane" title="Nimewo kanè">${t("Kanè")} <b data-brut>${h(k.no_kane)}</b></span>` : "");
 export const badgePend = (o) => (o?._error ? `<span class="badge err">Erè sync</span>` : o?._pending ? `<span class="badge pend">Poko voye</span>` : "");
-export const badgeTx = (x) => x._error ? `<span class="badge err">Erè</span>` : x._pending ? `<span class="badge pend">Poko voye</span>`
+export const badgeTx = (x) => (x._error ? `<span class="badge err">Erè</span>` : x._pending ? `<span class="badge pend">Poko voye</span>`
   : x.validation_status === "pending" ? `<span class="badge warn">An atant validasyon</span>`
-  : x.validation_status === "rejected" ? `<span class="badge err">Anile / refize</span>` : "";
+  : x.validation_status === "rejected" ? `<span class="badge err">Anile / refize</span>` : "")
+  // Modil Kontwòl (A2): ekriti Sèvis Kontwòl la ajoute (rectification / regularisation)
+  + (x.origine === "rectification" || x.origine === "regularisation" ? ` <span class="badge info" title="${x.origine === "rectification" ? "Ranplase yon ekriti ki te gen erè" : "Ekriti ki te bliye, ajoute nan dat reyèl li"}">Koreksyon Kontwòl</span>` : "");
 export const badgeKont = (k) => !k._actif ? `<span class="badge mut">Fini</span>`
   : k._jodiPeman ? (k._jodi >= Number(k.montant_plan || 0) ? `<span class="badge ok">Peye jodi a</span>` : `<span class="badge info">Peman jodi a</span>`) : `<span class="badge ok">Aktif</span>`;
 export const badgeDm = (dm) => dm._error ? `<span class="badge err">Erè sync</span>` : dm._pending ? `<span class="badge pend">Poko voye</span>`
